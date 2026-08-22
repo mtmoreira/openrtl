@@ -21,11 +21,13 @@ from openrtl.application.reviews import (
     ReviewReport,
     build_requirement_coverage,
 )
+from openrtl.application.scripted import FIFO_REQUIREMENTS, ScriptedFifoResult, run_scripted_fifo
 
 __all__ = [
     "EXPERT_DEFINITIONS",
     "DiagnosisReport",
     "EvaluationCase",
+    "FIFO_REQUIREMENTS",
     "ExpertDefinition",
     "ExpertInvocationPlan",
     "ExpertRegistry",
@@ -34,9 +36,11 @@ __all__ = [
     "ReviewFinding",
     "ReviewKind",
     "ReviewReport",
+    "ScriptedFifoResult",
     "StageOutcome",
     "WorkflowStage",
     "WorkflowState",
     "build_requirement_coverage",
     "load_evaluation_cases",
+    "run_scripted_fifo",
 ]
