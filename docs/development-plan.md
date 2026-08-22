@@ -12,6 +12,11 @@
 7. Implement plans, reference-model traces, RTL/DV run bundles, and closure.
 8. Implement diagnosis, waveform navigation, teaching, reviews, and evaluations.
 
+The initial repository delivers these as coherent local commits on one isolated
+product worktree. FPGA, synthesis, formal execution, remote catalog publication,
+and automatic waveform-viewer launch remain deferred ports; their future
+evidence attaches to the same artifact graph and requirement IDs.
+
 ## V1 completion gate
 
 - Provider-free unit and integration lanes pass.

@@ -1,0 +1,30 @@
+[
+  {
+    "case_id": "fifo.clean.build",
+    "expected_roles": ["design_lead", "design_architect", "reference_model_engineer", "rtl_engineer", "dv_engineer", "signoff_reviewer"],
+    "must_escalate": false,
+    "objective": "Build and simulation-verify a synchronous FIFO.",
+    "required_outputs": ["specification", "reference_model", "rtl", "dv", "run", "design_package"]
+  },
+  {
+    "case_id": "fifo.order.diagnosis",
+    "expected_roles": ["diagnosis_closure_engineer"],
+    "must_escalate": false,
+    "objective": "Root-cause an ordering mismatch using log, waveform, RTL, and model evidence.",
+    "required_outputs": ["diagnosis", "source_anchor", "waveform_anchor", "requirement_anchor"]
+  },
+  {
+    "case_id": "reset.ambiguity.escalation",
+    "expected_roles": ["design_lead", "design_architect"],
+    "must_escalate": true,
+    "objective": "Resolve a requirement that does not define reset polarity or timing.",
+    "required_outputs": ["escalation_report", "requested_decision"]
+  },
+  {
+    "case_id": "fifo.learn.waveform",
+    "expected_roles": ["learning_coach", "diagnosis_closure_engineer"],
+    "must_escalate": false,
+    "objective": "Teach simultaneous FIFO transfers using source, log, and waveform anchors.",
+    "required_outputs": ["teaching_step", "waveform_focus", "source_anchor"]
+  }
+]

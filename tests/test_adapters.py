@@ -13,6 +13,8 @@ from openrtl.adapters import (
     SimulationStatus,
     VcdIndex,
     VerilatorBackend,
+    build_command_tools,
+    build_eda_mcp_binding,
     parse_jsonl_events,
 )
 
@@ -91,6 +93,25 @@ class VerilatorBackendTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.status, SimulationStatus.FAILED)
         self.assertEqual(result.failure_signature, "verilator.compile.failed")
         self.assertEqual(calls, 1)
+
+
+class AgentRigToolBindingTest(unittest.TestCase):
+    def test_cli_and_mcp_tool_choices_remain_explicit(self) -> None:
+        tools = build_command_tools(
+            workspace="/workspace",
+            verilator_executable="/opt/eda/verilator",
+            surfer_executable="/opt/eda/surfer",
+        )
+        self.assertEqual(tools.tool_ids, ("eda.verilator", "waveform.surfer"))
+        binding = build_eda_mcp_binding(
+            server_id="local-eda",
+            command=("/opt/eda/server", "--stdio"),
+            allowed_tools=("lint", "simulate"),
+        )
+        self.assertEqual(
+            binding.tool_ids,
+            ("mcp.local-eda.lint", "mcp.local-eda.simulate"),
+        )
 
 
 if __name__ == "__main__":

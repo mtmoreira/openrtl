@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import compileall
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -43,6 +44,9 @@ def _validate_architecture() -> None:
         "pyproject.toml",
         "src/openrtl/__init__.py",
         "src/openrtl/py.typed",
+        "examples/fifo/rtl/sync_fifo.sv",
+        "examples/fifo/dv/test_sync_fifo.py",
+        "evals/openrtl_v1.json",
     }
     missing = sorted(path for path in required if not (ROOT / path).is_file())
     if missing:
@@ -51,7 +55,8 @@ def _validate_architecture() -> None:
 
 
 def _run_tests() -> None:
-    environment = {"PYTHONPATH": f"{ROOT / 'src'}:{ROOT.parent / 'agentrig' / 'src'}"}
+    environment = dict(os.environ)
+    environment["PYTHONPATH"] = f"{ROOT / 'src'}:{ROOT}:{ROOT.parent / 'agentrig' / 'src'}"
     completed = subprocess.run(
         [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-t", "."],
         cwd=ROOT,
@@ -60,6 +65,14 @@ def _run_tests() -> None:
     )
     if completed.returncode != 0:
         raise RuntimeError("unit tests failed")
+    model = subprocess.run(
+        [sys.executable, "-m", "unittest", "examples.fifo.test_model"],
+        cwd=ROOT,
+        env=environment,
+        check=False,
+    )
+    if model.returncode != 0:
+        raise RuntimeError("FIFO model tests failed")
     print("CHECKPOINT tests passed")
 
 

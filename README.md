@@ -34,6 +34,7 @@ Run the provider-free validation lane:
 
 ```sh
 PYTHONPATH=src:../agentrig/src python -m unittest discover -s tests -t .
+PYTHONPATH=src:../agentrig/src:. python -m unittest examples.fifo.test_model
 python tools/validate.py
 ```
 
@@ -41,7 +42,10 @@ The simulator canary is separately selected because it requires Verilator and
 cocotb:
 
 ```sh
-python -m openrtl.cli canary --project examples/sync_fifo
+PYTHONPATH=src:../agentrig/src python -m openrtl.cli canary --root .
+
+# With the simulation extra and external tools installed:
+make -C examples/fifo/dv
 ```
 
 No provider call, GUI launch, package publication, or remote Git operation is

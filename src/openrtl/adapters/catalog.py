@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
+from openrtl.domain._validation import identifier
 from openrtl.domain.packages import DesignPackage, TrustLevel
 
 
@@ -20,7 +22,7 @@ class LocalDesignCatalog:
         return tuple(sorted(path.name for path in self.root.iterdir() if path.is_dir()))
 
     def versions(self, package_id: str) -> tuple[str, ...]:
-        package_root = self.root / package_id
+        package_root = self.root / identifier(package_id, "package_id")
         if not package_root.exists():
             return ()
         return tuple(
@@ -55,7 +57,10 @@ class LocalDesignCatalog:
         return destination
 
     def read_manifest(self, package_id: str, version: str) -> dict[str, object]:
-        source = self.root / package_id / f"{version}.json"
+        normalized_id = identifier(package_id, "package_id")
+        if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?", version):
+            raise ValueError("version must use semantic version syntax")
+        source = self.root / normalized_id / f"{version}.json"
         value = json.loads(source.read_text())
         if not isinstance(value, dict):
             raise ValueError("catalog manifest must be an object")
