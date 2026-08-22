@@ -56,7 +56,14 @@ def _validate_architecture() -> None:
 
 def _run_tests() -> None:
     environment = dict(os.environ)
-    environment["PYTHONPATH"] = f"{ROOT / 'src'}:{ROOT}:{ROOT.parent / 'agentrig' / 'src'}"
+    inherited = environment.get("PYTHONPATH", "")
+    candidates = (
+        str(ROOT / "src"),
+        str(ROOT),
+        inherited,
+        str(ROOT.parent / "agentrig" / "src"),
+    )
+    environment["PYTHONPATH"] = ":".join(value for value in candidates if value)
     completed = subprocess.run(
         [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-t", "."],
         cwd=ROOT,
