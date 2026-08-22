@@ -10,12 +10,27 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
+IGNORED_DIRECTORY_NAMES = {
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".venv",
+    "__pycache__",
+    "artifacts",
+    "build",
+    "dist",
+    "runs",
+    "sim_build",
+}
 
 
 def _validate_text_files() -> None:
     checked = 0
     for path in sorted(ROOT.rglob("*")):
-        if not path.is_file() or ".git" in path.parts:
+        relative_path = path.relative_to(ROOT)
+        if not path.is_file() or any(
+            part in IGNORED_DIRECTORY_NAMES for part in relative_path.parts
+        ):
             continue
         if path.suffix not in {".md", ".py", ".toml", ".sv", ".zsh"} and path.name not in {
             ".gitignore",
@@ -24,9 +39,9 @@ def _validate_text_files() -> None:
             continue
         data = path.read_bytes()
         if b"\x00" in data:
-            raise RuntimeError(f"binary data in text file: {path.relative_to(ROOT)}")
+            raise RuntimeError(f"binary data in text file: {relative_path}")
         if data and not data.endswith(b"\n"):
-            raise RuntimeError(f"missing final newline: {path.relative_to(ROOT)}")
+            raise RuntimeError(f"missing final newline: {relative_path}")
         checked += 1
     print(f"CHECKPOINT text_files valid {checked}")
 
