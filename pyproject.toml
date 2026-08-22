@@ -1,0 +1,41 @@
+[build-system]
+requires = ["uv_build==0.12.3"]
+build-backend = "uv_build"
+
+[project]
+name = "openrtl"
+version = "0.1.0"
+description = "Evidence-driven multi-agent RTL design and verification"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+dependencies = [
+  "agentrig==0.2.2",
+]
+
+[project.optional-dependencies]
+simulation = [
+  "cocotb==2.0.1",
+]
+
+[project.scripts]
+openrtl = "openrtl.cli:main"
+
+[tool.uv]
+required-version = "==0.12.3"
+exclude-newer = "2026-08-22T00:00:00Z"
+
+[tool.uv.sources]
+agentrig = { path = "../agentrig", editable = true }
+
+[tool.uv.build-backend]
+source-exclude = ["**/AGENTS.md"]
+wheel-exclude = ["**/AGENTS.md"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = ["src", "../agentrig/src"]
+files = ["src/openrtl", "tests"]
+show_error_codes = true
+pretty = true

@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.pytest_cache/
+build/
+dist/
+artifacts/
+runs/
+*.vcd
+*.fst
+sim_build/
+results.xml
