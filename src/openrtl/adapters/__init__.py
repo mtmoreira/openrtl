@@ -1,6 +1,7 @@
 """Infrastructure adapters for local OpenRTL execution."""
 
 from openrtl.adapters.catalog import LocalDesignCatalog
+from openrtl.adapters.canary import load_fifo_canary_evidence
 from openrtl.adapters.agentrig import (
     OpenRTLCommandTools,
     build_command_tools,
@@ -30,5 +31,6 @@ __all__ = [
     "WaveformFocus",
     "build_command_tools",
     "build_eda_mcp_binding",
+    "load_fifo_canary_evidence",
     "parse_jsonl_events",
 ]

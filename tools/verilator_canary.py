@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,6 +19,7 @@ _KNOWN_OUTPUTS = frozenset(
         ".complete",
         ".openrtl-verilator-canary-owner",
         "canary.log",
+        "evidence.json",
         "results.xml",
         "sim_build",
         "tmp",
@@ -43,6 +45,7 @@ class CanaryArtifacts:
     results: Path
     waveform: Path
     simulation_build: Path
+    evidence_manifest: Path
 
 
 CommandRunner = Callable[..., subprocess.CompletedProcess[bytes]]
@@ -123,6 +126,7 @@ def _prepare_output_directory(root: Path, output_directory: Path) -> CanaryArtif
         results=resolved / "results.xml",
         waveform=resolved / "waves.vcd",
         simulation_build=resolved / "sim_build",
+        evidence_manifest=resolved / "evidence.json",
     )
 
 
@@ -160,6 +164,50 @@ def _verify_artifacts(artifacts: CanaryArtifacts) -> None:
         or not any(artifacts.simulation_build.iterdir())
     ):
         raise RuntimeError("Verilator simulation build collateral is missing")
+
+
+def _file_evidence(root: Path, artifact: Path) -> dict[str, str | int]:
+    content = artifact.read_bytes()
+    return {
+        "path": artifact.relative_to(root).as_posix(),
+        "sha256": hashlib.sha256(content).hexdigest(),
+        "size_bytes": len(content),
+    }
+
+
+def _write_evidence_manifest(
+    root: Path,
+    rtl: Path,
+    artifacts: CanaryArtifacts,
+) -> str:
+    payload = {
+        "artifacts": {
+            "log": _file_evidence(root, artifacts.log),
+            "results": _file_evidence(root, artifacts.results),
+            "waveform": _file_evidence(root, artifacts.waveform),
+        },
+        "requirements": [
+            "fifo.reset",
+            "fifo.write",
+            "fifo.read",
+            "fifo.order",
+            "fifo.backpressure",
+            "fifo.simultaneous",
+            "fifo.wrap",
+            "fifo.status",
+        ],
+        "rtl": _file_evidence(root, rtl),
+        "run_id": "fifo.verilator.canary",
+        "schema": "openrtl.verilator-canary-evidence.v1",
+        "seed": 1,
+        "status": "passed",
+        "testcase": "test_sync_fifo.randomized_fifo_scoreboard",
+        "tool_profile_id": "verilator.cocotb",
+        "top": "sync_fifo",
+    }
+    encoded = (json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    artifacts.evidence_manifest.write_bytes(encoded)
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _simulation_environment(
@@ -239,8 +287,9 @@ def run_verilator_canary(
 
     _verify_artifacts(artifacts)
     rtl_digest = hashlib.sha256(required[0].read_bytes()).hexdigest()
+    evidence_digest = _write_evidence_manifest(resolved_root, required[0], artifacts)
     (artifacts.output_directory / ".complete").write_text(
-        f"rtl_sha256={rtl_digest}\n",
+        f"rtl_sha256={rtl_digest}\nevidence_sha256={evidence_digest}\n",
         encoding="utf-8",
     )
     return artifacts
@@ -251,5 +300,6 @@ def describe_artifacts(artifacts: CanaryArtifacts) -> tuple[str, ...]:
         f"COLLATERAL canary_log={artifacts.log}",
         f"COLLATERAL results={artifacts.results}",
         f"COLLATERAL waveform={artifacts.waveform}",
+        f"COLLATERAL evidence_manifest={artifacts.evidence_manifest}",
         f"COLLATERAL simulation_build={artifacts.simulation_build}",
     )

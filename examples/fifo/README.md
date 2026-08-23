@@ -17,9 +17,19 @@ artifact-preserving RTL lane with:
 uv run python tools/validate.py --with-verilator
 ```
 
-The verified log, results XML, VCD trace, and simulator build are retained under
-`build/verilator-fifo-canary/`. The default `python tools/validate.py` command
-does not invoke Verilator.
+The verified log, results XML, VCD trace, simulator build, and `evidence.json`
+manifest are retained under `build/verilator-fifo-canary/`. Inspect the
+hash-bound run as a build- or learn-mode package candidate with:
+
+```sh
+uv run openrtl verified-canary --root . --mode build
+uv run openrtl verified-canary --root . --mode learn
+```
+
+Ingestion fails closed if collateral is missing, changed, symlinked, oversized,
+or does not contain the expected passing test, scoreboard events, and waveform
+signals. The default `python tools/validate.py` command does not invoke
+Verilator.
 
 The canary uses a synchronous active-low reset. Transfers occur on rising clock
 edges when `valid && ready` is true.

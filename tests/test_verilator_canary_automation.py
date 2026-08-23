@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import json
 from pathlib import Path
 import subprocess
 import tempfile
@@ -93,6 +94,11 @@ class VerilatorCanaryAutomationTest(unittest.TestCase):
             self.assertTrue(artifacts.log.is_file())
             self.assertTrue(artifacts.results.is_file())
             self.assertTrue(artifacts.waveform.is_file())
+            self.assertTrue(artifacts.evidence_manifest.is_file())
+            manifest = json.loads(artifacts.evidence_manifest.read_text(encoding="utf-8"))
+            self.assertEqual(manifest["schema"], "openrtl.verilator-canary-evidence.v1")
+            self.assertEqual(manifest["status"], "passed")
+            self.assertEqual(manifest["rtl"]["path"], "examples/fifo/rtl/sync_fifo.sv")
             self.assertTrue((output_directory / ".complete").is_file())
 
     def test_unowned_output_directory_fails_closed(self) -> None:

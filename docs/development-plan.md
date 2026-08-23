@@ -26,8 +26,10 @@ evidence attaches to the same artifact graph and requirement IDs.
   plus a VCD trace when the external toolchain is selected explicitly with the
   repository validation flag; the default lane reports that simulation was not
   selected and performs no implicit toolchain execution.
-- The scripted end-to-end workflow traces requirements through package
-  candidacy and demonstrates build and learn modes.
+- The selected simulation lane emits a deterministic hash-bound evidence
+  manifest. Fail-closed ingestion verifies the retained log, results XML, RTL,
+  and waveform before the scripted end-to-end workflow traces the real run
+  through package candidacy in build and learn modes.
 - No live provider call, remote publication, GUI launch, or remote Git effect is
   part of validation.
 

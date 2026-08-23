@@ -7,8 +7,14 @@ import json
 from pathlib import Path
 from typing import Sequence
 
-from openrtl.adapters import LocalDesignCatalog
-from openrtl.application import EXPERT_DEFINITIONS, OpenRTLWorkflow
+from openrtl.adapters import LocalDesignCatalog, load_fifo_canary_evidence
+from openrtl.application import (
+    EXPERT_DEFINITIONS,
+    FIFO_RUN_REF,
+    FIFO_SOURCE_REFS,
+    OpenRTLWorkflow,
+    run_scripted_fifo,
+)
 from openrtl.domain import InteractionMode
 
 
@@ -42,6 +48,17 @@ def parser() -> argparse.ArgumentParser:
     canary.add_argument("--root", type=Path, default=Path.cwd())
     catalog = subcommands.add_parser("catalog", help="list local reusable designs")
     catalog.add_argument("--root", type=Path, required=True)
+    verified = subcommands.add_parser(
+        "verified-canary",
+        help="build FIFO package candidacy from retained Verilator evidence",
+    )
+    verified.add_argument("--root", type=Path, default=Path.cwd())
+    verified.add_argument(
+        "--manifest",
+        type=Path,
+        default=Path("build/verilator-fifo-canary/evidence.json"),
+    )
+    verified.add_argument("--mode", choices=("build", "learn"), default="build")
     return root
 
 
@@ -75,6 +92,39 @@ def main(argv: Sequence[str] | None = None) -> int:
     if arguments.command == "catalog":
         catalog = LocalDesignCatalog(arguments.root.resolve())
         print(json.dumps({"package_ids": catalog.package_ids()}, sort_keys=True))
+        return 0
+    if arguments.command == "verified-canary":
+        project_root = arguments.root.resolve()
+        verified_run = load_fifo_canary_evidence(
+            project_root,
+            arguments.manifest,
+            (*FIFO_SOURCE_REFS, FIFO_RUN_REF),
+        )
+        result = run_scripted_fifo(
+            project_root,
+            InteractionMode(arguments.mode),
+            verified_run,
+        )
+        print(
+            json.dumps(
+                {
+                    "covered_requirements": [
+                        row.requirement_id for row in result.coverage if row.covered
+                    ],
+                    "evidence_id": verified_run.evidence.evidence_id,
+                    "learning": result.learning is not None,
+                    "package_digest": result.package.content_digest,
+                    "package_id": result.package.package_id,
+                    "publication_ready": result.package.publication_ready,
+                    "run_id": verified_run.run.run_id,
+                    "run_status": verified_run.run.status.value,
+                    "trace_uri": verified_run.run.trace_uri,
+                    "trust": result.package.trust.value,
+                },
+                sort_keys=True,
+                indent=2,
+            )
+        )
         return 0
     raise AssertionError("argparse returned an unknown command")
 

@@ -49,9 +49,18 @@ uv run python tools/validate.py --with-verilator
 
 The opt-in lane resolves and prints the exact `verilator`, `make`, and
 `cocotb-config` executables, applies a bounded timeout, and retains the run log,
-results XML, VCD trace, and simulator build under
-`build/verilator-fifo-canary/`. Exact executable overrides are available when
-PATH selection is insufficient:
+results XML, VCD trace, simulator build, and a hash-bound evidence manifest
+under `build/verilator-fifo-canary/`. The manifest is accepted only when every
+referenced file is contained, regular, unchanged, bounded, and semantically a
+passing FIFO run. Build or learn mode can then derive package candidacy from
+that verified run:
+
+```sh
+uv run openrtl verified-canary --root . --mode build
+uv run openrtl verified-canary --root . --mode learn
+```
+
+Exact executable overrides are available when PATH selection is insufficient:
 
 ```sh
 uv run python tools/validate.py --with-verilator \

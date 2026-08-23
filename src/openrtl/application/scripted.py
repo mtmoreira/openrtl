@@ -29,6 +29,7 @@ from openrtl.domain import (
     SourceAnchor,
     TeachingStep,
     TrustLevel,
+    VerifiedRunEvidence,
     WaveformAnchor,
 )
 
@@ -43,6 +44,13 @@ FIFO_REQUIREMENTS = (
     "fifo.wrap",
     "fifo.status",
 )
+FIFO_SOURCE_REFS = (
+    ArtifactRef("fifo.spec", 1),
+    ArtifactRef("fifo.model", 1),
+    ArtifactRef("fifo.rtl", 1),
+    ArtifactRef("fifo.dv", 1),
+)
+FIFO_RUN_REF = ArtifactRef("fifo.run", 1)
 
 
 @dataclass(frozen=True)
@@ -53,7 +61,11 @@ class ScriptedFifoResult:
     learning: LearningSession | None
 
 
-def run_scripted_fifo(root: Path, mode: InteractionMode) -> ScriptedFifoResult:
+def run_scripted_fifo(
+    root: Path,
+    mode: InteractionMode,
+    verified_run: VerifiedRunEvidence | None = None,
+) -> ScriptedFifoResult:
     root = root.resolve()
     if root == Path("/"):
         raise ValueError("scripted workflow root must be bounded")
@@ -81,43 +93,62 @@ def run_scripted_fifo(root: Path, mode: InteractionMode) -> ScriptedFifoResult:
             )
         )
         refs.append(ref)
-    run_ref = ArtifactRef("fifo.run", 1)
+    run_ref = FIFO_RUN_REF
+    if tuple(refs) != FIFO_SOURCE_REFS:
+        raise AssertionError("FIFO artifact identities drifted")
+    if verified_run is None:
+        run_uri = "runs/fifo.scripted/run.json"
+        run_digest = _text_digest("scripted-pass")
+        run_summary = "Provider-free scripted FIFO pass"
+    else:
+        expected_refs = (*FIFO_SOURCE_REFS, FIFO_RUN_REF)
+        if set(verified_run.run.artifact_refs) != set(expected_refs):
+            raise ValueError("verified FIFO run references unexpected artifacts")
+        covered = {
+            anchor.requirement_id
+            for anchor in verified_run.evidence.anchors
+            if isinstance(anchor, RequirementAnchor)
+        }
+        if covered != set(FIFO_REQUIREMENTS):
+            raise ValueError("verified FIFO run does not cover every requirement")
+        run_uri = verified_run.artifact_uri
+        run_digest = verified_run.content_digest
+        run_summary = "Hash-bound Verilator/cocotb FIFO pass"
     knowledge.artifacts.add(
         ArtifactRevision(
             run_ref,
             ArtifactKind.RUN,
-            "runs/fifo.scripted/run.json",
-            _text_digest("scripted-pass"),
-            "Provider-free scripted FIFO pass",
+            run_uri,
+            run_digest,
+            run_summary,
             FIFO_REQUIREMENTS,
             tuple(refs),
         )
     )
-    evidence = EvidenceRecord(
-        "ev.fifo.scripted",
-        "All FIFO requirements are linked to model, RTL, DV, log, and waveform evidence.",
-        (
-            *(RequirementAnchor(value) for value in FIFO_REQUIREMENTS),
-            SourceAnchor(
-                "examples/fifo/rtl/sync_fifo.sv",
-                1,
-                len((root / "examples/fifo/rtl/sync_fifo.sv").read_text().splitlines()),
-                digests["examples/fifo/rtl/sync_fifo.sv"],
+    if verified_run is None:
+        evidence = EvidenceRecord(
+            "ev.fifo.scripted",
+            "All FIFO requirements are linked to model, RTL, DV, log, and waveform evidence.",
+            (
+                *(RequirementAnchor(value) for value in FIFO_REQUIREMENTS),
+                SourceAnchor(
+                    "examples/fifo/rtl/sync_fifo.sv",
+                    1,
+                    len((root / "examples/fifo/rtl/sync_fifo.sv").read_text().splitlines()),
+                    digests["examples/fifo/rtl/sync_fifo.sv"],
+                ),
+                LogAnchor("fifo.scripted", "regression.passed"),
+                WaveformAnchor(
+                    "fifo.scripted.trace",
+                    10_000_000,
+                    40_000_000,
+                    ("sync_fifo.wr_valid", "sync_fifo.rd_valid", "sync_fifo.level"),
+                    (20_000_000, 30_000_000),
+                ),
             ),
-            LogAnchor("fifo.scripted", "regression.passed"),
-            WaveformAnchor(
-                "fifo.scripted.trace",
-                10_000_000,
-                40_000_000,
-                ("sync_fifo.wr_valid", "sync_fifo.rd_valid", "sync_fifo.level"),
-                (20_000_000, 30_000_000),
-            ),
-        ),
-        (*refs, run_ref),
-    )
-    knowledge.evidence.add(evidence)
-    knowledge.add_run(
-        RunBundle(
+            (*refs, run_ref),
+        )
+        run = RunBundle(
             "fifo.scripted",
             RunStatus.PASSED,
             "verilator.cocotb",
@@ -127,7 +158,11 @@ def run_scripted_fifo(root: Path, mode: InteractionMode) -> ScriptedFifoResult:
             "runs/fifo.scripted/events.jsonl",
             "runs/fifo.scripted/waves.vcd",
         )
-    )
+    else:
+        evidence = verified_run.evidence
+        run = verified_run.run
+    knowledge.evidence.add(evidence)
+    knowledge.add_run(run)
     package = DesignPackage(
         "community.sync.fifo",
         "1.0.0",

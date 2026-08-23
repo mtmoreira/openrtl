@@ -171,3 +171,23 @@ class RunBundle:
             )
         elif self.failure_signature is not None:
             raise ValueError("only failed runs may have a failure_signature")
+
+
+@dataclass(frozen=True)
+class VerifiedRunEvidence:
+    """Hash-bound run artifact plus its normalized evidence contracts."""
+
+    artifact_uri: str
+    content_digest: str
+    evidence: EvidenceRecord
+    run: RunBundle
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "artifact_uri", relative_path(self.artifact_uri, "artifact_uri"))
+        object.__setattr__(self, "content_digest", digest(self.content_digest, "content_digest"))
+        if self.run.status is not RunStatus.PASSED:
+            raise ValueError("verified run evidence requires a passing run")
+        if self.evidence.evidence_id not in self.run.evidence_ids:
+            raise ValueError("verified run must reference its evidence record")
+        if set(self.evidence.artifact_refs) != set(self.run.artifact_refs):
+            raise ValueError("verified run evidence and bundle must reference the same artifacts")

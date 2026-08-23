@@ -43,6 +43,7 @@ from openrtl.domain.evidence import (
     RunBundle,
     RunStatus,
     SourceAnchor,
+    VerifiedRunEvidence,
     WaveformAnchor,
 )
 from openrtl.domain.learning import (
@@ -119,6 +120,7 @@ __all__ = [
     "ToolProfile",
     "TraceLink",
     "TrustLevel",
+    "VerifiedRunEvidence",
     "WaveformAnchor",
     "analyze_compatibility",
 ]
