@@ -24,13 +24,17 @@ module sync_fifo #(
   logic write_accepted;
   logic read_accepted;
 
+  localparam logic [PTR_W-1:0] LAST_POINTER = PTR_W'(DEPTH - 1);
+  localparam logic [LEVEL_W-1:0] MAX_LEVEL = LEVEL_W'(DEPTH);
+  localparam bit HAS_UNUSED_POINTER_STATES = (DEPTH & (DEPTH - 1)) != 0;
+
   initial begin
     assert (WIDTH >= 1) else $fatal(1, "WIDTH must be positive");
     assert (DEPTH >= 2) else $fatal(1, "DEPTH must be at least two");
   end
 
   assign empty = (count == 0);
-  assign full = (count == DEPTH);
+  assign full = (count == MAX_LEVEL);
   assign level = count;
   assign rd_valid = !empty;
   assign rd_data = rd_valid ? memory[read_pointer] : '0;
@@ -38,22 +42,31 @@ module sync_fifo #(
   assign wr_ready = !full || read_accepted;
   assign write_accepted = wr_valid && wr_ready;
 
+  generate
+    if (HAS_UNUSED_POINTER_STATES) begin : non_power_of_two_depth
+      always_ff @(posedge clk) begin
+        if (rst_n) begin
+          assert (write_pointer <= LAST_POINTER) else $fatal(1, "write pointer out of range");
+          assert (read_pointer <= LAST_POINTER) else $fatal(1, "read pointer out of range");
+        end
+      end
+    end
+  endgenerate
+
   always_ff @(posedge clk) begin
     if (!rst_n) begin
       write_pointer <= '0;
       read_pointer <= '0;
       count <= '0;
     end else begin
-      assert (count <= DEPTH) else $fatal(1, "FIFO count exceeded DEPTH");
-      assert (write_pointer < DEPTH) else $fatal(1, "write pointer out of range");
-      assert (read_pointer < DEPTH) else $fatal(1, "read pointer out of range");
+      assert (count <= MAX_LEVEL) else $fatal(1, "FIFO count exceeded DEPTH");
 
       if (write_accepted) begin
         memory[write_pointer] <= wr_data;
-        write_pointer <= (write_pointer == DEPTH-1) ? '0 : write_pointer + 1'b1;
+        write_pointer <= (write_pointer == LAST_POINTER) ? '0 : write_pointer + 1'b1;
       end
       if (read_accepted) begin
-        read_pointer <= (read_pointer == DEPTH-1) ? '0 : read_pointer + 1'b1;
+        read_pointer <= (read_pointer == LAST_POINTER) ? '0 : read_pointer + 1'b1;
       end
       unique case ({write_accepted, read_accepted})
         2'b10: count <= count + 1'b1;
