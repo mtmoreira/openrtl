@@ -38,18 +38,28 @@ PYTHONPATH=src:../agentrig/src:. python -m unittest examples.fifo.test_model
 python tools/validate.py
 ```
 
-The simulator canary is separately selected because it requires Verilator and
-cocotb:
+The default validation lane never invokes the external simulator and prints a
+`verilator_cocotb_canary not_selected` checkpoint. Select the installed
+Verilator/cocotb toolchain explicitly with:
 
 ```sh
-PYTHONPATH=src:../agentrig/src python -m openrtl.cli canary --root .
+uv sync --locked --extra simulation
+uv run python tools/validate.py --with-verilator
+```
 
-# With the simulation extra and external tools installed:
-make -C examples/fifo/dv
+The opt-in lane resolves and prints the exact `verilator`, `make`, and
+`cocotb-config` executables, applies a bounded timeout, and retains the run log,
+results XML, VCD trace, and simulator build under
+`build/verilator-fifo-canary/`. Exact executable overrides are available when
+PATH selection is insufficient:
+
+```sh
+uv run python tools/validate.py --with-verilator \
+  --verilator-executable /absolute/path/to/verilator
 ```
 
 No provider call, GUI launch, package publication, or remote Git operation is
-performed by the offline validation lane.
+performed by either validation lane.
 
 ## Architecture
 

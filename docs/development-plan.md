@@ -23,7 +23,9 @@ evidence attaches to the same artifact graph and requirement IDs.
 - Strict static typing passes when the development environment is available.
 - The package imports without simulation or provider extras.
 - A synchronous FIFO runs through Verilator/cocotb and emits standardized logs
-  plus a VCD trace when the external toolchain is selected.
+  plus a VCD trace when the external toolchain is selected explicitly with the
+  repository validation flag; the default lane reports that simulation was not
+  selected and performs no implicit toolchain execution.
 - The scripted end-to-end workflow traces requirements through package
   candidacy and demonstrates build and learn modes.
 - No live provider call, remote publication, GUI launch, or remote Git effect is

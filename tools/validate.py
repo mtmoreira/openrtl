@@ -2,14 +2,26 @@
 
 from __future__ import annotations
 
+import argparse
 import compileall
 import os
 from pathlib import Path
 import subprocess
 import sys
+from typing import Sequence
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from tools.verilator_canary import (  # noqa: E402
+    describe_artifacts,
+    discover_verilator_toolchain,
+    run_verilator_canary,
+)
+
+
 IGNORED_DIRECTORY_NAMES = {
     ".git",
     ".mypy_cache",
@@ -62,6 +74,7 @@ def _validate_architecture() -> None:
         "examples/fifo/rtl/sync_fifo.sv",
         "examples/fifo/dv/test_sync_fifo.py",
         "evals/openrtl_v1.json",
+        "tools/verilator_canary.py",
     }
     missing = sorted(path for path in required if not (ROOT / path).is_file())
     if missing:
@@ -98,13 +111,67 @@ def _run_tests() -> None:
     print("CHECKPOINT tests passed")
 
 
-def main() -> int:
+def _parse_arguments(arguments: Sequence[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--with-verilator",
+        action="store_true",
+        help="explicitly select the external Verilator/cocotb FIFO canary",
+    )
+    parser.add_argument("--verilator-executable")
+    parser.add_argument("--make-executable")
+    parser.add_argument("--cocotb-config-executable")
+    parser.add_argument("--verilator-output", type=Path)
+    parser.add_argument("--verilator-timeout-seconds", type=int)
+    parsed = parser.parse_args(arguments)
+    explicit_tools = (
+        parsed.verilator_executable,
+        parsed.make_executable,
+        parsed.cocotb_config_executable,
+        parsed.verilator_output,
+        parsed.verilator_timeout_seconds,
+    )
+    if any(value is not None for value in explicit_tools) and not parsed.with_verilator:
+        parser.error("Verilator options require --with-verilator")
+    return parsed
+
+
+def main(arguments: Sequence[str] | None = None) -> int:
+    parsed = _parse_arguments(tuple(sys.argv[1:] if arguments is None else arguments))
     _validate_text_files()
     _validate_architecture()
     if not compileall.compile_dir(ROOT / "src", quiet=1):
         raise RuntimeError("source compilation failed")
     print("CHECKPOINT compile passed")
     _run_tests()
+    if parsed.with_verilator:
+        toolchain = discover_verilator_toolchain(
+            verilator=parsed.verilator_executable,
+            make=parsed.make_executable,
+            cocotb_config=parsed.cocotb_config_executable,
+        )
+        print(f"CHECKPOINT verilator_executable selected {toolchain.verilator}")
+        print(f"CHECKPOINT make_executable selected {toolchain.make}")
+        print(f"CHECKPOINT cocotb_config_executable selected {toolchain.cocotb_config}")
+        output_directory = parsed.verilator_output or Path("build/verilator-fifo-canary")
+        if not output_directory.is_absolute():
+            output_directory = ROOT / output_directory
+        timeout_seconds = (
+            120
+            if parsed.verilator_timeout_seconds is None
+            else parsed.verilator_timeout_seconds
+        )
+        artifacts = run_verilator_canary(
+            ROOT,
+            output_directory,
+            toolchain,
+            timeout_seconds=timeout_seconds,
+        )
+        print("CHECKPOINT verilator_cocotb_canary passed")
+        for description in describe_artifacts(artifacts):
+            print(description)
+    else:
+        print("CHECKPOINT verilator_cocotb_canary not_selected")
     print("OPENRTL_VALIDATION_STATUS=0")
     return 0
 
