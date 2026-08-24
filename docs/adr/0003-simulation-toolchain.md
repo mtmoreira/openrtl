@@ -14,5 +14,6 @@ XML, VCD trace, simulator build, and a deterministic evidence manifest under
 the ignored build root. The manifest binds the run to exact RTL and collateral
 digests. Package candidacy accepts it only after contained, bounded,
 non-symlinked files and the expected passing test, scoreboard events, and VCD
-signals have been revalidated. Validation never launches the waveform viewer
-automatically.
+signals have been revalidated. Validation never launches the waveform viewer.
+The waveform CLI may start a detached Surfer process only when the user supplies
+both an exact executable and the explicit launch flag.

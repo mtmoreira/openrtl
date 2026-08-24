@@ -63,9 +63,11 @@ blocked result, never a silent substitution.
 ## Simulation and deferred backends
 
 V1 implements a `SimulationBackend` using Verilator and cocotb. Waveforms are
-VCD and viewer focus requests target Surfer. Formal, synthesis, implementation,
-and device programming remain future backends that can contribute evidence to
-the same graph without changing logical design identity.
+VCD and viewer focus requests target Surfer. Inspection produces bounded JSON;
+focus generation produces deterministic command files; and GUI launch crosses
+an explicit, non-repeatable AgentRig tool boundary. Formal, synthesis,
+implementation, and device programming remain future backends that can
+contribute evidence to the same graph without changing logical design identity.
 
 ## Reuse and community boundary
 

@@ -14,7 +14,8 @@
 
 The initial repository delivers these as coherent local commits on one isolated
 product worktree. FPGA, synthesis, formal execution, remote catalog publication,
-and automatic waveform-viewer launch remain deferred ports; their future
+and automatic waveform-viewer launch remain deferred ports; the local waveform
+workbench supports only an explicit user-selected viewer launch. Future
 evidence attaches to the same artifact graph and requirement IDs.
 
 ## V1 completion gate
@@ -32,6 +33,8 @@ evidence attaches to the same artifact graph and requirement IDs.
   through package candidacy in build and learn modes.
 - No live provider call, remote publication, GUI launch, or remote Git effect is
   part of validation.
+- Bounded VCD inspection and deterministic Surfer command files are available
+  from the CLI; detached GUI launch requires an explicit executable and flag.
 
 ## Convergence
 

@@ -6,6 +6,7 @@ from openrtl.adapters.agentrig import (
     OpenRTLCommandTools,
     build_command_tools,
     build_eda_mcp_binding,
+    build_surfer_tool,
 )
 from openrtl.adapters.logs import LogEvent, LogLevel, parse_jsonl_events
 from openrtl.adapters.simulation import (
@@ -15,7 +16,13 @@ from openrtl.adapters.simulation import (
     SimulationStatus,
     VerilatorBackend,
 )
-from openrtl.adapters.waveforms import VcdIndex, WaveformFocus
+from openrtl.adapters.waveform_workbench import (
+    SignalInspection,
+    WaveformInspection,
+    inspect_vcd,
+    surfer_command_file,
+)
+from openrtl.adapters.waveforms import SignalTransition, VcdIndex, WaveformFocus
 
 __all__ = [
     "LocalDesignCatalog",
@@ -26,11 +33,17 @@ __all__ = [
     "SimulationRequest",
     "SimulationResult",
     "SimulationStatus",
+    "SignalInspection",
+    "SignalTransition",
     "VcdIndex",
     "VerilatorBackend",
     "WaveformFocus",
+    "WaveformInspection",
     "build_command_tools",
     "build_eda_mcp_binding",
+    "build_surfer_tool",
     "load_fifo_canary_evidence",
+    "inspect_vcd",
     "parse_jsonl_events",
+    "surfer_command_file",
 ]

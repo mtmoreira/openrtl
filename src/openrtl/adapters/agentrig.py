@@ -6,13 +6,13 @@ from dataclasses import dataclass
 
 from agentrig.capabilities import McpServerBinding, McpTransport
 from agentrig.core import EffectProfile
-from agentrig.integrations import CommandTool
+from agentrig.integrations import CommandTool, DetachedCommandTool
 
 
 @dataclass(frozen=True)
 class OpenRTLCommandTools:
     verilator: CommandTool
-    surfer: CommandTool | None
+    surfer: DetachedCommandTool | None
 
     @property
     def tool_ids(self) -> tuple[str, ...]:
@@ -39,20 +39,28 @@ def build_command_tools(
         max_output_bytes=2_000_000,
     )
     surfer = (
-        CommandTool(
-            tool_id="waveform.surfer",
-            version="1",
-            purpose="Open an explicitly selected waveform focus in Surfer.",
-            executable=surfer_executable,
-            working_directory=workspace,
-            effect_profile=EffectProfile.NON_REPEATABLE,
-            timeout_seconds=30,
-            max_output_bytes=100_000,
+        build_surfer_tool(
+            workspace=workspace,
+            surfer_executable=surfer_executable,
         )
         if surfer_executable is not None
         else None
     )
     return OpenRTLCommandTools(verilator, surfer)
+
+
+def build_surfer_tool(
+    *,
+    workspace: str,
+    surfer_executable: str,
+) -> DetachedCommandTool:
+    return DetachedCommandTool(
+        tool_id="waveform.surfer",
+        version="1",
+        purpose="Open an explicitly selected waveform focus in Surfer.",
+        executable=surfer_executable,
+        working_directory=workspace,
+    )
 
 
 def build_eda_mcp_binding(

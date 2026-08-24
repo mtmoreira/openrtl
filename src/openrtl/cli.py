@@ -3,11 +3,27 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 from pathlib import Path
 from typing import Sequence
 
-from openrtl.adapters import LocalDesignCatalog, load_fifo_canary_evidence
+from agentrig.capabilities import ToolInvocation
+from agentrig.core import (
+    CancellationSource,
+    RunContext,
+    RunId,
+    SystemClock,
+    Uuid4IdGenerator,
+)
+from agentrig.integrations import CommandInput
+from openrtl.adapters import (
+    LocalDesignCatalog,
+    build_surfer_tool,
+    inspect_vcd,
+    load_fifo_canary_evidence,
+    surfer_command_file,
+)
 from openrtl.application import (
     EXPERT_DEFINITIONS,
     FIFO_RUN_REF,
@@ -59,6 +75,32 @@ def parser() -> argparse.ArgumentParser:
         default=Path("build/verilator-fifo-canary/evidence.json"),
     )
     verified.add_argument("--mode", choices=("build", "learn"), default="build")
+    waveform = subcommands.add_parser(
+        "waveform",
+        help="inspect VCD traces and prepare an explicit Surfer focus",
+    )
+    waveform_commands = waveform.add_subparsers(
+        dest="waveform_command",
+        required=True,
+    )
+    inspect = waveform_commands.add_parser(
+        "inspect",
+        help="list signals or inspect bounded transitions",
+    )
+    _add_waveform_selection_arguments(inspect)
+    inspect.add_argument("--output", type=Path)
+    focus = waveform_commands.add_parser(
+        "focus",
+        help="write inspection JSON and a deterministic Surfer command file",
+    )
+    _add_waveform_selection_arguments(focus)
+    focus.add_argument(
+        "--output-directory",
+        type=Path,
+        default=Path("build/waveform-focus"),
+    )
+    focus.add_argument("--surfer-executable", type=Path)
+    focus.add_argument("--launch", action="store_true")
     return root
 
 
@@ -126,7 +168,138 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         )
         return 0
+    if arguments.command == "waveform":
+        return _waveform_command(arguments)
     raise AssertionError("argparse returned an unknown command")
+
+
+def _add_waveform_selection_arguments(command: argparse.ArgumentParser) -> None:
+    command.add_argument("trace", type=Path)
+    command.add_argument("--root", type=Path, default=Path.cwd())
+    command.add_argument("--signal", action="append", default=[])
+    command.add_argument("--start-fs", type=int, default=0)
+    command.add_argument("--end-fs", type=int)
+    command.add_argument("--max-transitions", type=int, default=200)
+
+
+def _waveform_command(arguments: argparse.Namespace) -> int:
+    root = arguments.root.resolve(strict=True)
+    signals = tuple(arguments.signal)
+    index, inspection = inspect_vcd(
+        root,
+        arguments.trace,
+        signals=signals,
+        start_fs=arguments.start_fs,
+        end_fs=arguments.end_fs,
+        max_transitions=arguments.max_transitions,
+    )
+    payload = inspection.payload()
+    if arguments.waveform_command == "inspect":
+        if arguments.output is not None:
+            output = _contained_output(root, arguments.output)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(
+                json.dumps(payload, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
+    if arguments.waveform_command != "focus":
+        raise AssertionError("argparse returned an unknown waveform command")
+    if not signals:
+        raise ValueError("waveform focus requires at least one --signal")
+    if arguments.launch and arguments.surfer_executable is None:
+        raise ValueError("--launch requires --surfer-executable")
+
+    output_directory = _contained_output(root, arguments.output_directory)
+    output_directory.mkdir(parents=True, exist_ok=True)
+    focus = index.focus(
+        inspection.trace,
+        signals,
+        inspection.start_fs,
+        inspection.end_fs,
+    )
+    inspection_path = output_directory / "inspection.json"
+    command_path = output_directory / "focus.sucl"
+    command_path.write_text(surfer_command_file(focus), encoding="utf-8")
+    payload.update(
+        {
+            "command_file": command_path.relative_to(root).as_posix(),
+            "markers_fs": focus.markers_fs,
+        }
+    )
+    inspection_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    launched_process_id: int | None = None
+    if arguments.launch:
+        executable = arguments.surfer_executable.resolve(strict=True)
+        if not executable.is_file():
+            raise ValueError("Surfer executable must be a regular file")
+        launched_process_id = asyncio.run(
+            _launch_surfer(
+                root,
+                executable,
+                (root / inspection.trace).resolve(strict=True),
+                command_path,
+            )
+        )
+    print(
+        json.dumps(
+            {
+                "command_file": str(command_path),
+                "inspection": str(inspection_path),
+                "launched_process_id": launched_process_id,
+                "trace": str((root / inspection.trace).resolve(strict=True)),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
+async def _launch_surfer(
+    root: Path,
+    executable: Path,
+    trace: Path,
+    command_file: Path,
+) -> int:
+    tool = build_surfer_tool(
+        workspace=str(root),
+        surfer_executable=str(executable),
+    )
+    invocation = ToolInvocation(
+        invocation_id="waveform.surfer.launch",
+        contract=tool.contract,
+        input=CommandInput(
+            arguments=("--command-file", str(command_file), str(trace)),
+        ),
+    )
+    id_generator = Uuid4IdGenerator(RunId)
+    context = RunContext.create_root(
+        clock=SystemClock(),
+        id_generator=id_generator,
+        cancellation=CancellationSource().token,
+    )
+    result = await tool.invoke(invocation, context)
+    return result.unwrap().process_id
+
+
+def _contained_output(root: Path, candidate: Path) -> Path:
+    output = candidate if candidate.is_absolute() else root / candidate
+    resolved = output.resolve()
+    try:
+        relative = resolved.relative_to(root)
+    except ValueError as error:
+        raise ValueError("waveform output must be contained by its root") from error
+    current = root
+    for part in relative.parts:
+        current /= part
+        if current.exists() and current.is_symlink():
+            raise ValueError("waveform output must not traverse symlinks")
+    return resolved
 
 
 def validate_fifo_canary(root: Path) -> tuple[str, ...]:

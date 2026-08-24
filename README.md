@@ -70,6 +70,11 @@ uv run python tools/validate.py --with-verilator \
 No provider call, GUI launch, package publication, or remote Git operation is
 performed by either validation lane.
 
+Use the bounded waveform workbench to list signals, inspect transitions, and
+prepare deterministic Surfer focus state. See
+[docs/waveform-debugging.md](docs/waveform-debugging.md) for the FIFO signal
+walkthrough and explicit viewer-launch command.
+
 ## Architecture
 
 See [docs/architecture.md](docs/architecture.md) for the artifact-first context

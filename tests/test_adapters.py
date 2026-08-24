@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from agentrig.integrations import DetachedCommandTool
 from openrtl.adapters import (
     LogEvent,
     LogLevel,
@@ -103,6 +104,7 @@ class AgentRigToolBindingTest(unittest.TestCase):
             surfer_executable="/opt/eda/surfer",
         )
         self.assertEqual(tools.tool_ids, ("eda.verilator", "waveform.surfer"))
+        self.assertIsInstance(tools.surfer, DetachedCommandTool)
         binding = build_eda_mcp_binding(
             server_id="local-eda",
             command=("/opt/eda/server", "--stdio"),
