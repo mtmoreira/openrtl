@@ -17,3 +17,9 @@ non-symlinked files and the expected passing test, scoreboard events, and VCD
 signals have been revalidated. Validation never launches the waveform viewer.
 The waveform CLI may start a detached Surfer process only when the user supplies
 both an exact executable and the explicit launch flag.
+
+Surfer 0.7 command files use only the empirically supported `variable_add`
+batch command. Exact focus windows and markers remain deterministic integer-fs
+metadata in JSON and SUCL comments; the user sets the viewport manually. This
+avoids emitting rejected `zoom_to`, time-qualified `cursor_set`, or
+`marker_set_at` commands while keeping the evidence window reviewable.

@@ -120,11 +120,14 @@ def inspect_vcd(
 
 
 def surfer_command_file(focus: WaveformFocus) -> str:
-    """Render stable Surfer commands for the selected signals and interval."""
+    """Render the stable Surfer 0.7 command subset plus reviewable focus metadata."""
 
-    commands = [f"variable_add {signal}" for signal in focus.signals]
-    commands.append(f"zoom_to {focus.start_fs}fs {focus.end_fs}fs")
-    commands.append(f"cursor_set {focus.start_fs}fs")
-    commands.append(f"marker_set_at {focus.start_fs}fs focus-start")
-    commands.append(f"marker_set_at {focus.end_fs}fs focus-end")
+    markers = ",".join(str(value) for value in focus.markers_fs) or "none"
+    commands = [
+        "# OpenRTL focus metadata; values are integer femtoseconds.",
+        f"# focus-window-fs: {focus.start_fs} {focus.end_fs}",
+        f"# focus-markers-fs: {markers}",
+        "# Surfer 0.7: set the viewport manually from the metadata above.",
+        *(f"variable_add {signal}" for signal in focus.signals),
+    ]
     return "\n".join(commands) + "\n"

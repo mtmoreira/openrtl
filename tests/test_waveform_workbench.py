@@ -52,7 +52,7 @@ class WaveformWorkbenchTest(unittest.TestCase):
             "001",
         )
 
-    def test_focus_command_file_is_deterministic_and_uses_fs(self) -> None:
+    def test_focus_command_file_uses_surfer_07_subset_and_fs_metadata(self) -> None:
         index, report = inspect_vcd(
             self.root,
             self.trace,
@@ -67,13 +67,16 @@ class WaveformWorkbenchTest(unittest.TestCase):
 
         self.assertEqual(
             surfer_command_file(focus),
+            "# OpenRTL focus metadata; values are integer femtoseconds.\n"
+            "# focus-window-fs: 0 10000000\n"
+            "# focus-markers-fs: 0,5000000,10000000\n"
+            "# Surfer 0.7: set the viewport manually from the metadata above.\n"
             "variable_add sync_fifo.wr_valid\n"
             "variable_add sync_fifo.level\n"
-            "zoom_to 0fs 10000000fs\n"
-            "cursor_set 0fs\n"
-            "marker_set_at 0fs focus-start\n"
-            "marker_set_at 10000000fs focus-end\n",
         )
+        self.assertNotIn("zoom_to", surfer_command_file(focus))
+        self.assertNotIn("cursor_set", surfer_command_file(focus))
+        self.assertNotIn("marker_set_at", surfer_command_file(focus))
 
     def test_cli_focus_preserves_reviewable_collateral_without_launch(self) -> None:
         status = main(

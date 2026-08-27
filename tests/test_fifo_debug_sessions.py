@@ -249,7 +249,8 @@ class FifoDebugSessionTest(unittest.TestCase):
         self.assertTrue((self.root / "build/repair/debug-session.json").is_file())
         commands = (self.root / "build/repair/focus.sucl").read_text(encoding="utf-8")
         self.assertIn("variable_add sync_fifo.level", commands)
-        self.assertIn("zoom_to 24000000fs 26000000fs", commands)
+        self.assertIn("# focus-window-fs: 24000000 26000000", commands)
+        self.assertIn("# focus-markers-fs: 25000000", commands)
 
     def test_passing_trace_cannot_be_mislabeled_as_a_repair(self) -> None:
         self.trace.write_text(render_fifo_trace(), encoding="utf-8")

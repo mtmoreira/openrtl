@@ -73,7 +73,9 @@ performed by either validation lane.
 Use the bounded waveform workbench to list signals, inspect transitions, and
 prepare deterministic Surfer focus state. See
 [docs/waveform-debugging.md](docs/waveform-debugging.md) for the FIFO signal
-walkthrough and explicit viewer-launch command.
+walkthrough and explicit viewer-launch command. Surfer 0.7 command files add
+the selected signals and retain the exact focus window and markers as comments;
+viewport placement remains a manual viewer action.
 
 Turn a retained FIFO trace into a reviewable, evidence-linked debug session:
 

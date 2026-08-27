@@ -2,7 +2,9 @@
 
 OpenRTL keeps waveform debugging reviewable: inspection is bounded JSON and a
 Surfer focus is a deterministic command file (`.sucl`). Neither operation
-launches a GUI unless the user explicitly selects `--launch`.
+launches a GUI unless the user explicitly selects `--launch`. With Surfer 0.7,
+the command file adds the selected signals; its comments and inspection JSON
+retain the exact integer-fs window and markers for manual viewport placement.
 
 ## Inspect the FIFO trace
 
@@ -124,6 +126,11 @@ At 25 ns, inspect these signals in order:
 The proposal consequently targets the sequential state-update anchors, not the
 valid/ready combinational assignments.
 
+Surfer 0.7 does not accept OpenRTL's former `zoom_to`, time-qualified
+`cursor_set`, or `marker_set_at` batch syntax. After the signals load, zoom
+manually to 24–26 ns and place the cursor at 25 ns. Those exact values are also
+recorded as `focus-window-fs` and `focus-markers-fs` comments in `focus.sucl`.
+
 ## Prepare and open a Surfer focus
 
 Generate reusable inspection and viewer state:
@@ -150,6 +157,10 @@ surfer \
   --command-file build/waveform-debug/focus.sucl \
   build/verilator-fifo-canary/waves.vcd
 ```
+
+Read `inspection.json` or the leading comments in `focus.sucl`, then set that
+window in the Surfer UI. The command file intentionally uses only
+`variable_add`, the command verified against Surfer 0.7.
 
 Or explicitly authorize OpenRTL to start the selected local executable:
 
