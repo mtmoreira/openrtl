@@ -2,6 +2,7 @@
 
 from openrtl.adapters.catalog import LocalDesignCatalog
 from openrtl.adapters.fifo_debug import MAX_DEBUG_EDGES, analyze_fifo_waveform
+from openrtl.adapters.fifo_repair import fifo_repair_focus, propose_fifo_repairs
 from openrtl.adapters.canary import load_fifo_canary_evidence
 from openrtl.adapters.agentrig import (
     OpenRTLCommandTools,
@@ -47,6 +48,8 @@ __all__ = [
     "load_fifo_canary_evidence",
     "inspect_vcd",
     "analyze_fifo_waveform",
+    "fifo_repair_focus",
     "parse_jsonl_events",
+    "propose_fifo_repairs",
     "surfer_command_file",
 ]

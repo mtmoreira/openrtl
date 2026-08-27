@@ -5,54 +5,26 @@ import json
 import tempfile
 import unittest
 from contextlib import redirect_stdout
+from dataclasses import replace
 from pathlib import Path
 
-from openrtl.adapters import analyze_fifo_waveform
+from examples.fifo.faults import render_fifo_trace
+from openrtl.adapters import (
+    analyze_fifo_waveform,
+    fifo_repair_focus,
+    propose_fifo_repairs,
+)
+from openrtl.application import ExpertRegistry, build_repair_proposal
 from openrtl.cli import main
-
-
-def _fifo_trace(*, broken_level: bool = False) -> str:
-    level_at_full = "01" if broken_level else "10"
-    full_at_full = "0" if broken_level else "1"
-    return (
-        "$timescale 1 ns $end\n"
-        "$scope module sync_fifo $end\n"
-        "$var wire 1 ! clk $end\n"
-        '$var wire 1 " rst_n $end\n'
-        "$var wire 1 # wr_valid $end\n"
-        "$var wire 1 $ wr_ready $end\n"
-        "$var wire 1 % write_accepted $end\n"
-        "$var wire 8 & wr_data [7:0] $end\n"
-        "$var wire 1 ' rd_valid $end\n"
-        "$var wire 1 ( rd_ready $end\n"
-        "$var wire 1 ) read_accepted $end\n"
-        "$var wire 8 * rd_data [7:0] $end\n"
-        "$var wire 2 + level [1:0] $end\n"
-        "$var wire 1 , full $end\n"
-        "$var wire 1 - empty $end\n"
-        "$var wire 1 . write_pointer $end\n"
-        "$var wire 1 / read_pointer $end\n"
-        "$var wire 32 0 DEPTH [31:0] $end\n"
-        "$upscope $end\n"
-        "$enddefinitions $end\n"
-        "#0\n0!\n1\"\n1#\n1$\n1%\nb00001010 &\n0'\n0(\n0)\n"
-        "b00000000 *\nb00 +\n0,\n1-\n0.\n0/\n"
-        "b00000000000000000000000000000010 0\n"
-        "#5\n1!\nb01 +\n0-\n1'\n1.\nb00001010 *\n"
-        "#6\nb00001011 &\n1(\n1)\n"
-        "#10\n0!\n"
-        "#15\n1!\n0.\n1/\nb00001011 *\n"
-        "#16\nb00001100 &\n0(\n0)\n"
-        "#20\n0!\n"
-        f"#25\n1!\nb{level_at_full} +\n{full_at_full},\n1.\n0$\n0%\n"
-        "#26\nb00001101 &\n"
-        "#30\n0!\n"
-        "#35\n1!\n"
-        "#36\n1(\n1)\n1$\n1%\n"
-        "#40\n0!\n"
-        "#45\n1!\n0.\n0/\nb00001100 *\n"
-        "#50\n0!\n"
-    )
+from openrtl.domain import (
+    ExpertBinding,
+    ExpertRole,
+    ProjectKnowledgeBase,
+    ProjectProfile,
+    RuntimeProfile,
+    SourceAnchor,
+    ToolProfile,
+)
 
 
 class FifoDebugSessionTest(unittest.TestCase):
@@ -77,7 +49,7 @@ class FifoDebugSessionTest(unittest.TestCase):
         )
 
     def test_passing_trace_explains_transfers_backpressure_and_wrap(self) -> None:
-        self.trace.write_text(_fifo_trace(), encoding="utf-8")
+        self.trace.write_text(render_fifo_trace(), encoding="utf-8")
 
         report = analyze_fifo_waveform(self.root, self.trace)
 
@@ -99,7 +71,7 @@ class FifoDebugSessionTest(unittest.TestCase):
         self.assertEqual(report.waveform_anchor.markers_fs, (5_000_000, 15_000_000, 25_000_000, 35_000_000, 45_000_000))
 
     def test_level_bug_produces_requirement_linked_waveform_finding(self) -> None:
-        self.trace.write_text(_fifo_trace(broken_level=True), encoding="utf-8")
+        self.trace.write_text(render_fifo_trace(level_update_fault=True), encoding="utf-8")
 
         report = analyze_fifo_waveform(
             self.root,
@@ -116,7 +88,7 @@ class FifoDebugSessionTest(unittest.TestCase):
         self.assertEqual(level.waveform_anchor.markers_fs, (25_000_000,))
 
     def test_reset_edge_is_explained_as_reset_even_with_a_handshake_request(self) -> None:
-        reset_trace = _fifo_trace().replace(
+        reset_trace = render_fifo_trace().replace(
             '#0\n0!\n1"\n1#',
             '#0\n0!\n0"\n1#',
             1,
@@ -134,7 +106,7 @@ class FifoDebugSessionTest(unittest.TestCase):
         self.assertEqual(report.observations[0].requirement_ids, ("fifo.reset",))
 
     def test_cli_writes_reviewable_debug_session_and_returns_finding_status(self) -> None:
-        self.trace.write_text(_fifo_trace(), encoding="utf-8")
+        self.trace.write_text(render_fifo_trace(), encoding="utf-8")
         output = io.StringIO()
         with redirect_stdout(output):
             result = main(
@@ -161,7 +133,7 @@ class FifoDebugSessionTest(unittest.TestCase):
         self.assertGreaterEqual(len(payload["source_anchors"]), 5)
 
     def test_unknown_signal_and_edge_free_window_fail_closed(self) -> None:
-        self.trace.write_text(_fifo_trace(), encoding="utf-8")
+        self.trace.write_text(render_fifo_trace(), encoding="utf-8")
         with self.assertRaisesRegex(KeyError, "unknown waveform signal"):
             analyze_fifo_waveform(self.root, self.trace, hierarchy="other")
         with self.assertRaisesRegex(ValueError, "no rising"):
@@ -170,6 +142,185 @@ class FifoDebugSessionTest(unittest.TestCase):
                 self.trace,
                 start_fs=1_000_000,
                 end_fs=4_000_000,
+            )
+
+    def test_faulty_trace_produces_non_applying_evidence_complete_repair(self) -> None:
+        self.trace.write_text(render_fifo_trace(level_update_fault=True), encoding="utf-8")
+        report = analyze_fifo_waveform(
+            self.root,
+            self.trace,
+            start_fs=20_000_000,
+            end_fs=30_000_000,
+            rtl_path=Path("examples/fifo/rtl/sync_fifo.sv"),
+        )
+
+        proposal = propose_fifo_repairs(
+            report,
+            report_uri="build/debug/debug-session.json",
+        )
+
+        payload = proposal.payload()
+        self.assertEqual(payload["schema"], "openrtl.repair-proposal.v1")
+        self.assertFalse(payload["applies_changes"])
+        self.assertEqual(payload["expert_role"], "diagnosis_closure_engineer")
+        self.assertEqual(proposal.confidence_percent, 90)
+        self.assertEqual(len(proposal.changes), 1)
+        change = proposal.changes[0]
+        self.assertEqual(change.change_id, "repair.change.level")
+        self.assertEqual(change.requirement_ids, ("fifo.write",))
+        self.assertTrue(change.source_anchors)
+        self.assertEqual(change.waveform_anchors[0].markers_fs, (25_000_000,))
+        focus = fifo_repair_focus(report)
+        self.assertEqual((focus.start_fs, focus.end_fs), (24_000_000, 26_000_000))
+        self.assertIn("sync_fifo.level", focus.signals)
+
+    def test_repair_context_is_attached_to_diagnosis_engineer_plan(self) -> None:
+        self.trace.write_text(render_fifo_trace(level_update_fault=True), encoding="utf-8")
+        report = analyze_fifo_waveform(
+            self.root,
+            self.trace,
+            start_fs=20_000_000,
+            end_fs=30_000_000,
+            rtl_path=Path("examples/fifo/rtl/sync_fifo.sv"),
+        )
+        proposal = propose_fifo_repairs(
+            report,
+            report_uri="build/debug/debug-session.json",
+        )
+        profile = ProjectProfile(
+            "local",
+            (RuntimeProfile("reasoning", "openai", "gpt-selected", "codex.local"),),
+            (
+                ToolProfile(
+                    "eda",
+                    ("eda.simulate", "waveform.inspect"),
+                    simulator="verilator",
+                    waveform_viewer="surfer",
+                ),
+            ),
+            (
+                ExpertBinding(
+                    ExpertRole.DIAGNOSIS_CLOSURE_ENGINEER,
+                    "reasoning",
+                    "eda",
+                ),
+            ),
+        )
+
+        invocation = ExpertRegistry().plan(
+            ExpertRole.DIAGNOSIS_CLOSURE_ENGINEER,
+            "Review the evidence-linked FIFO repair proposal.",
+            profile,
+            ProjectKnowledgeBase(),
+            context_items=(proposal.context_item,),
+        )
+
+        self.assertEqual(invocation.context.items, (proposal.context_item,))
+        self.assertEqual(invocation.context.items[0].item_type, "debug.session")
+
+    def test_repair_cli_retains_session_proposal_and_surfer_focus(self) -> None:
+        self.trace.write_text(render_fifo_trace(level_update_fault=True), encoding="utf-8")
+        output = io.StringIO()
+        with redirect_stdout(output):
+            result = main(
+                (
+                    "waveform",
+                    "propose-fifo-repair",
+                    "waves.vcd",
+                    "--root",
+                    str(self.root),
+                    "--start-fs",
+                    "20000000",
+                    "--end-fs",
+                    "30000000",
+                    "--output-directory",
+                    "build/repair",
+                )
+            )
+
+        self.assertEqual(result, 0)
+        payload = json.loads(output.getvalue())
+        retained = json.loads(
+            (self.root / "build/repair/repair-proposal.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(payload, retained)
+        self.assertTrue((self.root / "build/repair/debug-session.json").is_file())
+        commands = (self.root / "build/repair/focus.sucl").read_text(encoding="utf-8")
+        self.assertIn("variable_add sync_fifo.level", commands)
+        self.assertIn("zoom_to 24000000fs 26000000fs", commands)
+
+    def test_passing_trace_cannot_be_mislabeled_as_a_repair(self) -> None:
+        self.trace.write_text(render_fifo_trace(), encoding="utf-8")
+        report = analyze_fifo_waveform(
+            self.root,
+            self.trace,
+            rtl_path=Path("examples/fifo/rtl/sync_fifo.sv"),
+        )
+
+        with self.assertRaisesRegex(ValueError, "requires a failing"):
+            propose_fifo_repairs(
+                report,
+                report_uri="build/debug/debug-session.json",
+            )
+
+    def test_repair_rejects_missing_findings_and_unverified_source_anchors(self) -> None:
+        self.trace.write_text(
+            render_fifo_trace(level_update_fault=True),
+            encoding="utf-8",
+        )
+        report = analyze_fifo_waveform(
+            self.root,
+            self.trace,
+            start_fs=20_000_000,
+            end_fs=30_000_000,
+            rtl_path=Path("examples/fifo/rtl/sync_fifo.sv"),
+        )
+        proposal = propose_fifo_repairs(
+            report,
+            report_uri="build/debug/debug-session.json",
+        )
+        with self.assertRaisesRegex(ValueError, "cover every debug finding"):
+            build_repair_proposal(
+                report,
+                report_uri="build/debug/debug-session.json",
+                changes=(),
+                validation_steps=("Re-run deterministic validation.",),
+                confidence_percent=90,
+            )
+
+        unverified = replace(
+            proposal.changes[0],
+            source_anchors=(
+                SourceAnchor(
+                    "examples/fifo/rtl/unverified.sv",
+                    1,
+                    1,
+                    "sha256:" + "0" * 64,
+                ),
+            ),
+        )
+        with self.assertRaisesRegex(ValueError, "absent from the debug session"):
+            build_repair_proposal(
+                report,
+                report_uri="build/debug/debug-session.json",
+                changes=(unverified,),
+                validation_steps=("Re-run deterministic validation.",),
+                confidence_percent=90,
+            )
+
+        duplicate = replace(
+            proposal.changes[0],
+            change_id="repair.change.duplicate-level",
+        )
+        with self.assertRaisesRegex(ValueError, "exactly one repair change"):
+            build_repair_proposal(
+                report,
+                report_uri="build/debug/debug-session.json",
+                changes=(proposal.changes[0], duplicate),
+                validation_steps=("Re-run deterministic validation.",),
+                confidence_percent=90,
             )
 
 

@@ -28,6 +28,11 @@ from openrtl.application.reviews import (
     ReviewReport,
     build_requirement_coverage,
 )
+from openrtl.application.repairs import (
+    RepairChange,
+    RepairProposal,
+    build_repair_proposal,
+)
 from openrtl.application.scripted import (
     FIFO_REQUIREMENTS,
     FIFO_RUN_REF,
@@ -55,11 +60,14 @@ __all__ = [
     "ReviewFinding",
     "ReviewKind",
     "ReviewReport",
+    "RepairChange",
+    "RepairProposal",
     "ScriptedFifoResult",
     "StageOutcome",
     "WorkflowStage",
     "WorkflowState",
     "build_requirement_coverage",
+    "build_repair_proposal",
     "load_evaluation_cases",
     "run_scripted_fifo",
 ]

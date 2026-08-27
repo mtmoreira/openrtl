@@ -69,10 +69,12 @@ def _validate_architecture() -> None:
         "docs/adr/0002-local-first-design-library.md",
         "docs/adr/0003-simulation-toolchain.md",
         "docs/adr/0004-evidence-linked-debug-sessions.md",
+        "docs/adr/0005-reviewable-repair-proposals.md",
         "pyproject.toml",
         "src/openrtl/__init__.py",
         "src/openrtl/adapters/canary.py",
         "src/openrtl/adapters/fifo_debug.py",
+        "src/openrtl/adapters/fifo_repair.py",
         "src/openrtl/py.typed",
         "examples/fifo/rtl/sync_fifo.sv",
         "examples/fifo/dv/test_sync_fifo.py",
@@ -80,6 +82,7 @@ def _validate_architecture() -> None:
         "tools/verilator_canary.py",
         "tests/test_canary_evidence.py",
         "tests/test_fifo_debug_sessions.py",
+        "tools/fifo_fault_case.py",
     }
     missing = sorted(path for path in required if not (ROOT / path).is_file())
     if missing:

@@ -38,6 +38,11 @@ evidence attaches to the same artifact graph and requirement IDs.
 - Evidence-linked FIFO debug sessions explain pre-edge handshakes and post-edge
   state, bind waveform and source anchors, and fail closed on invariant
   violations without editing RTL or launching a GUI.
+- Failed debug sessions can be attached to the Diagnosis and Closure Engineer's
+  deterministic context and converted into non-applying repair proposals that
+  cover every finding with exact requirement, source, and waveform anchors.
+- A deterministic FIFO level-update fault case retains its VCD, debug report,
+  proposal, and Surfer focus while the passing Verilator canary remains intact.
 
 ## Convergence
 

@@ -75,6 +75,13 @@ generic application-layer debug observations and findings. Each session binds
 the trace digest, requirement IDs, clock-edge markers, and relevant RTL source
 lines. Findings recommend bounded next probes but never mutate RTL directly.
 
+A failed debug session can become a digest-bound context item for the
+Diagnosis and Closure Engineer. Generic application contracts require every
+repair change to cover explicit findings and matching requirements using only
+the session's source and waveform anchors. Block-specific adapters may propose
+bounded strategies, but proposals are non-applying review artifacts; RTL edits
+remain a later reviewed workflow action followed by deterministic validation.
+
 ## Reuse and community boundary
 
 A passing design produces a local package candidate containing interfaces,

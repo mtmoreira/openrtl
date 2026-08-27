@@ -7,7 +7,7 @@ from enum import Enum
 import hashlib
 import json
 
-from openrtl.domain._validation import identifier, nonempty
+from openrtl.domain._validation import digest, identifier, nonempty, relative_path
 from openrtl.domain.artifacts import ArtifactGraph, ArtifactKind, ArtifactRef
 from openrtl.domain.decisions import DecisionRecord
 from openrtl.domain.evidence import EvidenceIndex, EvidenceRecord, RunBundle
@@ -27,6 +27,26 @@ class ExpertRole(str, Enum):
     SIGNOFF_REVIEWER = "signoff_reviewer"
 
 
+@dataclass(frozen=True, order=True)
+class ContextItem:
+    item_id: str
+    item_type: str
+    uri: str
+    content_digest: str
+    summary: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "item_id", identifier(self.item_id, "item_id"))
+        object.__setattr__(self, "item_type", identifier(self.item_type, "item_type"))
+        object.__setattr__(self, "uri", relative_path(self.uri, "uri"))
+        object.__setattr__(
+            self,
+            "content_digest",
+            digest(self.content_digest, "content_digest"),
+        )
+        object.__setattr__(self, "summary", nonempty(self.summary, "summary"))
+
+
 @dataclass(frozen=True)
 class ContextRequest:
     role: ExpertRole
@@ -37,6 +57,7 @@ class ContextRequest:
     decision_ids: tuple[str, ...] = ()
     run_id: str | None = None
     attempt: int = 1
+    attached_items: tuple[ContextItem, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "objective", nonempty(self.objective, "objective"))
@@ -56,19 +77,14 @@ class ContextRequest:
             object.__setattr__(self, "run_id", identifier(self.run_id, "run_id"))
         if self.attempt < 1:
             raise ValueError("attempt must be positive")
+        attached = tuple(self.attached_items)
+        if len({value.item_id for value in attached}) != len(attached):
+            raise ValueError("attached context item identifiers must be unique")
         object.__setattr__(self, "artifact_kinds", kinds)
         object.__setattr__(self, "requirement_ids", requirements)
         object.__setattr__(self, "evidence_ids", evidence)
         object.__setattr__(self, "decision_ids", decisions)
-
-
-@dataclass(frozen=True, order=True)
-class ContextItem:
-    item_id: str
-    item_type: str
-    uri: str
-    content_digest: str
-    summary: str
+        object.__setattr__(self, "attached_items", attached)
 
 
 @dataclass(frozen=True)
@@ -85,6 +101,8 @@ class ContextPack:
             raise ValueError("a context pack must contain at least one item")
         if len(set(self.items)) != len(self.items):
             raise ValueError("context items must be unique")
+        if len({value.item_id for value in self.items}) != len(self.items):
+            raise ValueError("context item identifiers must be unique")
 
 
 class ProjectKnowledgeBase:
@@ -130,7 +148,7 @@ class ContextPackBuilder:
         self._knowledge = knowledge
 
     def build(self, request: ContextRequest) -> ContextPack:
-        items: list[ContextItem] = []
+        items: list[ContextItem] = list(request.attached_items)
         for revision in self._knowledge.artifacts.latest_by_kind(request.artifact_kinds):
             if request.requirement_ids and not set(request.requirement_ids).intersection(
                 revision.requirement_ids

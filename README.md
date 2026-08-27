@@ -91,6 +91,28 @@ requirements, binds the VCD and relevant RTL lines by digest, and flags
 handshake, backpressure, occupancy, status, pointer, wraparound, or ordering
 violations. It never launches the viewer or edits RTL.
 
+Turn a failing FIFO trace into a reviewable, non-applying repair proposal and
+a focused Surfer command file:
+
+```sh
+uv run openrtl waveform propose-fifo-repair \
+  build/failing-run/waves.vcd \
+  --root . \
+  --start-fs 24000000 \
+  --end-fs 26000000 \
+  --output-directory build/fifo-repair-proposal
+```
+
+The proposal is hash-bound to the retained debug session and covers every
+finding with matching requirement, source, and waveform anchors. It never
+applies an edit. Run the deterministic demonstration without modifying the
+production FIFO:
+
+```sh
+uv run python tools/fifo_fault_case.py \
+  --output-directory build/fifo-level-fault
+```
+
 ## Architecture
 
 See [docs/architecture.md](docs/architecture.md) for the artifact-first context

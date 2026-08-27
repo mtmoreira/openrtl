@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from openrtl.domain import (
     ArtifactKind,
+    ContextItem,
     ContextPack,
     ContextPackBuilder,
     ContextRequest,
@@ -134,6 +135,7 @@ class ExpertRegistry:
         evidence_ids: tuple[str, ...] = (),
         run_id: str | None = None,
         attempt: int = 1,
+        context_items: tuple[ContextItem, ...] = (),
     ) -> ExpertInvocationPlan:
         definition = self.definition(role)
         binding = profile.expert(role)
@@ -155,6 +157,7 @@ class ExpertRegistry:
                 evidence_ids=evidence_ids,
                 run_id=run_id,
                 attempt=attempt,
+                attached_items=context_items,
             )
         )
         return ExpertInvocationPlan(

@@ -82,6 +82,48 @@ invariant violation is still written to the selected output, and the CLI
 returns a nonzero status so automation cannot mistake a diagnosis for a pass.
 The report does not alter RTL or launch Surfer.
 
+## Review a repair proposal for a failing trace
+
+Generate a retained debug session, non-applying proposal, and narrow Surfer
+focus together:
+
+```sh
+uv run openrtl waveform propose-fifo-repair \
+  build/failing-run/waves.vcd \
+  --root . \
+  --start-fs 24000000 \
+  --end-fs 26000000 \
+  --output-directory build/fifo-repair-proposal
+```
+
+Review `debug-session.json` first: confirm the expected and observed values at
+each marker. Then review `repair-proposal.json`: every change names its covered
+finding and requirement and repeats only anchors already established by the
+debug session. The proposal has `applies_changes: false`; it is evidence for a
+later engineering decision, not permission to edit RTL.
+
+For the included level-update fault case, open the generated focus:
+
+```sh
+uv run python tools/fifo_fault_case.py \
+  --output-directory build/fifo-level-fault
+surfer \
+  --command-file build/fifo-level-fault/focus.sucl \
+  build/fifo-level-fault/waves.vcd
+```
+
+At 25 ns, inspect these signals in order:
+
+1. `sync_fifo.wr_valid`, `sync_fifo.wr_ready`, and
+   `sync_fifo.write_accepted` establish that the write was accepted.
+2. `sync_fifo.level` should change from `1` to `2`, but the fault trace leaves
+   it at `1`.
+3. `sync_fifo.read_accepted` confirms that no simultaneous read explains the
+   unchanged occupancy.
+
+The proposal consequently targets the sequential state-update anchors, not the
+valid/ready combinational assignments.
+
 ## Prepare and open a Surfer focus
 
 Generate reusable inspection and viewer state:

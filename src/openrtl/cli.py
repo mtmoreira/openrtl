@@ -21,8 +21,10 @@ from openrtl.adapters import (
     LocalDesignCatalog,
     analyze_fifo_waveform,
     build_surfer_tool,
+    fifo_repair_focus,
     inspect_vcd,
     load_fifo_canary_evidence,
+    propose_fifo_repairs,
     surfer_command_file,
 )
 from openrtl.application import (
@@ -106,18 +108,18 @@ def parser() -> argparse.ArgumentParser:
         "diagnose-fifo",
         help="explain FIFO clock-edge behavior and flag invariant violations",
     )
-    diagnose_fifo.add_argument("trace", type=Path)
-    diagnose_fifo.add_argument("--root", type=Path, default=Path.cwd())
-    diagnose_fifo.add_argument("--start-fs", type=int, default=0)
-    diagnose_fifo.add_argument("--end-fs", type=int)
-    diagnose_fifo.add_argument("--depth", type=int)
-    diagnose_fifo.add_argument("--hierarchy", default="sync_fifo")
-    diagnose_fifo.add_argument(
-        "--rtl",
-        type=Path,
-        default=Path("examples/fifo/rtl/sync_fifo.sv"),
-    )
+    _add_fifo_debug_arguments(diagnose_fifo)
     diagnose_fifo.add_argument("--output", type=Path)
+    propose_fifo = waveform_commands.add_parser(
+        "propose-fifo-repair",
+        help="derive a reviewable non-applying repair proposal from FIFO findings",
+    )
+    _add_fifo_debug_arguments(propose_fifo)
+    propose_fifo.add_argument(
+        "--output-directory",
+        type=Path,
+        default=Path("build/fifo-repair-proposal"),
+    )
     return root
 
 
@@ -199,9 +201,23 @@ def _add_waveform_selection_arguments(command: argparse.ArgumentParser) -> None:
     command.add_argument("--max-transitions", type=int, default=200)
 
 
+def _add_fifo_debug_arguments(command: argparse.ArgumentParser) -> None:
+    command.add_argument("trace", type=Path)
+    command.add_argument("--root", type=Path, default=Path.cwd())
+    command.add_argument("--start-fs", type=int, default=0)
+    command.add_argument("--end-fs", type=int)
+    command.add_argument("--depth", type=int)
+    command.add_argument("--hierarchy", default="sync_fifo")
+    command.add_argument(
+        "--rtl",
+        type=Path,
+        default=Path("examples/fifo/rtl/sync_fifo.sv"),
+    )
+
+
 def _waveform_command(arguments: argparse.Namespace) -> int:
     root = arguments.root.resolve(strict=True)
-    if arguments.waveform_command == "diagnose-fifo":
+    if arguments.waveform_command in ("diagnose-fifo", "propose-fifo-repair"):
         report = analyze_fifo_waveform(
             root,
             arguments.trace,
@@ -211,16 +227,32 @@ def _waveform_command(arguments: argparse.Namespace) -> int:
             hierarchy=arguments.hierarchy,
             rtl_path=arguments.rtl,
         )
-        payload = report.payload()
-        if arguments.output is not None:
-            output = _contained_output(root, arguments.output)
-            output.parent.mkdir(parents=True, exist_ok=True)
-            output.write_text(
-                json.dumps(payload, indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
-            )
-        print(json.dumps(payload, indent=2, sort_keys=True))
-        return 0 if report.passed else 1
+        if arguments.waveform_command == "diagnose-fifo":
+            payload = report.payload()
+            if arguments.output is not None:
+                output = _contained_output(root, arguments.output)
+                output.parent.mkdir(parents=True, exist_ok=True)
+                _write_json(output, payload)
+            print(json.dumps(payload, indent=2, sort_keys=True))
+            return 0 if report.passed else 1
+
+        output_directory = _contained_output(root, arguments.output_directory)
+        output_directory.mkdir(parents=True, exist_ok=True)
+        debug_path = output_directory / "debug-session.json"
+        proposal_path = output_directory / "repair-proposal.json"
+        focus_path = output_directory / "focus.sucl"
+        proposal = propose_fifo_repairs(
+            report,
+            report_uri=debug_path.relative_to(root).as_posix(),
+        )
+        _write_json(debug_path, report.payload())
+        _write_json(proposal_path, proposal.payload())
+        focus_path.write_text(
+            surfer_command_file(fifo_repair_focus(report)),
+            encoding="utf-8",
+        )
+        print(json.dumps(proposal.payload(), indent=2, sort_keys=True))
+        return 0
 
     signals = tuple(arguments.signal)
     index, inspection = inspect_vcd(
@@ -338,6 +370,13 @@ def _contained_output(root: Path, candidate: Path) -> Path:
         if current.exists() and current.is_symlink():
             raise ValueError("waveform output must not traverse symlinks")
     return resolved
+
+
+def _write_json(path: Path, payload: object) -> None:
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
 
 def validate_fifo_canary(root: Path) -> tuple[str, ...]:
