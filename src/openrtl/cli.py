@@ -19,6 +19,7 @@ from agentrig.core import (
 from agentrig.integrations import CommandInput
 from openrtl.adapters import (
     LocalDesignCatalog,
+    analyze_fifo_waveform,
     build_surfer_tool,
     inspect_vcd,
     load_fifo_canary_evidence,
@@ -101,6 +102,22 @@ def parser() -> argparse.ArgumentParser:
     )
     focus.add_argument("--surfer-executable", type=Path)
     focus.add_argument("--launch", action="store_true")
+    diagnose_fifo = waveform_commands.add_parser(
+        "diagnose-fifo",
+        help="explain FIFO clock-edge behavior and flag invariant violations",
+    )
+    diagnose_fifo.add_argument("trace", type=Path)
+    diagnose_fifo.add_argument("--root", type=Path, default=Path.cwd())
+    diagnose_fifo.add_argument("--start-fs", type=int, default=0)
+    diagnose_fifo.add_argument("--end-fs", type=int)
+    diagnose_fifo.add_argument("--depth", type=int)
+    diagnose_fifo.add_argument("--hierarchy", default="sync_fifo")
+    diagnose_fifo.add_argument(
+        "--rtl",
+        type=Path,
+        default=Path("examples/fifo/rtl/sync_fifo.sv"),
+    )
+    diagnose_fifo.add_argument("--output", type=Path)
     return root
 
 
@@ -184,6 +201,27 @@ def _add_waveform_selection_arguments(command: argparse.ArgumentParser) -> None:
 
 def _waveform_command(arguments: argparse.Namespace) -> int:
     root = arguments.root.resolve(strict=True)
+    if arguments.waveform_command == "diagnose-fifo":
+        report = analyze_fifo_waveform(
+            root,
+            arguments.trace,
+            start_fs=arguments.start_fs,
+            end_fs=arguments.end_fs,
+            depth=arguments.depth,
+            hierarchy=arguments.hierarchy,
+            rtl_path=arguments.rtl,
+        )
+        payload = report.payload()
+        if arguments.output is not None:
+            output = _contained_output(root, arguments.output)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(
+                json.dumps(payload, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0 if report.passed else 1
+
     signals = tuple(arguments.signal)
     index, inspection = inspect_vcd(
         root,

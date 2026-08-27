@@ -54,6 +54,34 @@ increments `level`, a read-only transfer decrements it, and simultaneous
 accepted read/write transfers leave it unchanged. Data accepted at the write
 side must later appear at the read side in order.
 
+## Generate an evidence-linked FIFO diagnosis
+
+Ask OpenRTL to apply those checks deterministically across a bounded window:
+
+```sh
+uv run openrtl waveform diagnose-fifo \
+  build/verilator-fifo-canary/waves.vcd \
+  --root . \
+  --start-fs 100000000 \
+  --end-fs 220000000 \
+  --output build/waveform-debug/diagnosis.json
+```
+
+The command samples inputs and acceptance signals immediately before each
+rising edge, then samples occupancy, status, pointers, and output state after
+the edge. Its `openrtl.debug-session.v1` JSON contains:
+
+- an immutable trace digest and bounded waveform anchor;
+- exact rising-edge markers and relevant signal names;
+- one requirement-linked observation per sampled edge;
+- digest-bound RTL anchors for handshake and state-update logic;
+- fail-closed findings with expected and observed values plus the next probe.
+
+A clean report has `"passed": true` and an empty `findings` list. A detected
+invariant violation is still written to the selected output, and the CLI
+returns a nonzero status so automation cannot mistake a diagnosis for a pass.
+The report does not alter RTL or launch Surfer.
+
 ## Prepare and open a Surfer focus
 
 Generate reusable inspection and viewer state:

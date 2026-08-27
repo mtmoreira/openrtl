@@ -68,15 +68,18 @@ def _validate_architecture() -> None:
         "docs/adr/0001-artifact-first-context.md",
         "docs/adr/0002-local-first-design-library.md",
         "docs/adr/0003-simulation-toolchain.md",
+        "docs/adr/0004-evidence-linked-debug-sessions.md",
         "pyproject.toml",
         "src/openrtl/__init__.py",
         "src/openrtl/adapters/canary.py",
+        "src/openrtl/adapters/fifo_debug.py",
         "src/openrtl/py.typed",
         "examples/fifo/rtl/sync_fifo.sv",
         "examples/fifo/dv/test_sync_fifo.py",
         "evals/openrtl_v1.json",
         "tools/verilator_canary.py",
         "tests/test_canary_evidence.py",
+        "tests/test_fifo_debug_sessions.py",
     }
     missing = sorted(path for path in required if not (ROOT / path).is_file())
     if missing:

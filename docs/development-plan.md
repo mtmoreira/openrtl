@@ -35,6 +35,9 @@ evidence attaches to the same artifact graph and requirement IDs.
   part of validation.
 - Bounded VCD inspection and deterministic Surfer command files are available
   from the CLI; detached GUI launch requires an explicit executable and flag.
+- Evidence-linked FIFO debug sessions explain pre-edge handshakes and post-edge
+  state, bind waveform and source anchors, and fail closed on invariant
+  violations without editing RTL or launching a GUI.
 
 ## Convergence
 

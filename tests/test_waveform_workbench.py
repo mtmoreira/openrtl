@@ -43,6 +43,8 @@ class WaveformWorkbenchTest(unittest.TestCase):
         )
 
         self.assertEqual(index.end_time_fs, 10_000_000)
+        self.assertEqual(index.value_before("sync_fifo.level", 5_000_000), "000")
+        self.assertEqual(index.value_at("sync_fifo.level", 5_000_000), "001")
         self.assertEqual(report.selected_signals[0].value_at_start, "1")
         self.assertTrue(report.selected_signals[0].truncated)
         self.assertEqual(

@@ -1,6 +1,7 @@
 """Infrastructure adapters for local OpenRTL execution."""
 
 from openrtl.adapters.catalog import LocalDesignCatalog
+from openrtl.adapters.fifo_debug import MAX_DEBUG_EDGES, analyze_fifo_waveform
 from openrtl.adapters.canary import load_fifo_canary_evidence
 from openrtl.adapters.agentrig import (
     OpenRTLCommandTools,
@@ -26,6 +27,7 @@ from openrtl.adapters.waveforms import SignalTransition, VcdIndex, WaveformFocus
 
 __all__ = [
     "LocalDesignCatalog",
+    "MAX_DEBUG_EDGES",
     "LogEvent",
     "LogLevel",
     "OpenRTLCommandTools",
@@ -44,6 +46,7 @@ __all__ = [
     "build_surfer_tool",
     "load_fifo_canary_evidence",
     "inspect_vcd",
+    "analyze_fifo_waveform",
     "parse_jsonl_events",
     "surfer_command_file",
 ]

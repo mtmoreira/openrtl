@@ -149,6 +149,20 @@ class VcdIndex:
             value = transition.value
         return value
 
+    def value_before(self, signal: str, timestamp_fs: int) -> str | None:
+        """Return the last value strictly before a timestamp."""
+
+        if signal not in self._signals:
+            raise KeyError(f"unknown waveform signal: {signal}")
+        if timestamp_fs < 0:
+            raise ValueError("waveform timestamp must not be negative")
+        value: str | None = None
+        for transition in self._signals[signal]:
+            if transition.timestamp_fs >= timestamp_fs:
+                break
+            value = transition.value
+        return value
+
     def focus(self, trace_uri: str, signals: tuple[str, ...], start_fs: int, end_fs: int) -> WaveformFocus:
         for signal in signals:
             if signal not in self._signals:

@@ -75,6 +75,22 @@ prepare deterministic Surfer focus state. See
 [docs/waveform-debugging.md](docs/waveform-debugging.md) for the FIFO signal
 walkthrough and explicit viewer-launch command.
 
+Turn a retained FIFO trace into a reviewable, evidence-linked debug session:
+
+```sh
+uv run openrtl waveform diagnose-fifo \
+  build/verilator-fifo-canary/waves.vcd \
+  --root . \
+  --start-fs 100000000 \
+  --end-fs 220000000 \
+  --output build/waveform-debug/diagnosis.json
+```
+
+The report explains every rising-edge transfer, links observations to FIFO
+requirements, binds the VCD and relevant RTL lines by digest, and flags
+handshake, backpressure, occupancy, status, pointer, wraparound, or ordering
+violations. It never launches the viewer or edits RTL.
+
 ## Architecture
 
 See [docs/architecture.md](docs/architecture.md) for the artifact-first context

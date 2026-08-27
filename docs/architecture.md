@@ -69,6 +69,12 @@ an explicit, non-repeatable AgentRig tool boundary. Formal, synthesis,
 implementation, and device programming remain future backends that can
 contribute evidence to the same graph without changing logical design identity.
 
+Waveform diagnosis is separate from GUI navigation. A block-specific adapter
+samples pre-edge inputs and post-edge state from the bounded VCD index and emits
+generic application-layer debug observations and findings. Each session binds
+the trace digest, requirement IDs, clock-edge markers, and relevant RTL source
+lines. Findings recommend bounded next probes but never mutate RTL directly.
+
 ## Reuse and community boundary
 
 A passing design produces a local package candidate containing interfaces,

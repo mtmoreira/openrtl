@@ -1,5 +1,12 @@
 """OpenRTL use cases and expert-team orchestration."""
 
+from openrtl.application.debugging import (
+    DebugFinding,
+    DebugObservation,
+    DebugSessionReport,
+    DebugSeverity,
+)
+
 from openrtl.application.experts import (
     EXPERT_DEFINITIONS,
     ExpertDefinition,
@@ -32,6 +39,10 @@ from openrtl.application.scripted import (
 __all__ = [
     "EXPERT_DEFINITIONS",
     "DiagnosisReport",
+    "DebugFinding",
+    "DebugObservation",
+    "DebugSessionReport",
+    "DebugSeverity",
     "EvaluationCase",
     "FIFO_REQUIREMENTS",
     "FIFO_RUN_REF",
