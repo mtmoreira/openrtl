@@ -34,5 +34,9 @@ uv run python tools/fifo_repair_application_case.py \
   --output-directory build/fifo-repair-application
 ```
 
-The reviewed edit is written only to the build directory. The tracked fault
-fixture and `examples/fifo/rtl/sync_fifo.sv` remain unchanged.
+`level_update_edit_spec.json` is reviewable example input, not trusted code.
+The tool converts it into `edit-plan.json`, pins the source and every edit by
+SHA-256, and binds approval to the canonical plan digest. The generic Python
+engine contains no FIFO statement replacement. The candidate is written only
+to the build directory; the tracked fault fixture and production FIFO remain
+unchanged.

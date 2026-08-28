@@ -43,10 +43,12 @@ evidence attaches to the same artifact graph and requirement IDs.
   cover every finding with exact requirement, source, and waveform anchors.
 - A deterministic FIFO level-update fault case retains its VCD, debug report,
   proposal, and Surfer focus while the passing Verilator canary remains intact.
-- An explicitly reviewed FIFO level proposal can be applied only to a separate
-  candidate after proposal, session, change, and source digests pass. The same
-  deterministic Verilator stimulus retains failing and repaired VCDs and proves
-  the linked finding disappears without modifying production RTL.
+- An explicitly reviewed repair can be applied only to a separate candidate
+  after proposal, session, change, source, and canonical edit-plan digests pass.
+  Concrete FIFO instructions reside in a reviewable example artifact rather
+  than Python application code. The same deterministic Verilator stimulus
+  retains failing and repaired VCDs and proves the linked finding disappears
+  without modifying production RTL.
 
 ## Convergence
 

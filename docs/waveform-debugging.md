@@ -133,9 +133,10 @@ recorded as `focus-window-fs` and `focus-markers-fs` comments in `focus.sucl`.
 
 ## Compare a reviewed repair before and after
 
-The opt-in repair qualification runs an actual faulty RTL fixture, applies the
-exact reviewed level change to a separate candidate, then reruns the same
-deterministic cocotb test:
+The opt-in repair qualification runs an actual faulty RTL fixture, builds a
+typed edit plan from the reviewable example specification, applies the
+digest-approved plan to a separate candidate, then reruns the same deterministic
+cocotb test:
 
 ```sh
 uv run python tools/fifo_repair_application_case.py \
@@ -151,10 +152,12 @@ compare these signals:
 3. `sync_fifo.level` remains `0` in the failing run and advances to `1` in the
    repaired run.
 
-The retained `comparison.json` requires the original linked finding and an
-empty repaired finding list. `evidence.json` binds every log, results file,
-waveform, focus, proposal, application report, and repaired source by SHA-256.
-The workflow does not launch Surfer or modify production RTL.
+Inspect `edit-plan.json` before `application.json`: its exact expected and
+replacement bytes, ranges, source digest, and canonical digest are the approval
+boundary. The retained `comparison.json` requires the original linked finding
+and an empty repaired finding list. `evidence.json` binds every log, results
+file, waveform, focus, proposal, edit plan, application report, and repaired
+source by SHA-256. The workflow does not launch Surfer or modify production RTL.
 
 ## Prepare and open a Surfer focus
 

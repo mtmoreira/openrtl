@@ -1,0 +1,12 @@
+{
+  "edits": [
+    {
+      "change_id": "repair.change.level",
+      "edit_id": "repair.edit.level.accepted-write",
+      "expected_before": "        2'b10: count <= count;",
+      "operation": "replace_exact_bytes",
+      "replacement": "        2'b10: count <= count + 1'b1;"
+    }
+  ],
+  "schema": "openrtl.source-edit-spec.v1"
+}

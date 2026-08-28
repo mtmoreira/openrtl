@@ -454,22 +454,36 @@ def _source_anchors(root: Path, rtl_path: Path | None) -> tuple[SourceAnchor, ..
     except UnicodeDecodeError as error:
         raise ValueError("FIFO RTL source is not UTF-8") from error
     digest = f"sha256:{hashlib.sha256(content).hexdigest()}"
-    snippets = (
+    point_snippets = (
         "assign read_accepted",
         "assign wr_ready",
         "assign write_accepted",
         "always_ff @(posedge clk)",
-        "unique case",
     )
-    selected_lines = tuple(
-        index
+    ranges = [
+        (index, index)
         for index, line in enumerate(lines, start=1)
-        if any(snippet in line for snippet in snippets)
-    )
-    if not selected_lines:
+        if any(snippet in line for snippet in point_snippets)
+    ]
+    for index, line in enumerate(lines, start=1):
+        if "unique case" not in line:
+            continue
+        end = next(
+            (
+                candidate
+                for candidate in range(index + 1, len(lines) + 1)
+                if "endcase" in lines[candidate - 1]
+            ),
+            None,
+        )
+        if end is None:
+            raise ValueError("FIFO RTL source has an unterminated debug case anchor")
+        ranges.append((index, end))
+    ranges.sort()
+    if not ranges:
         raise ValueError("FIFO RTL source lacks debug anchor points")
     relative = resolved.relative_to(resolved_root).as_posix()
-    return tuple(SourceAnchor(relative, line, line, digest) for line in selected_lines)
+    return tuple(SourceAnchor(relative, start, end, digest) for start, end in ranges)
 
 
 def _fifo_signals(hierarchy: str) -> tuple[str, ...]:

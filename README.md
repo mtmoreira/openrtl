@@ -105,24 +105,27 @@ uv run openrtl waveform propose-fifo-repair \
   --output-directory build/fifo-repair-proposal
 ```
 
-Apply the reviewed FIFO level change only to an isolated candidate by naming
-the exact proposal and change identities:
+Apply a reviewed typed edit plan only to an isolated candidate by naming the
+exact proposal and change identities and approving the canonical plan digest:
 
 ```console
-uv run openrtl repair apply-fifo-level \
+uv run openrtl repair apply-source-edits \
   --proposal build/fifo-repair-application/proposal.json \
   --debug-session build/fifo-repair-application/debug-session.json \
-  --source examples/fifo/faults/sync_fifo_level_fault.sv \
+  --edit-plan build/fifo-repair-application/edit-plan.json \
   --output build/fifo-repair-application/candidate/sync_fifo.sv \
   --application-report build/fifo-repair-application/application.json \
   --approve-proposal REPAIR_PROPOSAL_ID \
   --approve-change repair.change.level \
+  --approve-edit-plan-digest SHA256_EDIT_PLAN_DIGEST \
   --review-note "Reviewed the linked edge and exact source anchors."
 ```
 
-The command fails on stale evidence or source and never edits its input. The
-opt-in `tools/fifo_repair_application_case.py` qualification retains the
-failing and repaired Verilator waveforms and their hash-bound comparison.
+The command fails on stale evidence, source, edit bytes, anchors, or approval
+and never edits its input. Concrete repair text is carried by the reviewed edit
+plan, not hardcoded in Python. The opt-in
+`tools/fifo_repair_application_case.py` qualification retains the edit plan,
+failing and repaired Verilator waveforms, and their hash-bound comparison.
 
 The proposal is hash-bound to the retained debug session and covers every
 finding with matching requirement, source, and waveform anchors. It never

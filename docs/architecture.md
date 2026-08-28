@@ -82,12 +82,14 @@ the session's source and waveform anchors. Block-specific adapters may propose
 bounded strategies, but proposals are non-applying review artifacts; RTL edits
 remain a later reviewed workflow action followed by deterministic validation.
 
-Reviewed repair application is a separate candidate-only boundary. An exact
-proposal ID and change allowlist authorize one bounded strategy only after the
-debug-session and source-anchor digests are reverified. Application records the
-changed lines and before/after source digests without modifying the reviewed
-source. Verilator qualification retains failing and repaired waveforms plus a
-hash-bound comparison; production promotion remains outside this boundary.
+Reviewed repair application is a separate candidate-only boundary. A typed
+source-edit plan carries concrete expected and replacement bytes, exact ranges,
+and source digests. Approval binds the canonical plan digest plus the proposal
+and change identities. The generic engine knows only allowlisted edit
+operations and reverifies debug-session, source-anchor, path, range, and digest
+linkage before writing a separate candidate. Verilator qualification retains
+the plan, failing and repaired waveforms, and a hash-bound comparison;
+production promotion remains outside this boundary.
 
 ## Reuse and community boundary
 

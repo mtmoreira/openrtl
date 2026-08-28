@@ -20,11 +20,12 @@ from agentrig.integrations import CommandInput
 from openrtl.adapters import (
     LocalDesignCatalog,
     analyze_fifo_waveform,
-    apply_reviewed_fifo_level_repair,
+    apply_reviewed_source_edits,
     build_surfer_tool,
     fifo_repair_focus,
     inspect_vcd,
     load_fifo_canary_evidence,
+    load_source_edit_plan,
     propose_fifo_repairs,
     surfer_command_file,
 )
@@ -127,23 +128,24 @@ def parser() -> argparse.ArgumentParser:
         help="apply an explicitly reviewed repair to an isolated candidate",
     )
     repair_commands = repair.add_subparsers(dest="repair_command", required=True)
-    apply_fifo_level = repair_commands.add_parser(
-        "apply-fifo-level",
-        help="apply the exact reviewed FIFO level change to a candidate copy",
+    apply_source_edits = repair_commands.add_parser(
+        "apply-source-edits",
+        help="apply an approved evidence-bound source edit plan to a candidate",
     )
-    apply_fifo_level.add_argument("--root", type=Path, default=Path.cwd())
-    apply_fifo_level.add_argument("--proposal", type=Path, required=True)
-    apply_fifo_level.add_argument("--debug-session", type=Path, required=True)
-    apply_fifo_level.add_argument("--source", type=Path, required=True)
-    apply_fifo_level.add_argument("--output", type=Path, required=True)
-    apply_fifo_level.add_argument("--application-report", type=Path, required=True)
-    apply_fifo_level.add_argument("--approve-proposal", required=True)
-    apply_fifo_level.add_argument(
+    apply_source_edits.add_argument("--root", type=Path, default=Path.cwd())
+    apply_source_edits.add_argument("--proposal", type=Path, required=True)
+    apply_source_edits.add_argument("--debug-session", type=Path, required=True)
+    apply_source_edits.add_argument("--edit-plan", type=Path, required=True)
+    apply_source_edits.add_argument("--output", type=Path, required=True)
+    apply_source_edits.add_argument("--application-report", type=Path, required=True)
+    apply_source_edits.add_argument("--approve-proposal", required=True)
+    apply_source_edits.add_argument(
         "--approve-change",
         action="append",
         required=True,
     )
-    apply_fifo_level.add_argument("--review-note", required=True)
+    apply_source_edits.add_argument("--approve-edit-plan-digest", required=True)
+    apply_source_edits.add_argument("--review-note", required=True)
     return root
 
 
@@ -219,16 +221,16 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _repair_command(arguments: argparse.Namespace) -> int:
-    if arguments.repair_command != "apply-fifo-level":
+    if arguments.repair_command != "apply-source-edits":
         raise AssertionError("argparse returned an unknown repair command")
     root = arguments.root.resolve(strict=True)
     report_path = _contained_output(root, arguments.application_report)
     candidate_path = _contained_output(root, arguments.output)
+    edit_plan = load_source_edit_plan(root, arguments.edit_plan)
+    source_path = (root / edit_plan.source_path).resolve(strict=True)
     protected_paths = {
         candidate_path,
-        (arguments.source if arguments.source.is_absolute() else root / arguments.source).resolve(
-            strict=True
-        ),
+        source_path,
         (arguments.proposal if arguments.proposal.is_absolute() else root / arguments.proposal).resolve(
             strict=True
         ),
@@ -237,18 +239,24 @@ def _repair_command(arguments: argparse.Namespace) -> int:
             if arguments.debug_session.is_absolute()
             else root / arguments.debug_session
         ).resolve(strict=True),
+        (
+            arguments.edit_plan
+            if arguments.edit_plan.is_absolute()
+            else root / arguments.edit_plan
+        ).resolve(strict=True),
     }
     if report_path in protected_paths:
         raise ValueError("repair application report must be separate from repair inputs and output")
-    report = apply_reviewed_fifo_level_repair(
+    report = apply_reviewed_source_edits(
         root,
         proposal_path=arguments.proposal,
         debug_session_path=arguments.debug_session,
-        source_path=arguments.source,
+        edit_plan_path=arguments.edit_plan,
         output_path=arguments.output,
         approval=RepairApproval(
             arguments.approve_proposal,
             tuple(arguments.approve_change),
+            arguments.approve_edit_plan_digest,
             arguments.review_note,
         ),
     )

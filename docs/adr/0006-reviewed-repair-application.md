@@ -2,14 +2,15 @@
 
 ## Status
 
-Accepted.
+Accepted, with its FIFO-specific transformation mechanism superseded by ADR
+0007. The candidate-only boundary remains current.
 
 ## Decision
 
 OpenRTL applies a repair only when the caller supplies the exact proposal ID,
 every explicitly approved change ID, and a non-empty review note. The proposal
 must remain linked to an unchanged failing debug session and unchanged source
-anchors. The first supported strategy is the FIFO accepted-write level update.
+anchors. ADR 0007 moves concrete transformations into typed edit artifacts.
 
 Application writes a separate candidate file; it never edits the reviewed
 source or production RTL in place. The application report records before and

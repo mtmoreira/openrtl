@@ -36,6 +36,10 @@ from openrtl.application.repairs import (
 from openrtl.application.repair_execution import (
     RepairApplicationReport,
     RepairApproval,
+    SourceEdit,
+    SourceEditPlan,
+    build_source_edit_plan,
+    canonical_payload_digest,
 )
 from openrtl.application.scripted import (
     FIFO_REQUIREMENTS,
@@ -68,12 +72,16 @@ __all__ = [
     "RepairApplicationReport",
     "RepairApproval",
     "RepairProposal",
+    "SourceEdit",
+    "SourceEditPlan",
     "ScriptedFifoResult",
     "StageOutcome",
     "WorkflowStage",
     "WorkflowState",
     "build_requirement_coverage",
     "build_repair_proposal",
+    "build_source_edit_plan",
+    "canonical_payload_digest",
     "load_evaluation_cases",
     "run_scripted_fifo",
 ]

@@ -44,7 +44,7 @@ def _validate_text_files() -> None:
             part in IGNORED_DIRECTORY_NAMES for part in relative_path.parts
         ):
             continue
-        if path.suffix not in {".md", ".py", ".toml", ".sv", ".zsh"} and path.name not in {
+        if path.suffix not in {".json", ".md", ".py", ".toml", ".sv", ".zsh"} and path.name not in {
             ".gitignore",
             "LICENSE",
         }:
@@ -71,12 +71,13 @@ def _validate_architecture() -> None:
         "docs/adr/0004-evidence-linked-debug-sessions.md",
         "docs/adr/0005-reviewable-repair-proposals.md",
         "docs/adr/0006-reviewed-repair-application.md",
+        "docs/adr/0007-evidence-bound-source-edits.md",
         "pyproject.toml",
         "src/openrtl/__init__.py",
         "src/openrtl/adapters/canary.py",
         "src/openrtl/adapters/fifo_debug.py",
         "src/openrtl/adapters/fifo_repair.py",
-        "src/openrtl/adapters/fifo_repair_application.py",
+        "src/openrtl/adapters/source_edit_application.py",
         "src/openrtl/application/repair_execution.py",
         "src/openrtl/py.typed",
         "examples/fifo/rtl/sync_fifo.sv",
@@ -89,6 +90,7 @@ def _validate_architecture() -> None:
         "tools/fifo_fault_case.py",
         "tools/fifo_repair_application_case.py",
         "examples/fifo/faults/sync_fifo_level_fault.sv",
+        "examples/fifo/faults/level_update_edit_spec.json",
         "examples/fifo/dv/test_fifo_level_repair.py",
     }
     missing = sorted(path for path in required if not (ROOT / path).is_file())

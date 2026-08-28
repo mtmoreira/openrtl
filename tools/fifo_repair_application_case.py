@@ -21,12 +21,12 @@ if str(ROOT) not in sys.path:
 
 from openrtl.adapters import (  # noqa: E402
     analyze_fifo_waveform,
-    apply_reviewed_fifo_level_repair,
+    apply_reviewed_source_edits,
     fifo_repair_focus,
     propose_fifo_repairs,
     surfer_command_file,
 )
-from openrtl.application import RepairApproval  # noqa: E402
+from openrtl.application import RepairApproval, build_source_edit_plan  # noqa: E402
 from openrtl.adapters.waveforms import WaveformFocus  # noqa: E402
 from tools.verilator_canary import (  # noqa: E402
     VerilatorToolchain,
@@ -34,7 +34,7 @@ from tools.verilator_canary import (  # noqa: E402
 )
 
 
-_MARKER_TEXT = "openrtl-fifo-repair-application-v1\n"
+_MARKER_TEXT = "openrtl-fifo-repair-application-v2\n"
 _KNOWN_OUTPUTS = frozenset(
     {
         ".openrtl-fifo-repair-application-owner",
@@ -43,6 +43,7 @@ _KNOWN_OUTPUTS = frozenset(
         "candidate",
         "comparison.json",
         "debug-session.json",
+        "edit-plan.json",
         "evidence.json",
         "focus-after.sucl",
         "focus-before.sucl",
@@ -108,6 +109,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
 
     debug_path = output / "debug-session.json"
     proposal_path = output / "proposal.json"
+    edit_plan_path = output / "edit-plan.json"
     application_path = output / "application.json"
     comparison_path = output / "comparison.json"
     before_focus_path = output / "focus-before.sucl"
@@ -119,18 +121,30 @@ def main(arguments: Sequence[str] | None = None) -> int:
     )
     _write_json(debug_path, before_report.payload())
     _write_json(proposal_path, proposal.payload())
+    edit_specs = _load_edit_specs(
+        root / "examples/fifo/faults/level_update_edit_spec.json"
+    )
+    edit_plan = build_source_edit_plan(
+        proposal_id=proposal.proposal_id,
+        debug_session_id=before_report.session_id,
+        source_path=source.relative_to(root).as_posix(),
+        source=source.read_bytes(),
+        edit_specs=edit_specs,
+    )
+    _write_json(edit_plan_path, edit_plan.payload())
     before_focus = fifo_repair_focus(before_report)
     before_focus_path.write_text(surfer_command_file(before_focus), encoding="utf-8")
 
-    application = apply_reviewed_fifo_level_repair(
+    application = apply_reviewed_source_edits(
         root,
         proposal_path=proposal_path,
         debug_session_path=debug_path,
-        source_path=source,
+        edit_plan_path=edit_plan_path,
         output_path=repaired_source,
         approval=RepairApproval(
             proposal.proposal_id,
             ("repair.change.level",),
+            edit_plan.content_digest,
             "Reviewed the linked FIFO level finding, waveform edge, and exact source anchors.",
         ),
     )
@@ -196,6 +210,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
                 ("before_waveform", before.waveform),
                 ("comparison", comparison_path),
                 ("debug_session", debug_path),
+                ("edit_plan", edit_plan_path),
                 ("focus_after", after_focus_path),
                 ("focus_before", before_focus_path),
                 ("proposal", proposal_path),
@@ -212,7 +227,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
             "remote_operations": False,
         },
         "qualified_application_id": application.application_id,
-        "schema": "openrtl.repair-application-evidence.v1",
+        "qualified_edit_plan_digest": edit_plan.content_digest,
+        "schema": "openrtl.repair-application-evidence.v2",
         "status": "passed",
         "toolchain": {
             "cocotb_config": str(toolchain.cocotb_config),
@@ -229,13 +245,44 @@ def main(arguments: Sequence[str] | None = None) -> int:
         "before_waveform": before.waveform.relative_to(root).as_posix(),
         "comparison": comparison_path.relative_to(root).as_posix(),
         "evidence": evidence_path.relative_to(root).as_posix(),
+        "edit_plan": edit_plan_path.relative_to(root).as_posix(),
+        "edit_plan_digest": edit_plan.content_digest,
         "proposal": proposal_path.relative_to(root).as_posix(),
         "repaired_finding_ids": tuple(value.finding_id for value in after_report.findings),
-        "schema": "openrtl.fifo-repair-application-case.v1",
+        "schema": "openrtl.fifo-repair-application-case.v2",
         "status": "passed",
     }
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0
+
+
+def _load_edit_specs(path: Path) -> tuple[dict[str, str], ...]:
+    if path.is_symlink() or not path.is_file():
+        raise RuntimeError("reviewed FIFO edit specification is unavailable")
+    payload = json.loads(path.read_bytes())
+    if not isinstance(payload, dict) or set(payload) != {"edits", "schema"}:
+        raise ValueError("reviewed FIFO edit specification fields are invalid")
+    if payload.get("schema") != "openrtl.source-edit-spec.v1":
+        raise ValueError("reviewed FIFO edit specification schema is invalid")
+    edits = payload.get("edits")
+    expected_fields = {
+        "change_id",
+        "edit_id",
+        "expected_before",
+        "operation",
+        "replacement",
+    }
+    if (
+        not isinstance(edits, list)
+        or not edits
+        or any(not isinstance(value, dict) or set(value) != expected_fields for value in edits)
+        or any(not all(isinstance(item, str) for item in value.values()) for value in edits)
+    ):
+        raise ValueError("reviewed FIFO edit specification edits are invalid")
+    return tuple(
+        {str(key): str(item) for key, item in value.items()}
+        for value in edits
+    )
 
 
 def _prepare_output(root: Path, candidate: Path) -> Path:

@@ -169,6 +169,9 @@ class FifoDebugSessionTest(unittest.TestCase):
         self.assertEqual(change.change_id, "repair.change.level")
         self.assertEqual(change.requirement_ids, ("fifo.write",))
         self.assertTrue(change.source_anchors)
+        self.assertTrue(
+            any(anchor.line_start < anchor.line_end for anchor in change.source_anchors)
+        )
         self.assertEqual(change.waveform_anchors[0].markers_fs, (25_000_000,))
         focus = fifo_repair_focus(report)
         self.assertEqual((focus.start_fs, focus.end_fs), (24_000_000, 26_000_000))
