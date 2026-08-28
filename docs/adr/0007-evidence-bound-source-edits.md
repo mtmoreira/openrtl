@@ -27,6 +27,9 @@ into a fully digest-bound edit plan before approval and application. Future
 planners may produce the same artifact contract without expanding the trusted
 application engine or executing generated code.
 
+ADR 0008 implements that planner boundary and makes its pre-approval state and
+input/output digest linkage explicit.
+
 ## Consequences
 
 - Python application code has no FIFO statement or replacement knowledge;

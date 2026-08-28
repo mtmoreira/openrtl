@@ -72,6 +72,7 @@ def _validate_architecture() -> None:
         "docs/adr/0005-reviewable-repair-proposals.md",
         "docs/adr/0006-reviewed-repair-application.md",
         "docs/adr/0007-evidence-bound-source-edits.md",
+        "docs/adr/0008-proposal-to-edit-plan.md",
         "pyproject.toml",
         "src/openrtl/__init__.py",
         "src/openrtl/adapters/canary.py",

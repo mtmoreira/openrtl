@@ -12,6 +12,8 @@ from openrtl.application import (
     RepairApproval,
     SourceEdit,
     SourceEditPlan,
+    SourceEditPlanningReport,
+    build_source_edit_plan,
     canonical_payload_digest,
 )
 
@@ -26,6 +28,70 @@ def load_source_edit_plan(root: Path, path: Path) -> SourceEditPlan:
     resolved_root = root.resolve(strict=True)
     plan_file = _contained_file(resolved_root, path, "source edit plan")
     return _parse_edit_plan(_read_json(plan_file, "source edit plan"))
+
+
+def draft_source_edit_plan(
+    root: Path,
+    *,
+    proposal_path: Path,
+    debug_session_path: Path,
+    source_path: Path,
+    edit_spec_path: Path,
+) -> tuple[SourceEditPlan, SourceEditPlanningReport]:
+    """Qualify untrusted exact replacements into a typed, review-required plan."""
+
+    resolved_root = root.resolve(strict=True)
+    proposal_file = _contained_file(resolved_root, proposal_path, "repair proposal")
+    debug_file = _contained_file(resolved_root, debug_session_path, "debug session")
+    source_file = _contained_file(resolved_root, source_path, "repair source")
+    edit_spec_file = _contained_file(resolved_root, edit_spec_path, "source edit specification")
+    proposal = _read_json(proposal_file, "repair proposal")
+    debug_session = _read_json(debug_file, "debug session")
+    edit_spec = _read_json(edit_spec_file, "source edit specification")
+    edit_specs = _parse_edit_specs(edit_spec)
+    source = _read_source(source_file)
+    proposal_id = proposal.get("proposal_id")
+    debug_session_id = debug_session.get("session_id")
+    if not isinstance(proposal_id, str) or not isinstance(debug_session_id, str):
+        raise ValueError("repair evidence identities are invalid")
+    plan = build_source_edit_plan(
+        proposal_id=proposal_id,
+        debug_session_id=debug_session_id,
+        source_path=source_file.relative_to(resolved_root).as_posix(),
+        source=source,
+        edit_specs=edit_specs,
+    )
+    change_ids = tuple(dict.fromkeys(value.change_id for value in plan.edits))
+    _validate_linkage(
+        resolved_root,
+        proposal,
+        debug_session,
+        plan,
+        source_file,
+        change_ids,
+    )
+    proposal_digest = _digest(_canonical_json(proposal))
+    debug_digest = _digest(_canonical_json(debug_session))
+    edit_spec_digest = _digest(edit_spec_file.read_bytes())
+    plan_digest = plan.content_digest
+    token = hashlib.sha256(
+        (
+            f"{proposal_digest}:{debug_digest}:{edit_spec_digest}:"
+            f"{plan_digest}"
+        ).encode()
+    ).hexdigest()[:20]
+    return plan, SourceEditPlanningReport(
+        f"repair.planning.{token}",
+        proposal_id,
+        proposal_digest,
+        debug_session_id,
+        debug_digest,
+        edit_spec_digest,
+        plan.edit_plan_id,
+        plan_digest,
+        change_ids,
+        tuple(value.edit_id for value in plan.edits),
+    )
 
 
 def apply_reviewed_source_edits(
@@ -50,6 +116,11 @@ def apply_reviewed_source_edits(
     plan_digest = canonical_payload_digest(plan_payload)
     if plan_digest != approval.edit_plan_digest:
         raise ValueError("repair approval does not match the source edit plan digest")
+    if proposal.get("proposal_id") != approval.proposal_id:
+        raise ValueError("repair approval does not match the proposal identity")
+    planned = tuple(dict.fromkeys(value.change_id for value in plan.edits))
+    if planned != approval.approved_change_ids:
+        raise ValueError("source edit plan changes do not match the exact approval")
 
     source_file = _contained_file(resolved_root, Path(plan.source_path), "repair source")
     output_file = _contained_output(resolved_root, output_path)
@@ -61,7 +132,7 @@ def apply_reviewed_source_edits(
         debug_session,
         plan,
         source_file,
-        approval,
+        approval.approved_change_ids,
     )
 
     source = _read_source(source_file)
@@ -119,7 +190,7 @@ def _validate_linkage(
     debug_session: dict[str, Any],
     plan: SourceEditPlan,
     source: Path,
-    approval: RepairApproval,
+    change_ids: tuple[str, ...],
 ) -> None:
     if (
         proposal.get("schema") != "openrtl.repair-proposal.v1"
@@ -127,14 +198,12 @@ def _validate_linkage(
         or proposal.get("applies_changes") is not False
     ):
         raise ValueError("repair proposal is not a non-applying v1 proposal")
-    if proposal.get("proposal_id") != approval.proposal_id:
-        raise ValueError("repair approval does not match the proposal identity")
-    if plan.proposal_id != approval.proposal_id:
+    if plan.proposal_id != proposal.get("proposal_id"):
         raise ValueError("source edit plan does not match the proposal identity")
     if debug_session.get("schema") != "openrtl.debug-session.v1":
         raise ValueError("repair debug session schema is invalid")
     if debug_session.get("passed") is not False:
-        raise ValueError("repair application requires a failing debug session")
+        raise ValueError("repair planning and application require a failing debug session")
     if proposal.get("debug_session_id") != debug_session.get("session_id"):
         raise ValueError("repair proposal and debug session identities differ")
     if plan.debug_session_id != debug_session.get("session_id"):
@@ -159,11 +228,10 @@ def _validate_linkage(
         if change_id in indexed_changes:
             raise ValueError("repair proposal change identities must be unique")
         indexed_changes[change_id] = change
-    approved = tuple(approval.approved_change_ids)
     planned = tuple(dict.fromkeys(value.change_id for value in plan.edits))
-    if planned != approved:
-        raise ValueError("source edit plan changes do not match the exact approval")
-    if any(value not in indexed_changes for value in approved):
+    if planned != change_ids:
+        raise ValueError("source edit plan changes differ from selected changes")
+    if any(value not in indexed_changes for value in change_ids):
         raise ValueError("source edit plan references an absent proposal change")
 
     findings = debug_session.get("findings")
@@ -180,7 +248,7 @@ def _validate_linkage(
     source_digest = _digest(source_bytes)
     line_ranges = _line_byte_ranges(source_bytes)
     anchor_ranges: dict[str, list[tuple[int, int]]] = {}
-    for change_id in approved:
+    for change_id in change_ids:
         change = indexed_changes[change_id]
         if change.get("artifact_kind") != "rtl":
             raise ValueError("source edit plan must target RTL changes")
@@ -229,6 +297,32 @@ def _validate_linkage(
             for start, end in anchor_ranges[edit.change_id]
         ):
             raise ValueError("source edit byte range is outside its reviewed source anchors")
+
+
+def _parse_edit_specs(payload: dict[str, Any]) -> tuple[dict[str, str], ...]:
+    if set(payload) != {"edits", "schema"}:
+        raise ValueError("source edit specification fields are invalid")
+    if payload.get("schema") != "openrtl.source-edit-spec.v1":
+        raise ValueError("source edit specification schema is invalid")
+    edits = payload.get("edits")
+    expected_fields = {
+        "change_id",
+        "edit_id",
+        "expected_before",
+        "operation",
+        "replacement",
+    }
+    if (
+        not isinstance(edits, list)
+        or not edits
+        or any(not isinstance(value, dict) or set(value) != expected_fields for value in edits)
+        or any(not all(isinstance(item, str) for item in value.values()) for value in edits)
+    ):
+        raise ValueError("source edit specification edits are invalid")
+    return tuple(
+        {str(key): str(item) for key, item in value.items()}
+        for value in edits
+    )
 
 
 def _parse_edit_plan(payload: dict[str, Any]) -> SourceEditPlan:

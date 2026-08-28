@@ -105,8 +105,23 @@ uv run openrtl waveform propose-fifo-repair \
   --output-directory build/fifo-repair-proposal
 ```
 
-Apply a reviewed typed edit plan only to an isolated candidate by naming the
-exact proposal and change identities and approving the canonical plan digest:
+First qualify an external exact-replacement specification into a typed,
+review-required edit plan:
+
+```console
+uv run openrtl repair draft-source-edits \
+  --proposal build/fifo-repair-application/proposal.json \
+  --debug-session build/fifo-repair-application/debug-session.json \
+  --source examples/fifo/faults/sync_fifo_level_fault.sv \
+  --edit-spec examples/fifo/faults/level_update_edit_spec.json \
+  --edit-plan-output build/fifo-repair-application/edit-plan.json \
+  --planning-report build/fifo-repair-application/edit-plan-planning.json
+```
+
+This first command only qualifies the external specification against the
+proposal evidence and writes an `awaiting_review` report. It does not apply or
+approve the plan. After reviewing those artifacts, application remains a
+separate explicit command:
 
 ```console
 uv run openrtl repair apply-source-edits \

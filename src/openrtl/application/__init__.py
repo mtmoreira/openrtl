@@ -38,6 +38,7 @@ from openrtl.application.repair_execution import (
     RepairApproval,
     SourceEdit,
     SourceEditPlan,
+    SourceEditPlanningReport,
     build_source_edit_plan,
     canonical_payload_digest,
 )
@@ -74,6 +75,7 @@ __all__ = [
     "RepairProposal",
     "SourceEdit",
     "SourceEditPlan",
+    "SourceEditPlanningReport",
     "ScriptedFifoResult",
     "StageOutcome",
     "WorkflowStage",

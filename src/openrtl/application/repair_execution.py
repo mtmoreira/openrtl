@@ -202,6 +202,82 @@ def canonical_payload_digest(payload: dict[str, Any]) -> str:
 
 
 @dataclass(frozen=True)
+class SourceEditPlanningReport:
+    planning_id: str
+    proposal_id: str
+    proposal_digest: str
+    debug_session_id: str
+    debug_session_digest: str
+    edit_spec_digest: str
+    edit_plan_id: str
+    edit_plan_digest: str
+    change_ids: tuple[str, ...]
+    edit_ids: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        for field_name in (
+            "planning_id",
+            "proposal_id",
+            "debug_session_id",
+            "edit_plan_id",
+        ):
+            object.__setattr__(
+                self,
+                field_name,
+                identifier(getattr(self, field_name), field_name),
+            )
+        for field_name in (
+            "proposal_digest",
+            "debug_session_digest",
+            "edit_spec_digest",
+            "edit_plan_digest",
+        ):
+            object.__setattr__(
+                self,
+                field_name,
+                digest(getattr(self, field_name), field_name),
+            )
+        changes = unique_identifiers(self.change_ids, "change_id")
+        edits = unique_identifiers(self.edit_ids, "edit_id")
+        if not changes or not edits:
+            raise ValueError("source edit planning requires changes and edits")
+        object.__setattr__(self, "change_ids", changes)
+        object.__setattr__(self, "edit_ids", edits)
+
+    def payload(self) -> dict[str, Any]:
+        return {
+            "applies_changes": False,
+            "change_ids": self.change_ids,
+            "debug_session": {
+                "content_digest": self.debug_session_digest,
+                "session_id": self.debug_session_id,
+            },
+            "edit_ids": self.edit_ids,
+            "edit_plan": {
+                "content_digest": self.edit_plan_digest,
+                "edit_plan_id": self.edit_plan_id,
+            },
+            "edit_spec_digest": self.edit_spec_digest,
+            "planning_id": self.planning_id,
+            "proposal": {
+                "content_digest": self.proposal_digest,
+                "proposal_id": self.proposal_id,
+            },
+            "review": {
+                "approval_required": True,
+                "required_bindings": (
+                    "proposal_id",
+                    "change_ids",
+                    "edit_plan_digest",
+                    "review_note",
+                ),
+            },
+            "schema": "openrtl.source-edit-planning-report.v1",
+            "status": "awaiting_review",
+        }
+
+
+@dataclass(frozen=True)
 class RepairApplicationReport:
     application_id: str
     proposal_id: str

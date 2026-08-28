@@ -5,6 +5,7 @@ from openrtl.adapters.fifo_debug import MAX_DEBUG_EDGES, analyze_fifo_waveform
 from openrtl.adapters.fifo_repair import fifo_repair_focus, propose_fifo_repairs
 from openrtl.adapters.source_edit_application import (
     apply_reviewed_source_edits,
+    draft_source_edit_plan,
     load_source_edit_plan,
 )
 from openrtl.adapters.canary import load_fifo_canary_evidence
@@ -54,6 +55,7 @@ __all__ = [
     "inspect_vcd",
     "analyze_fifo_waveform",
     "apply_reviewed_source_edits",
+    "draft_source_edit_plan",
     "fifo_repair_focus",
     "parse_jsonl_events",
     "propose_fifo_repairs",

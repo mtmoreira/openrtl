@@ -22,6 +22,7 @@ from openrtl.adapters import (
     analyze_fifo_waveform,
     apply_reviewed_source_edits,
     build_surfer_tool,
+    draft_source_edit_plan,
     fifo_repair_focus,
     inspect_vcd,
     load_fifo_canary_evidence,
@@ -125,9 +126,20 @@ def parser() -> argparse.ArgumentParser:
     )
     repair = subcommands.add_parser(
         "repair",
-        help="apply an explicitly reviewed repair to an isolated candidate",
+        help="draft or apply evidence-bound source edits",
     )
     repair_commands = repair.add_subparsers(dest="repair_command", required=True)
+    draft_source_edits = repair_commands.add_parser(
+        "draft-source-edits",
+        help="qualify an external edit specification into a review-required typed plan",
+    )
+    draft_source_edits.add_argument("--root", type=Path, default=Path.cwd())
+    draft_source_edits.add_argument("--proposal", type=Path, required=True)
+    draft_source_edits.add_argument("--debug-session", type=Path, required=True)
+    draft_source_edits.add_argument("--source", type=Path, required=True)
+    draft_source_edits.add_argument("--edit-spec", type=Path, required=True)
+    draft_source_edits.add_argument("--edit-plan-output", type=Path, required=True)
+    draft_source_edits.add_argument("--planning-report", type=Path, required=True)
     apply_source_edits = repair_commands.add_parser(
         "apply-source-edits",
         help="apply an approved evidence-bound source edit plan to a candidate",
@@ -221,6 +233,45 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _repair_command(arguments: argparse.Namespace) -> int:
+    if arguments.repair_command == "draft-source-edits":
+        root = arguments.root.resolve(strict=True)
+        plan_path = _contained_output(root, arguments.edit_plan_output)
+        report_path = _contained_output(root, arguments.planning_report)
+        input_paths = {
+            _contained_input(root, arguments.proposal),
+            _contained_input(root, arguments.debug_session),
+            _contained_input(root, arguments.source),
+            _contained_input(root, arguments.edit_spec),
+        }
+        if plan_path == report_path or plan_path in input_paths or report_path in input_paths:
+            raise ValueError("repair planning outputs must be separate from every input")
+        plan, planning_report = draft_source_edit_plan(
+            root,
+            proposal_path=arguments.proposal,
+            debug_session_path=arguments.debug_session,
+            source_path=arguments.source,
+            edit_spec_path=arguments.edit_spec,
+        )
+        _write_exact_planning_outputs(
+            (
+                (plan_path, plan.payload()),
+                (report_path, planning_report.payload()),
+            )
+        )
+        print(
+            json.dumps(
+                {
+                    "edit_plan": plan_path.relative_to(root).as_posix(),
+                    "edit_plan_digest": plan.content_digest,
+                    "planning_report": report_path.relative_to(root).as_posix(),
+                    "planning_report_payload": planning_report.payload(),
+                    "status": "awaiting_review",
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
     if arguments.repair_command != "apply-source-edits":
         raise AssertionError("argparse returned an unknown repair command")
     root = arguments.root.resolve(strict=True)
@@ -247,7 +298,7 @@ def _repair_command(arguments: argparse.Namespace) -> int:
     }
     if report_path in protected_paths:
         raise ValueError("repair application report must be separate from repair inputs and output")
-    report = apply_reviewed_source_edits(
+    application_report = apply_reviewed_source_edits(
         root,
         proposal_path=arguments.proposal,
         debug_session_path=arguments.debug_session,
@@ -261,8 +312,8 @@ def _repair_command(arguments: argparse.Namespace) -> int:
         ),
     )
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    _write_json(report_path, report.payload())
-    print(json.dumps(report.payload(), indent=2, sort_keys=True))
+    _write_json(report_path, application_report.payload())
+    print(json.dumps(application_report.payload(), indent=2, sort_keys=True))
     return 0
 
 
@@ -432,17 +483,32 @@ async def _launch_surfer(
 
 
 def _contained_output(root: Path, candidate: Path) -> Path:
-    output = candidate if candidate.is_absolute() else root / candidate
-    resolved = output.resolve()
-    try:
-        relative = resolved.relative_to(root)
-    except ValueError as error:
-        raise ValueError("waveform output must be contained by its root") from error
+    selected = candidate if candidate.is_absolute() else root / candidate
+    lexical = selected.absolute()
+    if not lexical.is_relative_to(root) or ".." in lexical.relative_to(root).parts:
+        raise ValueError("output must be contained by its root")
+    relative = lexical.relative_to(root)
     current = root
     for part in relative.parts:
         current /= part
         if current.exists() and current.is_symlink():
-            raise ValueError("waveform output must not traverse symlinks")
+            raise ValueError("output must not traverse symlinks")
+    return lexical
+
+
+def _contained_input(root: Path, candidate: Path) -> Path:
+    selected = candidate if candidate.is_absolute() else root / candidate
+    lexical = selected.absolute()
+    if not lexical.is_relative_to(root) or ".." in lexical.relative_to(root).parts:
+        raise ValueError("repair input must be contained by its root")
+    current = root
+    for part in lexical.relative_to(root).parts:
+        current /= part
+        if current.is_symlink():
+            raise ValueError("repair input must not traverse symlinks")
+    resolved = selected.resolve(strict=True)
+    if not resolved.is_file():
+        raise ValueError("repair input must be a regular file")
     return resolved
 
 
@@ -451,6 +517,26 @@ def _write_json(path: Path, payload: object) -> None:
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+
+
+def _write_exact_planning_outputs(
+    outputs: tuple[tuple[Path, object], ...],
+) -> None:
+    encoded = tuple(
+        (
+            path,
+            (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode(),
+        )
+        for path, payload in outputs
+    )
+    for path, content in encoded:
+        if path.exists():
+            if path.is_symlink() or not path.is_file() or path.read_bytes() != content:
+                raise ValueError("repair planning output contains unrecognized content")
+    for path, content in encoded:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if not path.exists():
+            path.write_bytes(content)
 
 
 def validate_fifo_canary(root: Path) -> tuple[str, ...]:

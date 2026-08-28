@@ -51,6 +51,10 @@ evidence attaches to the same artifact graph and requirement IDs.
   without modifying production RTL. Both traces and their causal-signal focus
   must extend beyond the finding edge so the post-edge difference is visibly
   inspectable rather than existing only at the terminal VCD timestamp.
+- External exact-replacement specifications can be qualified into typed,
+  digest-bound edit plans only after proposal, failed-session, source-anchor,
+  change, and byte-range validation. The resulting planning report remains
+  `awaiting_review`; it does not authorize or apply an edit.
 
 ## Convergence
 

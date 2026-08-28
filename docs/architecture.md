@@ -91,6 +91,12 @@ linkage before writing a separate candidate. Verilator qualification retains
 the plan, failing and repaired waveforms, and a hash-bound comparison;
 production promotion remains outside this boundary.
 
+Plan qualification precedes that approval boundary. A generic, non-applying
+planner converts an external exact-replacement specification into the typed
+plan only after checking the proposal, failed session, source digest, change
+identities, and anchored byte ranges. Its separate `awaiting_review` report
+binds all input and output digests; it neither approves nor applies the plan.
+
 ## Reuse and community boundary
 
 A passing design produces a local package candidate containing interfaces,

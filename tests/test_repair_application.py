@@ -12,6 +12,7 @@ from examples.fifo.faults import render_fifo_trace
 from openrtl.adapters import (
     analyze_fifo_waveform,
     apply_reviewed_source_edits,
+    draft_source_edit_plan,
     propose_fifo_repairs,
 )
 from openrtl.application import RepairApproval, build_source_edit_plan
@@ -65,12 +66,17 @@ class ReviewedRepairApplicationTest(unittest.TestCase):
             json.dumps(proposal.payload(), indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
-        self.edit_plan = build_source_edit_plan(
-            proposal_id=proposal.proposal_id,
-            debug_session_id=report.session_id,
-            source_path=self.source.relative_to(self.root).as_posix(),
-            source=self.source.read_bytes(),
-            edit_specs=tuple(spec["edits"]),
+        self.edit_spec_path = self.root / "build/fault/edit-spec.json"
+        self.edit_spec_path.write_text(
+            json.dumps(spec, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        self.edit_plan, self.planning_report = draft_source_edit_plan(
+            self.root,
+            proposal_path=self.proposal_path,
+            debug_session_path=self.debug_path,
+            source_path=self.source,
+            edit_spec_path=self.edit_spec_path,
         )
         self.edit_plan_path = self.root / "build/fault/edit-plan.json"
         self.edit_plan_path.write_text(
@@ -84,6 +90,68 @@ class ReviewedRepairApplicationTest(unittest.TestCase):
             self.edit_plan.content_digest,
             "Reviewed the linked edge and exact sequential source anchor.",
         )
+
+    def test_draft_plan_is_evidence_bound_and_requires_separate_review(self) -> None:
+        payload = self.planning_report.payload()
+
+        self.assertEqual(payload["status"], "awaiting_review")
+        self.assertFalse(payload["applies_changes"])
+        self.assertTrue(payload["review"]["approval_required"])
+        self.assertEqual(
+            payload["edit_plan"]["content_digest"],
+            self.edit_plan.content_digest,
+        )
+        self.assertEqual(payload["proposal"]["proposal_id"], self.proposal_id)
+        self.assertFalse((self.root / "build/application/repaired.sv").exists())
+
+    def test_draft_rejects_absent_change_and_unanchored_edit(self) -> None:
+        spec = json.loads(self.edit_spec_path.read_text(encoding="utf-8"))
+        spec["edits"][0]["change_id"] = "repair.change.absent"
+        self.edit_spec_path.write_text(json.dumps(spec), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "absent proposal change"):
+            draft_source_edit_plan(
+                self.root,
+                proposal_path=self.proposal_path,
+                debug_session_path=self.debug_path,
+                source_path=self.source,
+                edit_spec_path=self.edit_spec_path,
+            )
+
+        spec["edits"][0].update(
+            {
+                "change_id": "repair.change.level",
+                "edit_id": "repair.edit.unanchored-module-name",
+                "expected_before": "module sync_fifo",
+                "replacement": "module changed_fifo",
+            }
+        )
+        self.edit_spec_path.write_text(json.dumps(spec), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "outside its reviewed source anchors"):
+            draft_source_edit_plan(
+                self.root,
+                proposal_path=self.proposal_path,
+                debug_session_path=self.debug_path,
+                source_path=self.source,
+                edit_spec_path=self.edit_spec_path,
+            )
+
+    def test_planning_report_binds_exact_edit_spec_file_bytes(self) -> None:
+        original_plan_digest = self.edit_plan.content_digest
+        original_spec_digest = self.planning_report.edit_spec_digest
+        spec = json.loads(self.edit_spec_path.read_text(encoding="utf-8"))
+        self.edit_spec_path.write_text(json.dumps(spec) + "\n", encoding="utf-8")
+
+        plan, planning = draft_source_edit_plan(
+            self.root,
+            proposal_path=self.proposal_path,
+            debug_session_path=self.debug_path,
+            source_path=self.source,
+            edit_spec_path=self.edit_spec_path,
+        )
+
+        self.assertEqual(plan.content_digest, original_plan_digest)
+        self.assertNotEqual(planning.edit_spec_digest, original_spec_digest)
+        self.assertNotEqual(planning.planning_id, self.planning_report.planning_id)
 
     def test_exact_approval_writes_separate_candidate_and_application_report(self) -> None:
         output = self.root / "build/application/repaired-sync-fifo.sv"
@@ -359,6 +427,125 @@ class ReviewedRepairApplicationTest(unittest.TestCase):
         )
         self.assertEqual(payload, retained)
         self.assertEqual(payload["status"], "applied_to_candidate")
+
+    def test_cli_drafts_plan_without_applying_it(self) -> None:
+        output = io.StringIO()
+        with redirect_stdout(output):
+            result = main(
+                (
+                    "repair",
+                    "draft-source-edits",
+                    "--root",
+                    str(self.root),
+                    "--proposal",
+                    str(self.proposal_path),
+                    "--debug-session",
+                    str(self.debug_path),
+                    "--source",
+                    str(self.source),
+                    "--edit-spec",
+                    str(self.edit_spec_path),
+                    "--edit-plan-output",
+                    "build/planning/edit-plan.json",
+                    "--planning-report",
+                    "build/planning/report.json",
+                )
+            )
+
+        self.assertEqual(result, 0)
+        summary = json.loads(output.getvalue())
+        report = json.loads(
+            (self.root / "build/planning/report.json").read_text(encoding="utf-8")
+        )
+        plan = json.loads(
+            (self.root / "build/planning/edit-plan.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(summary["status"], "awaiting_review")
+        self.assertEqual(report["status"], "awaiting_review")
+        self.assertEqual(
+            report["edit_plan"]["content_digest"],
+            self.edit_plan.content_digest,
+        )
+        self.assertEqual(plan, self.edit_plan.payload())
+        self.assertFalse((self.root / "build/application/repaired.sv").exists())
+
+    def test_cli_planning_outputs_cannot_overwrite_inputs(self) -> None:
+        with self.assertRaisesRegex(ValueError, "outputs must be separate"):
+            main(
+                (
+                    "repair",
+                    "draft-source-edits",
+                    "--root",
+                    str(self.root),
+                    "--proposal",
+                    str(self.proposal_path),
+                    "--debug-session",
+                    str(self.debug_path),
+                    "--source",
+                    str(self.source),
+                    "--edit-spec",
+                    str(self.edit_spec_path),
+                    "--edit-plan-output",
+                    str(self.edit_spec_path),
+                    "--planning-report",
+                    "build/planning/report.json",
+                )
+            )
+
+    def test_cli_planning_is_idempotent_only_for_exact_outputs(self) -> None:
+        arguments = (
+            "repair",
+            "draft-source-edits",
+            "--root",
+            str(self.root),
+            "--proposal",
+            str(self.proposal_path),
+            "--debug-session",
+            str(self.debug_path),
+            "--source",
+            str(self.source),
+            "--edit-spec",
+            str(self.edit_spec_path),
+            "--edit-plan-output",
+            "build/planning/edit-plan.json",
+            "--planning-report",
+            "build/planning/report.json",
+        )
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(main(arguments), 0)
+            self.assertEqual(main(arguments), 0)
+        report = self.root / "build/planning/report.json"
+        report.write_text("{}\n", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "unrecognized content"):
+            main(arguments)
+
+    def test_cli_planning_rejects_symlinked_output(self) -> None:
+        target = self.root / "build/planning-target.json"
+        target.write_text("protected\n", encoding="utf-8")
+        link = self.root / "build/planning-link.json"
+        link.symlink_to(target)
+        with self.assertRaisesRegex(ValueError, "must not traverse symlinks"):
+            main(
+                (
+                    "repair",
+                    "draft-source-edits",
+                    "--root",
+                    str(self.root),
+                    "--proposal",
+                    str(self.proposal_path),
+                    "--debug-session",
+                    str(self.debug_path),
+                    "--source",
+                    str(self.source),
+                    "--edit-spec",
+                    str(self.edit_spec_path),
+                    "--edit-plan-output",
+                    str(link),
+                    "--planning-report",
+                    "build/planning-report.json",
+                )
+            )
+        self.assertEqual(target.read_text(encoding="utf-8"), "protected\n")
 
     def test_cli_report_cannot_overwrite_repair_input_or_output(self) -> None:
         original_source = self.source.read_text(encoding="utf-8")
