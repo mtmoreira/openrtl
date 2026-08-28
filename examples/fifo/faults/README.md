@@ -25,3 +25,14 @@ At the 25 ns marker, inspect `wr_valid`, `wr_ready`, `write_accepted`, and
 `level`. The handshake is accepted, but the post-edge level remains `1`; the
 proposal therefore points to the sequential count-update lines rather than the
 handshake assignments.
+
+`sync_fifo_level_fault.sv` is the equivalent intentional RTL fixture. Run the
+explicit Verilator qualification to produce failing and repaired waveforms:
+
+```sh
+uv run python tools/fifo_repair_application_case.py \
+  --output-directory build/fifo-repair-application
+```
+
+The reviewed edit is written only to the build directory. The tracked fault
+fixture and `examples/fifo/rtl/sync_fifo.sv` remain unchanged.

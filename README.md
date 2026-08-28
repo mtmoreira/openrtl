@@ -105,6 +105,25 @@ uv run openrtl waveform propose-fifo-repair \
   --output-directory build/fifo-repair-proposal
 ```
 
+Apply the reviewed FIFO level change only to an isolated candidate by naming
+the exact proposal and change identities:
+
+```console
+uv run openrtl repair apply-fifo-level \
+  --proposal build/fifo-repair-application/proposal.json \
+  --debug-session build/fifo-repair-application/debug-session.json \
+  --source examples/fifo/faults/sync_fifo_level_fault.sv \
+  --output build/fifo-repair-application/candidate/sync_fifo.sv \
+  --application-report build/fifo-repair-application/application.json \
+  --approve-proposal REPAIR_PROPOSAL_ID \
+  --approve-change repair.change.level \
+  --review-note "Reviewed the linked edge and exact source anchors."
+```
+
+The command fails on stale evidence or source and never edits its input. The
+opt-in `tools/fifo_repair_application_case.py` qualification retains the
+failing and repaired Verilator waveforms and their hash-bound comparison.
+
 The proposal is hash-bound to the retained debug session and covers every
 finding with matching requirement, source, and waveform anchors. It never
 applies an edit. Run the deterministic demonstration without modifying the

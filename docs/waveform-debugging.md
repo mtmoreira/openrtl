@@ -131,6 +131,31 @@ Surfer 0.7 does not accept OpenRTL's former `zoom_to`, time-qualified
 manually to 24–26 ns and place the cursor at 25 ns. Those exact values are also
 recorded as `focus-window-fs` and `focus-markers-fs` comments in `focus.sucl`.
 
+## Compare a reviewed repair before and after
+
+The opt-in repair qualification runs an actual faulty RTL fixture, applies the
+exact reviewed level change to a separate candidate, then reruns the same
+deterministic cocotb test:
+
+```sh
+uv run python tools/fifo_repair_application_case.py \
+  --output-directory build/fifo-repair-application
+```
+
+Open `before/waves.vcd` with `focus-before.sucl`, then
+`repaired/waves.vcd` with `focus-after.sucl`. At the accepted-write edge,
+compare these signals:
+
+1. `sync_fifo.write_accepted` is `1` in both runs;
+2. `sync_fifo.read_accepted` is `0` in both runs;
+3. `sync_fifo.level` remains `0` in the failing run and advances to `1` in the
+   repaired run.
+
+The retained `comparison.json` requires the original linked finding and an
+empty repaired finding list. `evidence.json` binds every log, results file,
+waveform, focus, proposal, application report, and repaired source by SHA-256.
+The workflow does not launch Surfer or modify production RTL.
+
 ## Prepare and open a Surfer focus
 
 Generate reusable inspection and viewer state:

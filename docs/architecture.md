@@ -82,6 +82,13 @@ the session's source and waveform anchors. Block-specific adapters may propose
 bounded strategies, but proposals are non-applying review artifacts; RTL edits
 remain a later reviewed workflow action followed by deterministic validation.
 
+Reviewed repair application is a separate candidate-only boundary. An exact
+proposal ID and change allowlist authorize one bounded strategy only after the
+debug-session and source-anchor digests are reverified. Application records the
+changed lines and before/after source digests without modifying the reviewed
+source. Verilator qualification retains failing and repaired waveforms plus a
+hash-bound comparison; production promotion remains outside this boundary.
+
 ## Reuse and community boundary
 
 A passing design produces a local package candidate containing interfaces,

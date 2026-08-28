@@ -20,6 +20,7 @@ from agentrig.integrations import CommandInput
 from openrtl.adapters import (
     LocalDesignCatalog,
     analyze_fifo_waveform,
+    apply_reviewed_fifo_level_repair,
     build_surfer_tool,
     fifo_repair_focus,
     inspect_vcd,
@@ -32,6 +33,7 @@ from openrtl.application import (
     FIFO_RUN_REF,
     FIFO_SOURCE_REFS,
     OpenRTLWorkflow,
+    RepairApproval,
     run_scripted_fifo,
 )
 from openrtl.domain import InteractionMode
@@ -120,6 +122,28 @@ def parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("build/fifo-repair-proposal"),
     )
+    repair = subcommands.add_parser(
+        "repair",
+        help="apply an explicitly reviewed repair to an isolated candidate",
+    )
+    repair_commands = repair.add_subparsers(dest="repair_command", required=True)
+    apply_fifo_level = repair_commands.add_parser(
+        "apply-fifo-level",
+        help="apply the exact reviewed FIFO level change to a candidate copy",
+    )
+    apply_fifo_level.add_argument("--root", type=Path, default=Path.cwd())
+    apply_fifo_level.add_argument("--proposal", type=Path, required=True)
+    apply_fifo_level.add_argument("--debug-session", type=Path, required=True)
+    apply_fifo_level.add_argument("--source", type=Path, required=True)
+    apply_fifo_level.add_argument("--output", type=Path, required=True)
+    apply_fifo_level.add_argument("--application-report", type=Path, required=True)
+    apply_fifo_level.add_argument("--approve-proposal", required=True)
+    apply_fifo_level.add_argument(
+        "--approve-change",
+        action="append",
+        required=True,
+    )
+    apply_fifo_level.add_argument("--review-note", required=True)
     return root
 
 
@@ -189,7 +213,49 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if arguments.command == "waveform":
         return _waveform_command(arguments)
+    if arguments.command == "repair":
+        return _repair_command(arguments)
     raise AssertionError("argparse returned an unknown command")
+
+
+def _repair_command(arguments: argparse.Namespace) -> int:
+    if arguments.repair_command != "apply-fifo-level":
+        raise AssertionError("argparse returned an unknown repair command")
+    root = arguments.root.resolve(strict=True)
+    report_path = _contained_output(root, arguments.application_report)
+    candidate_path = _contained_output(root, arguments.output)
+    protected_paths = {
+        candidate_path,
+        (arguments.source if arguments.source.is_absolute() else root / arguments.source).resolve(
+            strict=True
+        ),
+        (arguments.proposal if arguments.proposal.is_absolute() else root / arguments.proposal).resolve(
+            strict=True
+        ),
+        (
+            arguments.debug_session
+            if arguments.debug_session.is_absolute()
+            else root / arguments.debug_session
+        ).resolve(strict=True),
+    }
+    if report_path in protected_paths:
+        raise ValueError("repair application report must be separate from repair inputs and output")
+    report = apply_reviewed_fifo_level_repair(
+        root,
+        proposal_path=arguments.proposal,
+        debug_session_path=arguments.debug_session,
+        source_path=arguments.source,
+        output_path=arguments.output,
+        approval=RepairApproval(
+            arguments.approve_proposal,
+            tuple(arguments.approve_change),
+            arguments.review_note,
+        ),
+    )
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    _write_json(report_path, report.payload())
+    print(json.dumps(report.payload(), indent=2, sort_keys=True))
+    return 0
 
 
 def _add_waveform_selection_arguments(command: argparse.ArgumentParser) -> None:

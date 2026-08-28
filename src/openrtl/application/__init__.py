@@ -33,6 +33,10 @@ from openrtl.application.repairs import (
     RepairProposal,
     build_repair_proposal,
 )
+from openrtl.application.repair_execution import (
+    RepairApplicationReport,
+    RepairApproval,
+)
 from openrtl.application.scripted import (
     FIFO_REQUIREMENTS,
     FIFO_RUN_REF,
@@ -61,6 +65,8 @@ __all__ = [
     "ReviewKind",
     "ReviewReport",
     "RepairChange",
+    "RepairApplicationReport",
+    "RepairApproval",
     "RepairProposal",
     "ScriptedFifoResult",
     "StageOutcome",
