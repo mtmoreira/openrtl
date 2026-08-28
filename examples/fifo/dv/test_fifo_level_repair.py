@@ -22,5 +22,9 @@ async def accepted_write_increments_level(dut: object) -> None:
     assert int(dut.wr_ready.value) == 1
     await RisingEdge(dut.clk)
     await ReadOnly()
-    assert int(dut.level.value) == 1
+    observed_level = int(dut.level.value)
     await Timer(1, unit="ns")
+    dut.wr_valid.value = 0
+    await RisingEdge(dut.clk)
+    await ReadOnly()
+    assert observed_level == 1

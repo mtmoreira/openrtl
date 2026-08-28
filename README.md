@@ -125,7 +125,9 @@ The command fails on stale evidence, source, edit bytes, anchors, or approval
 and never edits its input. Concrete repair text is carried by the reviewed edit
 plan, not hardcoded in Python. The opt-in
 `tools/fifo_repair_application_case.py` qualification retains the edit plan,
-failing and repaired Verilator waveforms, and their hash-bound comparison.
+failing and repaired Verilator waveforms, and their hash-bound comparison. Both
+traces extend beyond the finding edge, and qualification rejects focus collateral
+that does not expose a persistent, visually distinct post-edge level.
 
 The proposal is hash-bound to the retained debug session and covers every
 finding with matching requirement, source, and waveform anchors. It never

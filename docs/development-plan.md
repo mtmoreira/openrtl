@@ -48,7 +48,9 @@ evidence attaches to the same artifact graph and requirement IDs.
   Concrete FIFO instructions reside in a reviewable example artifact rather
   than Python application code. The same deterministic Verilator stimulus
   retains failing and repaired VCDs and proves the linked finding disappears
-  without modifying production RTL.
+  without modifying production RTL. Both traces and their causal-signal focus
+  must extend beyond the finding edge so the post-edge difference is visibly
+  inspectable rather than existing only at the terminal VCD timestamp.
 
 ## Convergence
 

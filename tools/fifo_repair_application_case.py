@@ -23,6 +23,7 @@ from openrtl.adapters import (  # noqa: E402
     analyze_fifo_waveform,
     apply_reviewed_source_edits,
     fifo_repair_focus,
+    inspect_vcd,
     propose_fifo_repairs,
     surfer_command_file,
 )
@@ -35,6 +36,21 @@ from tools.verilator_canary import (  # noqa: E402
 
 
 _MARKER_TEXT = "openrtl-fifo-repair-application-v2\n"
+_VISIBLE_SIGNAL_SUFFIXES = frozenset(
+    {
+        "clk",
+        "empty",
+        "full",
+        "level",
+        "rd_ready",
+        "rd_valid",
+        "read_accepted",
+        "rst_n",
+        "wr_ready",
+        "wr_valid",
+        "write_accepted",
+    }
+)
 _KNOWN_OUTPUTS = frozenset(
     {
         ".openrtl-fifo-repair-application-owner",
@@ -165,21 +181,24 @@ def main(arguments: Sequence[str] | None = None) -> int:
     )
     if not after_report.passed or after_report.findings:
         raise RuntimeError("repaired FIFO still has waveform findings")
-    after_focus_path.write_text(
-        surfer_command_file(
-            WaveformFocus(
-                after.waveform.relative_to(root).as_posix(),
-                before_focus.start_fs,
-                min(before_focus.end_fs, after_report.waveform_anchor.end_fs),
-                before_focus.signals,
-                tuple(
-                    value
-                    for value in before_focus.markers_fs
-                    if value <= after_report.waveform_anchor.end_fs
-                ),
-            )
+    after_focus = WaveformFocus(
+        after.waveform.relative_to(root).as_posix(),
+        before_focus.start_fs,
+        min(before_focus.end_fs, after_report.waveform_anchor.end_fs),
+        before_focus.signals,
+        tuple(
+            value
+            for value in before_focus.markers_fs
+            if value <= after_report.waveform_anchor.end_fs
         ),
-        encoding="utf-8",
+    )
+    after_focus_path.write_text(surfer_command_file(after_focus), encoding="utf-8")
+    visual_evidence = _verify_visible_waveform_difference(
+        root,
+        before,
+        after,
+        before_focus,
+        after_focus,
     )
 
     comparison: dict[str, Any] = {
@@ -195,8 +214,9 @@ def main(arguments: Sequence[str] | None = None) -> int:
             "waveform": before.waveform.relative_to(root).as_posix(),
         },
         "proposal_id": proposal.proposal_id,
-        "schema": "openrtl.repair-comparison.v1",
+        "schema": "openrtl.repair-comparison.v2",
         "status": "validated",
+        "visual_evidence": visual_evidence,
     }
     _write_json(comparison_path, comparison)
     evidence_path = output / "evidence.json"
@@ -228,7 +248,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
         },
         "qualified_application_id": application.application_id,
         "qualified_edit_plan_digest": edit_plan.content_digest,
-        "schema": "openrtl.repair-application-evidence.v2",
+        "schema": "openrtl.repair-application-evidence.v3",
         "status": "passed",
         "toolchain": {
             "cocotb_config": str(toolchain.cocotb_config),
@@ -249,8 +269,9 @@ def main(arguments: Sequence[str] | None = None) -> int:
         "edit_plan_digest": edit_plan.content_digest,
         "proposal": proposal_path.relative_to(root).as_posix(),
         "repaired_finding_ids": tuple(value.finding_id for value in after_report.findings),
-        "schema": "openrtl.fifo-repair-application-case.v2",
+        "schema": "openrtl.fifo-repair-application-case.v3",
         "status": "passed",
+        "visual_evidence": visual_evidence,
     }
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0
@@ -409,6 +430,103 @@ def _verify_attempt(attempt: SimulationAttempt, *, expect_pass: bool) -> None:
         or not any(attempt.simulation_build.iterdir())
     ):
         raise RuntimeError("FIFO repair simulation build is missing")
+
+
+def _verify_visible_waveform_difference(
+    root: Path,
+    before: SimulationAttempt,
+    after: SimulationAttempt,
+    before_focus: WaveformFocus,
+    after_focus: WaveformFocus,
+) -> dict[str, Any]:
+    if (
+        before_focus.start_fs != after_focus.start_fs
+        or before_focus.end_fs != after_focus.end_fs
+        or before_focus.markers_fs != after_focus.markers_fs
+        or before_focus.signals != after_focus.signals
+    ):
+        raise RuntimeError("before and repaired waveform focus must be directly comparable")
+    if len(before_focus.markers_fs) != 1:
+        raise RuntimeError("visible repair evidence requires one finding marker")
+    marker_fs = before_focus.markers_fs[0]
+    if not before_focus.start_fs < marker_fs < before_focus.end_fs:
+        raise RuntimeError("repair finding must be inside the visible focus window")
+    selected_suffixes = {
+        signal.rpartition(".")[2] for signal in before_focus.signals
+    }
+    if not _VISIBLE_SIGNAL_SUFFIXES.issubset(selected_suffixes):
+        raise RuntimeError("repair focus omits causal FIFO signals")
+
+    before_index, before_inspection = inspect_vcd(
+        root,
+        before.waveform,
+        signals=before_focus.signals,
+    )
+    after_index, after_inspection = inspect_vcd(
+        root,
+        after.waveform,
+        signals=after_focus.signals,
+    )
+    if (
+        before_inspection.trace_end_fs <= before_focus.end_fs
+        or after_inspection.trace_end_fs <= after_focus.end_fs
+    ):
+        raise RuntimeError("repair traces must extend beyond the visible focus window")
+
+    hierarchy = before_focus.signals[0].rpartition(".")[0]
+    if not hierarchy or any(
+        signal.rpartition(".")[0] != hierarchy for signal in before_focus.signals
+    ):
+        raise RuntimeError("repair focus signals must share one hierarchy")
+    clock = f"{hierarchy}.clk"
+    level = f"{hierarchy}.level"
+    for index in (before_index, after_index):
+        if not index.transitions(clock, marker_fs + 1, before_focus.end_fs):
+            raise RuntimeError("repair focus requires a clock transition after the finding")
+
+    before_level = _binary_integer(before_index.value_at(level, marker_fs), level)
+    repaired_level = _binary_integer(after_index.value_at(level, marker_fs), level)
+    before_visible_level = _binary_integer(
+        before_index.value_at(level, before_focus.end_fs),
+        level,
+    )
+    repaired_visible_level = _binary_integer(
+        after_index.value_at(level, after_focus.end_fs),
+        level,
+    )
+    if (
+        before_level != before_visible_level
+        or repaired_level != repaired_visible_level
+        or before_level == repaired_level
+    ):
+        raise RuntimeError("repair level difference is not visible across the focus window")
+
+    return {
+        "before": {
+            "level_at_focus_end": before_visible_level,
+            "level_at_marker": before_level,
+            "trace_end_fs": before_inspection.trace_end_fs,
+        },
+        "focus": {
+            "end_fs": before_focus.end_fs,
+            "marker_fs": marker_fs,
+            "signals": before_focus.signals,
+            "start_fs": before_focus.start_fs,
+        },
+        "repaired": {
+            "level_at_focus_end": repaired_visible_level,
+            "level_at_marker": repaired_level,
+            "trace_end_fs": after_inspection.trace_end_fs,
+        },
+        "schema": "openrtl.repair-visual-comparison.v1",
+        "status": "visibly_distinct",
+    }
+
+
+def _binary_integer(value: str | None, signal: str) -> int:
+    if value is None or not value or any(character not in "01" for character in value):
+        raise RuntimeError(f"repair visual evidence signal is not binary: {signal}")
+    return int(value, 2)
 
 
 def _file_evidence(root: Path, path: Path) -> dict[str, str | int]:

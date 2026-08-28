@@ -144,20 +144,33 @@ uv run python tools/fifo_repair_application_case.py \
 ```
 
 Open `before/waves.vcd` with `focus-before.sucl`, then
-`repaired/waves.vcd` with `focus-after.sucl`. At the accepted-write edge,
-compare these signals:
+`repaired/waves.vcd` with `focus-after.sucl`. Both traces deliberately continue
+through a later clock transition, and both focus files keep the finding strictly
+inside a padded pre/post-edge window. At the accepted-write edge, compare these
+signals in order:
 
-1. `sync_fifo.write_accepted` is `1` in both runs;
-2. `sync_fifo.read_accepted` is `0` in both runs;
-3. `sync_fifo.level` remains `0` in the failing run and advances to `1` in the
-   repaired run.
+1. `sync_fifo.clk` establishes the sampling edge;
+2. `sync_fifo.wr_valid`, `sync_fifo.wr_ready`, and
+   `sync_fifo.write_accepted` are `1` in both runs;
+3. `sync_fifo.rd_valid`, `sync_fifo.rd_ready`, and
+   `sync_fifo.read_accepted` exclude a simultaneous read;
+4. `sync_fifo.level` remains `0` across the post-edge interval in the failing
+   run and remains `1` across that interval in the repaired run;
+5. `sync_fifo.empty` stays asserted only in the failing run.
+
+Surfer 0.7 adds these signals but does not apply the recorded viewport. Read the
+`focus-window-fs` comment and zoom manually so that time remains visible on both
+sides of `focus-markers-fs`. The generated `comparison.json` independently
+requires each trace to extend beyond that window, a later clock transition to
+be present, and the differing `level` values to persist through the focus end.
 
 Inspect `edit-plan.json` before `application.json`: its exact expected and
 replacement bytes, ranges, source digest, and canonical digest are the approval
-boundary. The retained `comparison.json` requires the original linked finding
-and an empty repaired finding list. `evidence.json` binds every log, results
-file, waveform, focus, proposal, edit plan, application report, and repaired
-source by SHA-256. The workflow does not launch Surfer or modify production RTL.
+boundary. The retained `comparison.json` requires the original linked finding,
+an empty repaired finding list, and `visual_evidence.status` equal to
+`visibly_distinct`. `evidence.json` binds every log, results file, waveform,
+focus, proposal, edit plan, application report, and repaired source by SHA-256.
+The workflow does not launch Surfer or modify production RTL.
 
 ## Prepare and open a Surfer focus
 

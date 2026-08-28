@@ -129,18 +129,52 @@ def propose_fifo_repairs(
 
 
 def fifo_repair_focus(report: DebugSessionReport) -> WaveformFocus:
-    """Select the minimum waveform window and signals covering all findings."""
+    """Select causal FIFO signals with visible context around all findings."""
 
     if not report.findings:
         raise ValueError("repair focus requires debug findings")
     anchors = tuple(value.waveform_anchor for value in report.findings)
-    signals = tuple(
+    observation_times = tuple(
+        sorted({value.timestamp_fs for value in report.observations})
+    )
+    intervals = tuple(
+        later - earlier
+        for earlier, later in zip(observation_times, observation_times[1:])
+        if later > earlier
+    )
+    padding_fs = min(intervals) // 2 if intervals else 0
+    selected_suffixes = {
+        "clk",
+        "rst_n",
+        "wr_valid",
+        "wr_ready",
+        "write_accepted",
+        "rd_valid",
+        "rd_ready",
+        "read_accepted",
+        "level",
+        "full",
+        "empty",
+    }
+    causal_signals = tuple(
+        signal
+        for signal in report.waveform_anchor.signals
+        if signal.rpartition(".")[2] in selected_suffixes
+    )
+    finding_signals = tuple(
         dict.fromkeys(signal for anchor in anchors for signal in anchor.signals)
     )
+    signals = tuple(dict.fromkeys((*causal_signals, *finding_signals)))
     return WaveformFocus(
         report.trace_uri,
-        min(value.start_fs for value in anchors),
-        max(value.end_fs for value in anchors),
+        max(
+            report.waveform_anchor.start_fs,
+            min(value.start_fs for value in anchors) - padding_fs,
+        ),
+        min(
+            report.waveform_anchor.end_fs,
+            max(value.end_fs for value in anchors) + padding_fs,
+        ),
         signals,
         tuple(sorted({marker for value in anchors for marker in value.markers_fs})),
     )

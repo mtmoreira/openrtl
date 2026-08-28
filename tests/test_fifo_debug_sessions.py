@@ -175,7 +175,22 @@ class FifoDebugSessionTest(unittest.TestCase):
         self.assertEqual(change.waveform_anchors[0].markers_fs, (25_000_000,))
         focus = fifo_repair_focus(report)
         self.assertEqual((focus.start_fs, focus.end_fs), (24_000_000, 26_000_000))
-        self.assertIn("sync_fifo.level", focus.signals)
+        self.assertEqual(
+            focus.signals,
+            (
+                "sync_fifo.clk",
+                "sync_fifo.rst_n",
+                "sync_fifo.wr_valid",
+                "sync_fifo.wr_ready",
+                "sync_fifo.write_accepted",
+                "sync_fifo.rd_valid",
+                "sync_fifo.rd_ready",
+                "sync_fifo.read_accepted",
+                "sync_fifo.level",
+                "sync_fifo.full",
+                "sync_fifo.empty",
+            ),
+        )
 
     def test_repair_context_is_attached_to_diagnosis_engineer_plan(self) -> None:
         self.trace.write_text(render_fifo_trace(level_update_fault=True), encoding="utf-8")
@@ -221,6 +236,27 @@ class FifoDebugSessionTest(unittest.TestCase):
         self.assertEqual(invocation.context.items, (proposal.context_item,))
         self.assertEqual(invocation.context.items[0].item_type, "debug.session")
 
+    def test_repair_focus_keeps_clock_context_after_the_finding_edge(self) -> None:
+        self.trace.write_text(render_fifo_trace(level_update_fault=True), encoding="utf-8")
+        report = analyze_fifo_waveform(
+            self.root,
+            self.trace,
+            start_fs=10_000_000,
+            end_fs=30_000_000,
+            rtl_path=Path("examples/fifo/rtl/sync_fifo.sv"),
+        )
+
+        focus = fifo_repair_focus(report)
+
+        self.assertEqual(focus.markers_fs, (25_000_000,))
+        self.assertEqual((focus.start_fs, focus.end_fs), (19_000_000, 30_000_000))
+        self.assertLess(focus.start_fs, focus.markers_fs[0])
+        self.assertGreater(focus.end_fs, focus.markers_fs[0])
+        self.assertIn("sync_fifo.clk", focus.signals)
+        self.assertIn("sync_fifo.wr_valid", focus.signals)
+        self.assertIn("sync_fifo.wr_ready", focus.signals)
+        self.assertIn("sync_fifo.level", focus.signals)
+
     def test_repair_cli_retains_session_proposal_and_surfer_focus(self) -> None:
         self.trace.write_text(render_fifo_trace(level_update_fault=True), encoding="utf-8")
         output = io.StringIO()
@@ -251,6 +287,9 @@ class FifoDebugSessionTest(unittest.TestCase):
         self.assertEqual(payload, retained)
         self.assertTrue((self.root / "build/repair/debug-session.json").is_file())
         commands = (self.root / "build/repair/focus.sucl").read_text(encoding="utf-8")
+        self.assertIn("variable_add sync_fifo.clk", commands)
+        self.assertIn("variable_add sync_fifo.wr_valid", commands)
+        self.assertIn("variable_add sync_fifo.wr_ready", commands)
         self.assertIn("variable_add sync_fifo.level", commands)
         self.assertIn("# focus-window-fs: 24000000 26000000", commands)
         self.assertIn("# focus-markers-fs: 25000000", commands)
