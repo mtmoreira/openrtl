@@ -1,0 +1,222 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "m14.repair.application",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/repair-case/application.json",
+      "media_type": "application/json",
+      "producer_id": "openrtl.repair-application.v1",
+      "review_state": "validated",
+      "schema": "openrtl.repair-application.v1",
+      "sha256": "fdf0ed6e9283aa68bc2935450c8916e40b1ef2de44eb3f3f48cfdf6a909efdb5",
+      "size_bytes": 870
+    },
+    {
+      "artifact_id": "m14.repair.before-log",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/repair-case/before/run.log",
+      "media_type": "text/plain",
+      "producer_id": "verilator.cocotb",
+      "review_state": "validated-expected-failure",
+      "schema": "openrtl.bounded-log.v1",
+      "sha256": "2deb03e3fffa04484de17f86d1a392453b7064baecbc728a050c5d0a81485ef2",
+      "size_bytes": 13447
+    },
+    {
+      "artifact_id": "m14.repair.before-results",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/repair-case/before/results.xml",
+      "media_type": "application/xml",
+      "producer_id": "cocotb.junit",
+      "review_state": "validated-expected-failure",
+      "schema": "junit.test-results",
+      "sha256": "b7a714cf15dbbb2e81ec0e448ac02d5dab6780a90d069aa12cdb2c10fcb5c3fa",
+      "size_bytes": 531
+    },
+    {
+      "artifact_id": "m14.repair.before-waveform",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/repair-case/before/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer_id": "verilator.trace",
+      "review_state": "validated-expected-failure",
+      "schema": "ieee.vcd",
+      "sha256": "97a154f333c6adaf1398bd797568da2fba1e467a10beafa85779402ab7094061",
+      "size_bytes": 1815
+    },
+    {
+      "artifact_id": "m14.repair.comparison",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/repair-case/comparison.json",
+      "media_type": "application/json",
+      "producer_id": "openrtl.fifo-repair-application-case.v1",
+      "review_state": "validated",
+      "schema": "openrtl.repair-comparison.v1",
+      "sha256": "a0be504b4ea1ac777a45b8af84e0950ebe4669a47ff1714b4c8940cb6ad39bd1",
+      "size_bytes": 495
+    },
+    {
+      "artifact_id": "m14.repair.debug-session",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/repair-case/debug-session.json",
+      "media_type": "application/json",
+      "producer_id": "openrtl.fifo-debug.v1",
+      "review_state": "validated",
+      "schema": "openrtl.debug-session.v1",
+      "sha256": "b10d333c680f4276a57e0886eb257ee86f485a21dc6afe9594f0c16ca0eb798e",
+      "size_bytes": 3848
+    },
+    {
+      "artifact_id": "m14.repair.focus-after",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/repair-case/focus-after.sucl",
+      "media_type": "text/x-surfer-command",
+      "producer_id": "openrtl.surfer-command.v1",
+      "review_state": "validated-surfer-0.7-subset",
+      "schema": "surfer.command-file",
+      "sha256": "74c45a9bba9a79ad4193620271b47f34853021ce7e3993eef9331795903098ac",
+      "size_bytes": 293
+    },
+    {
+      "artifact_id": "m14.repair.focus-before",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/repair-case/focus-before.sucl",
+      "media_type": "text/x-surfer-command",
+      "producer_id": "openrtl.surfer-command.v1",
+      "review_state": "validated-surfer-0.7-subset",
+      "schema": "surfer.command-file",
+      "sha256": "74c45a9bba9a79ad4193620271b47f34853021ce7e3993eef9331795903098ac",
+      "size_bytes": 293
+    },
+    {
+      "artifact_id": "m14.repair.proposal",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/repair-case/proposal.json",
+      "media_type": "application/json",
+      "producer_id": "openrtl.fifo-repair.v1",
+      "review_state": "approved-for-candidate",
+      "schema": "openrtl.repair-proposal.v1",
+      "sha256": "38a50c97c795c2e1a3b730e2a0b2ab6e25ec3f9535f3dbd2b6db10084e54ce7b",
+      "size_bytes": 2361
+    },
+    {
+      "artifact_id": "m14.repair.repaired-log",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/repair-case/repaired/run.log",
+      "media_type": "text/plain",
+      "producer_id": "verilator.cocotb",
+      "review_state": "validated-pass",
+      "schema": "openrtl.bounded-log.v1",
+      "sha256": "1be095d5ba79f34d3874bb00171768695ee756f5596e40b659e59d1dc75234a4",
+      "size_bytes": 12721
+    },
+    {
+      "artifact_id": "m14.repair.repaired-results",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/repair-case/repaired/results.xml",
+      "media_type": "application/xml",
+      "producer_id": "cocotb.junit",
+      "review_state": "validated-pass",
+      "schema": "junit.test-results",
+      "sha256": "a01380efd1824d5e8c01f351edb4653f99709f3e89f0238b50983e024d8eceaf",
+      "size_bytes": 458
+    },
+    {
+      "artifact_id": "m14.repair.repaired-source",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/repair-case/candidate/sync_fifo.sv",
+      "media_type": "text/x-systemverilog",
+      "producer_id": "openrtl.repair-application.v1",
+      "review_state": "validated-candidate",
+      "schema": "systemverilog.source",
+      "sha256": "4fea04242e4da6fe3018016bcaaf7902531174f39896200e8d86f13c71741531",
+      "size_bytes": 2681
+    },
+    {
+      "artifact_id": "m14.repair.repaired-waveform",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/repair-case/repaired/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer_id": "verilator.trace",
+      "review_state": "validated-pass",
+      "schema": "ieee.vcd",
+      "sha256": "c91869295308463ed88f5e2848c876917ad9d75485b95cfc00db7f820c0bb711",
+      "size_bytes": 1872
+    },
+    {
+      "artifact_id": "m14.production.canary-log",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/production-canary/canary.log",
+      "media_type": "text/plain",
+      "producer_id": "verilator.cocotb",
+      "review_state": "validated-pass",
+      "schema": "openrtl.bounded-log.v1",
+      "sha256": "dfbe1781b4a4aee6623b2df3d0b0bd6d082efcc331ff2c4b347a61335c2081eb",
+      "size_bytes": 83864
+    },
+    {
+      "artifact_id": "m14.production.canary-results",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/production-canary/results.xml",
+      "media_type": "application/xml",
+      "producer_id": "cocotb.junit",
+      "review_state": "validated-pass",
+      "schema": "junit.test-results",
+      "sha256": "ebdc156661d16f8641fa94fb273d07ed8c3b616c1fa423892265cca6b24a4c19",
+      "size_bytes": 429
+    },
+    {
+      "artifact_id": "m14.production.canary-waveform",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/production-canary/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer_id": "verilator.trace",
+      "review_state": "validated-pass",
+      "schema": "ieee.vcd",
+      "sha256": "5fc0e1558f732f9b8917fcf19c2d4d78f96bb22b38a7d16628daf29d9e546695",
+      "size_bytes": 44255
+    },
+    {
+      "artifact_id": "m14.production.canary-evidence",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/production-canary/evidence.json",
+      "media_type": "application/json",
+      "producer_id": "openrtl.verilator-canary.v1",
+      "review_state": "validated-pass",
+      "schema": "openrtl.verilator-canary-evidence.v1",
+      "sha256": "7f43e8903ff0af1cc969d0d5fd163549a7fa46a9fe829da085e8183f3ca9eec3",
+      "size_bytes": 994
+    },
+    {
+      "artifact_id": "m14.validation.log",
+      "availability_class": "local-retained",
+      "locator": "build/reviewed-repair-application/m14-49e6d3d/validation.log",
+      "media_type": "text/plain",
+      "producer_id": "openrtl.m14-validation",
+      "review_state": "validated-pass",
+      "schema": "openrtl.validation-log.v1",
+      "sha256": "316633d1d6c53aa8f6a6a3cacc42bbf6100d37b1b2aab8d3b155093f16695780",
+      "size_bytes": 2645
+    }
+  ],
+  "authorization_boundary": {
+    "candidate_only": true,
+    "gui_launched": false,
+    "production_authorized": false,
+    "production_rtl_modified": false,
+    "remote_operations": false
+  },
+  "evidence_lane": "local-verilator-repair",
+  "milestone_id": "m14-reviewed-repair-application",
+  "qualified_parent": "49e6d3d6692fc2e35c940fe686e7e7113bc4ac3c",
+  "retention_class": "local-build-collateral",
+  "review_state": "validated",
+  "schema": "openrtl.milestone-evidence.v1",
+  "validation_outcomes": {
+    "focused_tests": "17 passed",
+    "focused_typing": "4 source files passed strict mypy",
+    "production_canary": "passed with retained VCD and evidence manifest",
+    "provider_free_suite": "58 passed",
+    "repair_case": "one expected failure finding before, zero findings after"
+  }
+}
