@@ -147,8 +147,46 @@ uv run openrtl repair invoke-expert-source-edits \
 This is one tool-free AgentRig structured-generation turn with exact scripted
 runtime/model identity, bounded context excerpts, deadline and output limits,
 and `not_retained` data handling. It never resolves credentials or falls back
-to a live provider. A live provider remains a separately authorized future
-composition point.
+to a live provider.
+
+Prepare—but do not execute—an exact OpenAI Responses plan:
+
+```console
+uv run openrtl repair plan-expert-provider-invocation \
+  --request build/fifo-repair-application/expert-edit-request.json \
+  --plan-output build/fifo-repair-application/provider-plan.json \
+  --model YOUR_EXPLICIT_MODEL_ID \
+  --credential-environment OPENAI_API_KEY
+```
+
+Review the plan and its `content_digest`. A real call requires an environment
+that already contains AgentRig's pinned OpenAI SDK extra; OpenRTL never installs
+it implicitly. Execution then requires all three explicit selections: the
+provider-specific command, `--with-openai-provider`, and the exact reviewed
+plan digest:
+
+```console
+uv run openrtl repair invoke-openai-expert-source-edits \
+  --request build/fifo-repair-application/expert-edit-request.json \
+  --proposal build/fifo-repair-application/proposal.json \
+  --debug-session build/fifo-repair-application/debug-session.json \
+  --source examples/fifo/faults/sync_fifo_level_fault.sv \
+  --plan build/fifo-repair-application/provider-plan.json \
+  --with-openai-provider \
+  --approve-provider-plan-digest sha256:REVIEWED_PLAN_DIGEST \
+  --review-note "Reviewed exact bounded provider plan" \
+  --envelope-output build/fifo-repair-application/provider-envelope.json \
+  --response-output build/fifo-repair-application/provider-response.json \
+  --edit-spec-output build/fifo-repair-application/provider-edit-spec.json \
+  --suggestion-report build/fifo-repair-application/provider-suggestion.json \
+  --invocation-report build/fifo-repair-application/provider-invocation.json \
+  --provider-execution-report build/fifo-repair-application/provider-execution.json
+```
+
+Planning never reads the named credential. Execution resolves it only after
+the plan digest, request, evidence, source, capability, tool, model, retention,
+and resource bounds pass. The response is still untrusted and
+`awaiting_qualification`; the call cannot edit RTL.
 
 That report is only `awaiting_qualification`. Next qualify the external
 exact-replacement specification into a typed, review-required edit plan:

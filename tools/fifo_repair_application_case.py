@@ -41,18 +41,31 @@ from agentrig.testing import (  # noqa: E402
     ScriptedStructuredGeneration,
     ScriptedStructuredGenerator,
 )
+from agentrig.integrations.openai import (  # noqa: E402
+    OpenAIResponsesClient,
+    OpenAIResponsesRequest,
+    OpenAIResponsesResult,
+    OpenAIResponsesStatus,
+)
 from openrtl.adapters import (  # noqa: E402
+    EnvironmentOpenAIAuthenticationSource,
     analyze_fifo_waveform,
     apply_reviewed_source_edits,
     draft_source_edit_plan,
     fifo_repair_focus,
     inspect_vcd,
     invoke_expert_source_edits,
+    invoke_approved_openai_expert_source_edits,
+    prepare_expert_provider_invocation_plan,
     prepare_expert_source_edit_request,
     propose_fifo_repairs,
     surfer_command_file,
 )
-from openrtl.application import ExpertInvocationPolicy, RepairApproval  # noqa: E402
+from openrtl.application import (  # noqa: E402
+    ExpertInvocationPolicy,
+    ExpertProviderInvocationApproval,
+    RepairApproval,
+)
 from openrtl.adapters.waveforms import WaveformFocus  # noqa: E402
 from tools.verilator_canary import (  # noqa: E402
     VerilatorToolchain,
@@ -92,6 +105,10 @@ _KNOWN_OUTPUTS = frozenset(
         "expert-edit-suggestion.json",
         "expert-invocation-envelope.json",
         "expert-invocation-report.json",
+        "provider-execution-report.json",
+        "provider-invocation-envelope.json",
+        "provider-invocation-plan.json",
+        "provider-invocation-report.json",
         "evidence.json",
         "focus-after.sucl",
         "focus-before.sucl",
@@ -108,6 +125,36 @@ class SimulationAttempt:
     waveform: Path
     simulation_build: Path
     passed: bool
+
+
+class _ProviderCaseClient:
+    def __init__(self, response: dict[str, Any], model: str) -> None:
+        self._response = response
+        self._model = model
+
+    async def create(self, request: OpenAIResponsesRequest) -> OpenAIResponsesResult:
+        if request.model != self._model:
+            raise RuntimeError("provider case model selection changed")
+        return OpenAIResponsesResult(
+            output_text=json.dumps(self._response),
+            model=self._model,
+            status=OpenAIResponsesStatus.COMPLETED,
+            input_tokens=300,
+            output_tokens=100,
+        )
+
+    async def close(self) -> None:
+        return None
+
+
+class _ProviderCaseFactory:
+    def __init__(self, client: OpenAIResponsesClient) -> None:
+        self._client = client
+        self.create_count = 0
+
+    def create(self) -> OpenAIResponsesClient:
+        self.create_count += 1
+        return self._client
 
 
 def main(arguments: Sequence[str] | None = None) -> int:
@@ -165,6 +212,10 @@ def main(arguments: Sequence[str] | None = None) -> int:
     expert_suggestion_path = output / "expert-edit-suggestion.json"
     expert_envelope_path = output / "expert-invocation-envelope.json"
     expert_invocation_path = output / "expert-invocation-report.json"
+    provider_plan_path = output / "provider-invocation-plan.json"
+    provider_envelope_path = output / "provider-invocation-envelope.json"
+    provider_invocation_path = output / "provider-invocation-report.json"
+    provider_execution_path = output / "provider-execution-report.json"
     application_path = output / "application.json"
     comparison_path = output / "comparison.json"
     before_focus_path = output / "focus-before.sucl"
@@ -260,6 +311,48 @@ def main(arguments: Sequence[str] | None = None) -> int:
     _write_json(expert_spec_path, expert_spec)
     _write_json(expert_suggestion_path, expert_suggestion)
     _write_json(expert_invocation_path, invocation.report.payload())
+    provider_plan = prepare_expert_provider_invocation_plan(
+        root,
+        request_path=expert_request_path,
+        model="synthetic-openai-model",
+        credential_environment="OPENRTL_SYNTHETIC_API_KEY",
+    )
+    _write_json(provider_plan_path, provider_plan.payload())
+    provider_factory = _ProviderCaseFactory(
+        _ProviderCaseClient(expert_response, provider_plan.policy.model)
+    )
+    provider_artifacts = asyncio.run(
+        invoke_approved_openai_expert_source_edits(
+            root,
+            request_path=expert_request_path,
+            proposal_path=proposal_path,
+            debug_session_path=debug_path,
+            source_path=source,
+            plan_path=provider_plan_path,
+            approval=ExpertProviderInvocationApproval(
+                provider_plan.plan_id,
+                provider_plan.content_digest,
+                "Reviewed synthetic provider integration plan.",
+            ),
+            context=RunContext.create_root(
+                clock=SystemClock(),
+                id_generator=id_generator,
+                cancellation=CancellationSource().token,
+            ),
+            authentication_source=EnvironmentOpenAIAuthenticationSource(
+                "OPENRTL_SYNTHETIC_API_KEY",
+                environment={"OPENRTL_SYNTHETIC_API_KEY": "synthetic"},
+            ),
+            client_factory=provider_factory,
+        )
+    )
+    if provider_factory.create_count != 1:
+        raise RuntimeError("provider integration case did not make exactly one local call")
+    if provider_artifacts.invocation.edit_spec != invocation.edit_spec:
+        raise RuntimeError("provider integration edit output differs from scripted output")
+    _write_json(provider_envelope_path, provider_artifacts.invocation.envelope)
+    _write_json(provider_invocation_path, provider_artifacts.invocation.report.payload())
+    _write_json(provider_execution_path, provider_artifacts.provider_report.payload())
     edit_plan, planning_report = draft_source_edit_plan(
         root,
         proposal_path=proposal_path,
@@ -359,6 +452,10 @@ def main(arguments: Sequence[str] | None = None) -> int:
                 ("expert_edit_suggestion", expert_suggestion_path),
                 ("expert_invocation_envelope", expert_envelope_path),
                 ("expert_invocation_report", expert_invocation_path),
+                ("provider_execution_report", provider_execution_path),
+                ("provider_invocation_envelope", provider_envelope_path),
+                ("provider_invocation_plan", provider_plan_path),
+                ("provider_invocation_report", provider_invocation_path),
                 ("focus_after", after_focus_path),
                 ("focus_before", before_focus_path),
                 ("proposal", proposal_path),
@@ -372,12 +469,15 @@ def main(arguments: Sequence[str] | None = None) -> int:
             "candidate_only": True,
             "gui_launched": False,
             "production_rtl_modified": False,
+            "real_credential_resolved": False,
+            "real_provider_called": False,
             "remote_operations": False,
+            "synthetic_provider_adapter_calls": 1,
         },
         "qualified_application_id": application.application_id,
         "qualified_edit_plan_digest": edit_plan.content_digest,
         "qualified_expert_suggestion_id": invocation.report.suggestion_id,
-        "schema": "openrtl.repair-application-evidence.v6",
+        "schema": "openrtl.repair-application-evidence.v7",
         "status": "passed",
         "toolchain": {
             "cocotb_config": str(toolchain.cocotb_config),
@@ -403,8 +503,11 @@ def main(arguments: Sequence[str] | None = None) -> int:
         "expert_invocation_envelope": expert_envelope_path.relative_to(root).as_posix(),
         "expert_invocation_report": expert_invocation_path.relative_to(root).as_posix(),
         "proposal": proposal_path.relative_to(root).as_posix(),
+        "provider_execution_report": provider_execution_path.relative_to(root).as_posix(),
+        "provider_invocation_plan": provider_plan_path.relative_to(root).as_posix(),
+        "provider_invocation_report": provider_invocation_path.relative_to(root).as_posix(),
         "repaired_finding_ids": tuple(value.finding_id for value in after_report.findings),
-        "schema": "openrtl.fifo-repair-application-case.v6",
+        "schema": "openrtl.fifo-repair-application-case.v7",
         "status": "passed",
         "visual_evidence": visual_evidence,
     }

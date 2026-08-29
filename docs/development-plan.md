@@ -67,6 +67,12 @@ evidence attaches to the same artifact graph and requirement IDs.
   report; capability drift, model drift, tool exposure, stale evidence,
   truncation, extra fields, and oversized output fail closed. Successful output
   remains `awaiting_qualification` and cannot apply RTL.
+- A real OpenAI Responses composition is available only through a canonical
+  non-executing provider plan followed by the provider-specific command,
+  `--with-openai-provider`, and the exact plan digest. The plan fixes the SDK,
+  runtime, capability, model, retention, credential-environment name, and
+  single-call bound. Credential resolution is late, validation stays synthetic
+  and network-free, and successful output remains `awaiting_qualification`.
 
 ## Convergence
 

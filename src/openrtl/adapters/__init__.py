@@ -19,6 +19,14 @@ from openrtl.adapters.expert_invocation import (
     ExpertInvocationArtifacts,
     invoke_expert_source_edits,
 )
+from openrtl.adapters.provider_invocation import (
+    ApprovedProviderInvocationArtifacts,
+    EnvironmentOpenAIAuthenticationSource,
+    RejectingArtifactResolver,
+    invoke_approved_openai_expert_source_edits,
+    load_expert_provider_invocation_plan,
+    prepare_expert_provider_invocation_plan,
+)
 from openrtl.adapters.canary import load_fifo_canary_evidence
 from openrtl.adapters.agentrig import (
     OpenRTLCommandTools,
@@ -75,7 +83,13 @@ __all__ = [
     "load_expert_source_edit_request",
     "validate_expert_source_edit_response",
     "ExpertInvocationArtifacts",
+    "ApprovedProviderInvocationArtifacts",
+    "EnvironmentOpenAIAuthenticationSource",
+    "RejectingArtifactResolver",
     "invoke_expert_source_edits",
+    "invoke_approved_openai_expert_source_edits",
+    "load_expert_provider_invocation_plan",
+    "prepare_expert_provider_invocation_plan",
     "propose_fifo_repairs",
     "surfer_command_file",
 ]

@@ -113,8 +113,13 @@ The caller selects exact runtime binding, capability, provider, model,
 retention, timeout, input/output bytes, and output tokens. The lane exposes no
 tools and permits one turn. Its safe report records identities, aggregate usage,
 and canonical digests, never hidden reasoning or raw provider payloads. The
-default CLI implementation is scripted and provider-free; live composition is
-an explicit opt-in adapter boundary.
+default CLI implementation is scripted and provider-free. The OpenAI Responses
+adapter is a separate two-step boundary: a non-executing canonical plan records
+the exact runtime and a credential-environment name, then the provider-specific
+command requires both `--with-openai-provider` and that plan's exact digest.
+Credential resolution and short-lived client creation occur only after every
+local preflight passes. Its value-safe execution report remains
+`awaiting_qualification`; no provider output can qualify or apply RTL.
 
 ## Reuse and community boundary
 

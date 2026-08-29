@@ -26,6 +26,16 @@ from openrtl.application.expert_invocation import (
     build_expert_invocation_report,
     invocation_payload_digest,
 )
+from openrtl.application.provider_invocation import (
+    OPENAI_RESPONSES_ADAPTER_ID,
+    OPENAI_RESPONSES_RUNTIME_BINDING_ID,
+    ExpertProviderExecutionReport,
+    ExpertProviderInvocationApproval,
+    ExpertProviderInvocationPlan,
+    build_expert_provider_execution_report,
+    build_expert_provider_invocation_plan,
+    provider_invocation_digest,
+)
 from openrtl.application.evals import EvaluationCase, load_evaluation_cases
 from openrtl.application.workflow import (
     OpenRTLWorkflow,
@@ -81,7 +91,12 @@ __all__ = [
     "ExpertSourceEditRequest",
     "ExpertInvocationPolicy",
     "ExpertInvocationReport",
+    "ExpertProviderExecutionReport",
+    "ExpertProviderInvocationApproval",
+    "ExpertProviderInvocationPlan",
     "OpenRTLWorkflow",
+    "OPENAI_RESPONSES_ADAPTER_ID",
+    "OPENAI_RESPONSES_RUNTIME_BINDING_ID",
     "RequirementCoverage",
     "ReviewFinding",
     "ReviewKind",
@@ -101,11 +116,14 @@ __all__ = [
     "build_expert_source_edit_report",
     "build_expert_source_edit_request",
     "build_expert_invocation_report",
+    "build_expert_provider_execution_report",
+    "build_expert_provider_invocation_plan",
     "build_repair_proposal",
     "build_source_edit_plan",
     "canonical_payload_digest",
     "context_pack_payload",
     "invocation_payload_digest",
+    "provider_invocation_digest",
     "load_evaluation_cases",
     "run_scripted_fifo",
 ]

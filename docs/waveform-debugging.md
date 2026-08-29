@@ -187,6 +187,13 @@ proposal. Confirm `runtime.tool_ids` is empty, `max_turns` is one, and the
 invocation report still says `awaiting_qualification`; the model output is not
 an approval or a repair application.
 
+For an explicitly selected provider, review the provider plan before granting
+the exact digest. Confirm its request digest identifies the same failed trace,
+its runtime exposes no tools, and its source excerpts cover the signals in the
+Surfer focus. After the call, compare the invocation envelope to this trace and
+require both lifecycle reports to remain `awaiting_qualification`. A provider
+response does not change either waveform and cannot apply the proposed edit.
+
 ## Prepare and open a Surfer focus
 
 Generate reusable inspection and viewer state:

@@ -1,4 +1,4 @@
-"""Provider-free local command line interface for OpenRTL V1."""
+"""Local OpenRTL CLI with an explicit opt-in boundary for provider calls."""
 
 from __future__ import annotations
 
@@ -30,6 +30,7 @@ from agentrig.integrations import CommandInput
 from agentrig.testing import ScriptedStructuredGeneration, ScriptedStructuredGenerator
 from openrtl.adapters import (
     LocalDesignCatalog,
+    EnvironmentOpenAIAuthenticationSource,
     accept_expert_source_edit_output,
     analyze_fifo_waveform,
     apply_reviewed_source_edits,
@@ -38,15 +39,19 @@ from openrtl.adapters import (
     fifo_repair_focus,
     inspect_vcd,
     invoke_expert_source_edits,
+    invoke_approved_openai_expert_source_edits,
+    load_expert_provider_invocation_plan,
     load_fifo_canary_evidence,
     load_source_edit_plan,
     prepare_expert_source_edit_request,
+    prepare_expert_provider_invocation_plan,
     propose_fifo_repairs,
     surfer_command_file,
 )
 from openrtl.application import (
     EXPERT_DEFINITIONS,
     ExpertInvocationPolicy,
+    ExpertProviderInvocationApproval,
     FIFO_RUN_REF,
     FIFO_SOURCE_REFS,
     OpenRTLWorkflow,
@@ -190,6 +195,58 @@ def parser() -> argparse.ArgumentParser:
     invoke_expert_edits.add_argument("--max-input-bytes", type=int, default=64 * 1024)
     invoke_expert_edits.add_argument("--max-output-bytes", type=int, default=64 * 1024)
     invoke_expert_edits.add_argument("--max-output-tokens", type=int, default=4096)
+    plan_provider_invocation = repair_commands.add_parser(
+        "plan-expert-provider-invocation",
+        help="prepare a non-executing OpenAI Responses invocation plan",
+    )
+    plan_provider_invocation.add_argument("--root", type=Path, default=Path.cwd())
+    plan_provider_invocation.add_argument("--request", type=Path, required=True)
+    plan_provider_invocation.add_argument("--plan-output", type=Path, required=True)
+    plan_provider_invocation.add_argument("--model", required=True)
+    plan_provider_invocation.add_argument(
+        "--credential-environment",
+        required=True,
+        help="environment-variable name only; the value is not read while planning",
+    )
+    plan_provider_invocation.add_argument("--timeout-seconds", type=int, default=120)
+    plan_provider_invocation.add_argument(
+        "--max-input-bytes", type=int, default=64 * 1024
+    )
+    plan_provider_invocation.add_argument(
+        "--max-output-bytes", type=int, default=64 * 1024
+    )
+    plan_provider_invocation.add_argument(
+        "--max-output-tokens", type=int, default=4096
+    )
+    invoke_openai_expert = repair_commands.add_parser(
+        "invoke-openai-expert-source-edits",
+        help="execute one explicitly approved OpenAI Responses expert turn",
+    )
+    invoke_openai_expert.add_argument("--root", type=Path, default=Path.cwd())
+    invoke_openai_expert.add_argument("--request", type=Path, required=True)
+    invoke_openai_expert.add_argument("--proposal", type=Path, required=True)
+    invoke_openai_expert.add_argument("--debug-session", type=Path, required=True)
+    invoke_openai_expert.add_argument("--source", type=Path, required=True)
+    invoke_openai_expert.add_argument("--plan", type=Path, required=True)
+    invoke_openai_expert.add_argument(
+        "--with-openai-provider",
+        action="store_true",
+        required=True,
+        help="explicitly opt in to one networked provider call",
+    )
+    invoke_openai_expert.add_argument(
+        "--approve-provider-plan-digest",
+        required=True,
+    )
+    invoke_openai_expert.add_argument("--review-note", required=True)
+    invoke_openai_expert.add_argument("--envelope-output", type=Path, required=True)
+    invoke_openai_expert.add_argument("--response-output", type=Path, required=True)
+    invoke_openai_expert.add_argument("--edit-spec-output", type=Path, required=True)
+    invoke_openai_expert.add_argument("--suggestion-report", type=Path, required=True)
+    invoke_openai_expert.add_argument("--invocation-report", type=Path, required=True)
+    invoke_openai_expert.add_argument(
+        "--provider-execution-report", type=Path, required=True
+    )
     draft_source_edits = repair_commands.add_parser(
         "draft-source-edits",
         help="qualify an external edit specification into a review-required typed plan",
@@ -350,6 +407,10 @@ def _repair_command(arguments: argparse.Namespace) -> int:
         return 0
     if arguments.repair_command == "invoke-expert-source-edits":
         return _invoke_scripted_expert_source_edits(arguments)
+    if arguments.repair_command == "plan-expert-provider-invocation":
+        return _plan_expert_provider_invocation(arguments)
+    if arguments.repair_command == "invoke-openai-expert-source-edits":
+        return _invoke_openai_expert_source_edits(arguments)
     if arguments.repair_command == "draft-source-edits":
         root = arguments.root.resolve(strict=True)
         plan_path = _contained_output(root, arguments.edit_plan_output)
@@ -525,6 +586,114 @@ def _invoke_scripted_expert_source_edits(arguments: argparse.Namespace) -> int:
                 "envelope": output_paths[0].relative_to(root).as_posix(),
                 "invocation_report": output_paths[4].relative_to(root).as_posix(),
                 "provider": "scripted",
+                "response": output_paths[1].relative_to(root).as_posix(),
+                "status": "awaiting_qualification",
+                "suggestion_report": output_paths[3].relative_to(root).as_posix(),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
+def _plan_expert_provider_invocation(arguments: argparse.Namespace) -> int:
+    root = arguments.root.resolve(strict=True)
+    request_path = _contained_input(root, arguments.request)
+    output_path = _contained_output(root, arguments.plan_output)
+    if output_path == request_path:
+        raise ValueError("provider invocation plan output must be separate from its request")
+    plan = prepare_expert_provider_invocation_plan(
+        root,
+        request_path=arguments.request,
+        model=arguments.model,
+        credential_environment=arguments.credential_environment,
+        timeout_seconds=arguments.timeout_seconds,
+        max_input_bytes=arguments.max_input_bytes,
+        max_output_bytes=arguments.max_output_bytes,
+        max_output_tokens=arguments.max_output_tokens,
+    )
+    _write_exact_repair_outputs(((output_path, plan.payload()),))
+    print(json.dumps(plan.payload(), indent=2, sort_keys=True))
+    return 0
+
+
+def _invoke_openai_expert_source_edits(arguments: argparse.Namespace) -> int:
+    if not arguments.with_openai_provider:
+        raise ValueError("OpenAI provider invocation requires explicit opt-in")
+    root = arguments.root.resolve(strict=True)
+    input_paths = {
+        _contained_input(root, arguments.request),
+        _contained_input(root, arguments.proposal),
+        _contained_input(root, arguments.debug_session),
+        _contained_input(root, arguments.source),
+        _contained_input(root, arguments.plan),
+    }
+    output_paths = tuple(
+        _contained_output(root, value)
+        for value in (
+            arguments.envelope_output,
+            arguments.response_output,
+            arguments.edit_spec_output,
+            arguments.suggestion_report,
+            arguments.invocation_report,
+            arguments.provider_execution_report,
+        )
+    )
+    if len(set(output_paths)) != len(output_paths) or any(
+        value in input_paths for value in output_paths
+    ):
+        raise ValueError("provider invocation outputs must be unique and separate from inputs")
+    plan = load_expert_provider_invocation_plan(root, arguments.plan)
+    approval = ExpertProviderInvocationApproval(
+        plan.plan_id,
+        arguments.approve_provider_plan_digest,
+        arguments.review_note,
+    )
+    approval.require_matches(plan)
+    authentication = EnvironmentOpenAIAuthenticationSource(
+        plan.credential_environment
+    )
+    context = RunContext.create_root(
+        clock=SystemClock(),
+        id_generator=Uuid4IdGenerator(RunId),
+        cancellation=CancellationSource().token,
+    )
+    artifacts = asyncio.run(
+        invoke_approved_openai_expert_source_edits(
+            root,
+            request_path=arguments.request,
+            proposal_path=arguments.proposal,
+            debug_session_path=arguments.debug_session,
+            source_path=arguments.source,
+            plan_path=arguments.plan,
+            approval=approval,
+            context=context,
+            authentication_source=authentication,
+        )
+    )
+    invocation = artifacts.invocation
+    _write_exact_repair_outputs(
+        (
+            (output_paths[0], invocation.envelope),
+            (output_paths[1], invocation.response),
+            (output_paths[2], invocation.edit_spec),
+            (output_paths[3], invocation.suggestion),
+            (output_paths[4], invocation.report.payload()),
+            (output_paths[5], artifacts.provider_report.payload()),
+        )
+    )
+    print(
+        json.dumps(
+            {
+                "applies_changes": False,
+                "edit_spec": output_paths[2].relative_to(root).as_posix(),
+                "envelope": output_paths[0].relative_to(root).as_posix(),
+                "invocation_report": output_paths[4].relative_to(root).as_posix(),
+                "provider": "openai",
+                "provider_execution_report": output_paths[5]
+                .relative_to(root)
+                .as_posix(),
                 "response": output_paths[1].relative_to(root).as_posix(),
                 "status": "awaiting_qualification",
                 "suggestion_report": output_paths[3].relative_to(root).as_posix(),
