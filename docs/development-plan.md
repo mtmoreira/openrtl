@@ -55,6 +55,11 @@ evidence attaches to the same artifact graph and requirement IDs.
   digest-bound edit plans only after proposal, failed-session, source-anchor,
   change, and byte-range validation. The resulting planning report remains
   `awaiting_review`; it does not authorize or apply an edit.
+- A provider-neutral Diagnosis and Closure Engineer request binds an exact
+  context pack, proposal, failed session, source digest, and ordered changes.
+  Strict expert output becomes only an untrusted `awaiting_qualification`
+  specification; deterministic qualification and explicit human review remain
+  mandatory downstream gates, and validation performs no provider call.
 
 ## Convergence
 

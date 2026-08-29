@@ -97,6 +97,15 @@ plan only after checking the proposal, failed session, source digest, change
 identities, and anchored byte ranges. Its separate `awaiting_review` report
 binds all input and output digests; it neither approves nor applies the plan.
 
+Expert suggestion precedes plan qualification. OpenRTL prepares a
+provider-neutral request for the Diagnosis and Closure Engineer with an exact
+role-specific context pack and proposal, failed-session, source, and change
+bindings. Strict expert output is ingested as an untrusted external
+specification only when every binding and requested change is repeated in
+canonical form. Its report remains `awaiting_qualification`; it cannot invoke a
+provider, approve a plan, or write RTL. Deterministic qualification and human
+review remain the two separate downstream gates.
+
 ## Reuse and community boundary
 
 A passing design produces a local package candidate containing interfaces,

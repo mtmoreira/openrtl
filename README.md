@@ -105,23 +105,45 @@ uv run openrtl waveform propose-fifo-repair \
   --output-directory build/fifo-repair-proposal
 ```
 
-First qualify an external exact-replacement specification into a typed,
-review-required edit plan:
+Prepare an exact, provider-neutral request for source-edit suggestions:
+
+```console
+uv run openrtl repair prepare-expert-source-edits \
+  --proposal build/fifo-repair-application/proposal.json \
+  --debug-session build/fifo-repair-application/debug-session.json \
+  --source examples/fifo/faults/sync_fifo_level_fault.sv \
+  --request-output build/fifo-repair-application/expert-edit-request.json
+```
+
+OpenRTL does not invoke a provider here. After an explicitly selected runtime
+returns the declared strict schema, ingest its response as an untrusted,
+non-applying specification:
+
+```console
+uv run openrtl repair accept-expert-source-edits \
+  --request build/fifo-repair-application/expert-edit-request.json \
+  --response build/fifo-repair-application/expert-edit-response.json \
+  --edit-spec-output build/fifo-repair-application/expert-edit-spec.json \
+  --suggestion-report build/fifo-repair-application/expert-edit-suggestion.json
+```
+
+That report is only `awaiting_qualification`. Next qualify the external
+exact-replacement specification into a typed, review-required edit plan:
 
 ```console
 uv run openrtl repair draft-source-edits \
   --proposal build/fifo-repair-application/proposal.json \
   --debug-session build/fifo-repair-application/debug-session.json \
   --source examples/fifo/faults/sync_fifo_level_fault.sv \
-  --edit-spec examples/fifo/faults/level_update_edit_spec.json \
+  --edit-spec build/fifo-repair-application/expert-edit-spec.json \
   --edit-plan-output build/fifo-repair-application/edit-plan.json \
   --planning-report build/fifo-repair-application/edit-plan-planning.json
 ```
 
-This first command only qualifies the external specification against the
-proposal evidence and writes an `awaiting_review` report. It does not apply or
-approve the plan. After reviewing those artifacts, application remains a
-separate explicit command:
+The deterministic qualification command checks the external specification
+against the proposal evidence and writes an `awaiting_review` report. Neither
+the expert-output gate nor qualification applies or approves the plan. After
+reviewing those artifacts, application remains a separate explicit command:
 
 ```console
 uv run openrtl repair apply-source-edits \
@@ -136,10 +158,12 @@ uv run openrtl repair apply-source-edits \
   --review-note "Reviewed the linked edge and exact source anchors."
 ```
 
-The command fails on stale evidence, source, edit bytes, anchors, or approval
+The commands fail on stale context, evidence, source, edit bytes, anchors, or approval
 and never edits its input. Concrete repair text is carried by the reviewed edit
 plan, not hardcoded in Python. The opt-in
-`tools/fifo_repair_application_case.py` qualification retains the edit plan,
+`tools/fifo_repair_application_case.py` provider-free qualification uses the
+external FIFO edit fixture as a synthetic strict expert response and retains
+the request, response, untrusted suggestion, qualified edit plan,
 failing and repaired Verilator waveforms, and their hash-bound comparison. Both
 traces extend beyond the finding edge, and qualification rejects focus collateral
 that does not expose a persistent, visually distinct post-edge level.

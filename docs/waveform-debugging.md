@@ -133,10 +133,12 @@ recorded as `focus-window-fs` and `focus-markers-fs` comments in `focus.sucl`.
 
 ## Compare a reviewed repair before and after
 
-The opt-in repair qualification runs an actual faulty RTL fixture, builds a
-typed edit plan from the reviewable example specification, applies the
-digest-approved plan to a separate candidate, then reruns the same deterministic
-cocotb test:
+The opt-in repair qualification runs an actual faulty RTL fixture, prepares a
+provider-neutral Diagnosis and Closure Engineer request, ingests the reviewable
+example specification as a synthetic strict expert response, and retains an
+untrusted `awaiting_qualification` report. It then builds a typed edit plan,
+applies the digest-approved plan to a separate candidate, and reruns the same
+deterministic cocotb test:
 
 ```sh
 uv run python tools/fifo_repair_application_case.py \
@@ -164,13 +166,18 @@ sides of `focus-markers-fs`. The generated `comparison.json` independently
 requires each trace to extend beyond that window, a later clock transition to
 be present, and the differing `level` values to persist through the focus end.
 
-Inspect `edit-plan.json` before `application.json`: its exact expected and
+Inspect `expert-edit-request.json`, `expert-edit-response.json`, and
+`expert-edit-suggestion.json` first. Confirm that the context, proposal,
+failed-session, source, and ordered change bindings match and that the
+suggestion status is `awaiting_qualification`. Then inspect `edit-plan.json`
+before `application.json`: its exact expected and
 replacement bytes, ranges, source digest, and canonical digest are the approval
 boundary. The retained `comparison.json` requires the original linked finding,
 an empty repaired finding list, and `visual_evidence.status` equal to
 `visibly_distinct`. `evidence.json` binds every log, results file, waveform,
 focus, proposal, edit plan, application report, and repaired source by SHA-256.
-The workflow does not launch Surfer or modify production RTL.
+The workflow makes no provider call, does not launch Surfer, and does not modify
+production RTL.
 
 ## Prepare and open a Surfer focus
 

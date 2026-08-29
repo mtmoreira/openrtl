@@ -8,6 +8,10 @@ from openrtl.adapters.source_edit_application import (
     draft_source_edit_plan,
     load_source_edit_plan,
 )
+from openrtl.adapters.expert_source_edits import (
+    accept_expert_source_edit_output,
+    prepare_expert_source_edit_request,
+)
 from openrtl.adapters.canary import load_fifo_canary_evidence
 from openrtl.adapters.agentrig import (
     OpenRTLCommandTools,
@@ -55,9 +59,11 @@ __all__ = [
     "inspect_vcd",
     "analyze_fifo_waveform",
     "apply_reviewed_source_edits",
+    "accept_expert_source_edit_output",
     "draft_source_edit_plan",
     "fifo_repair_focus",
     "parse_jsonl_events",
+    "prepare_expert_source_edit_request",
     "propose_fifo_repairs",
     "surfer_command_file",
 ]

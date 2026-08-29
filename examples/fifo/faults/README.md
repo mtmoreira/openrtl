@@ -34,9 +34,12 @@ uv run python tools/fifo_repair_application_case.py \
   --output-directory build/fifo-repair-application
 ```
 
-`level_update_edit_spec.json` is reviewable example input, not trusted code.
-The tool converts it into `edit-plan.json`, pins the source and every edit by
-SHA-256, and binds approval to the canonical plan digest. The generic Python
-engine contains no FIFO statement replacement. The candidate is written only
-to the build directory; the tracked fault fixture and production FIFO remain
+`level_update_edit_spec.json` supplies the synthetic expert's concrete output;
+it is reviewable example input, not trusted code. The tool first creates an
+exact provider-neutral request and ingests a strict synthetic response as an
+`awaiting_qualification` specification. The deterministic planner then creates
+`edit-plan.json`, pins the source and every edit by SHA-256, and leaves the plan
+`awaiting_review`. The generic Python engine contains no FIFO statement
+replacement. The candidate is written only after exact approval and only to
+the build directory; the tracked fault fixture and production FIFO remain
 unchanged.

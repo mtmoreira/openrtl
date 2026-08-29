@@ -20,11 +20,13 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from openrtl.adapters import (  # noqa: E402
+    accept_expert_source_edit_output,
     analyze_fifo_waveform,
     apply_reviewed_source_edits,
     draft_source_edit_plan,
     fifo_repair_focus,
     inspect_vcd,
+    prepare_expert_source_edit_request,
     propose_fifo_repairs,
     surfer_command_file,
 )
@@ -62,6 +64,10 @@ _KNOWN_OUTPUTS = frozenset(
         "debug-session.json",
         "edit-plan.json",
         "edit-plan-planning.json",
+        "expert-edit-response.json",
+        "expert-edit-request.json",
+        "expert-edit-spec.json",
+        "expert-edit-suggestion.json",
         "evidence.json",
         "focus-after.sucl",
         "focus-before.sucl",
@@ -129,6 +135,10 @@ def main(arguments: Sequence[str] | None = None) -> int:
     proposal_path = output / "proposal.json"
     edit_plan_path = output / "edit-plan.json"
     planning_report_path = output / "edit-plan-planning.json"
+    expert_request_path = output / "expert-edit-request.json"
+    expert_response_path = output / "expert-edit-response.json"
+    expert_spec_path = output / "expert-edit-spec.json"
+    expert_suggestion_path = output / "expert-edit-suggestion.json"
     application_path = output / "application.json"
     comparison_path = output / "comparison.json"
     before_focus_path = output / "focus-before.sucl"
@@ -140,12 +150,50 @@ def main(arguments: Sequence[str] | None = None) -> int:
     )
     _write_json(debug_path, before_report.payload())
     _write_json(proposal_path, proposal.payload())
+    expert_request = prepare_expert_source_edit_request(
+        root,
+        proposal_path=proposal_path,
+        debug_session_path=debug_path,
+        source_path=source,
+    )
+    _write_json(expert_request_path, expert_request.payload())
+    external_spec = json.loads(
+        (root / "examples/fifo/faults/level_update_edit_spec.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    expert_response = {
+        "applies_changes": False,
+        "change_ids": list(expert_request.change_ids),
+        "context_pack_digest": expert_request.context_pack_digest,
+        "context_pack_id": expert_request.context_pack.pack_id,
+        "debug_session_id": expert_request.debug_session_id,
+        "edits": external_spec["edits"],
+        "expert_role": "diagnosis_closure_engineer",
+        "proposal_id": expert_request.proposal_id,
+        "request_digest": expert_request.content_digest,
+        "request_id": expert_request.request_id,
+        "schema": "openrtl.expert-source-edit-output.v1",
+        "source": {
+            "content_digest": expert_request.source_digest,
+            "path": expert_request.source_path,
+        },
+        "status": "proposed_untrusted",
+    }
+    _write_json(expert_response_path, expert_response)
+    expert_spec, expert_suggestion = accept_expert_source_edit_output(
+        root,
+        request_path=expert_request_path,
+        response_path=expert_response_path,
+    )
+    _write_json(expert_spec_path, expert_spec)
+    _write_json(expert_suggestion_path, expert_suggestion.payload())
     edit_plan, planning_report = draft_source_edit_plan(
         root,
         proposal_path=proposal_path,
         debug_session_path=debug_path,
         source_path=source,
-        edit_spec_path=Path("examples/fifo/faults/level_update_edit_spec.json"),
+        edit_spec_path=expert_spec_path,
     )
     _write_json(edit_plan_path, edit_plan.payload())
     _write_json(planning_report_path, planning_report.payload())
@@ -233,6 +281,10 @@ def main(arguments: Sequence[str] | None = None) -> int:
                 ("debug_session", debug_path),
                 ("edit_plan", edit_plan_path),
                 ("edit_plan_planning", planning_report_path),
+                ("expert_edit_request", expert_request_path),
+                ("expert_edit_response", expert_response_path),
+                ("expert_edit_spec", expert_spec_path),
+                ("expert_edit_suggestion", expert_suggestion_path),
                 ("focus_after", after_focus_path),
                 ("focus_before", before_focus_path),
                 ("proposal", proposal_path),
@@ -250,7 +302,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
         },
         "qualified_application_id": application.application_id,
         "qualified_edit_plan_digest": edit_plan.content_digest,
-        "schema": "openrtl.repair-application-evidence.v4",
+        "qualified_expert_suggestion_id": expert_suggestion.suggestion_id,
+        "schema": "openrtl.repair-application-evidence.v5",
         "status": "passed",
         "toolchain": {
             "cocotb_config": str(toolchain.cocotb_config),
@@ -270,9 +323,12 @@ def main(arguments: Sequence[str] | None = None) -> int:
         "edit_plan": edit_plan_path.relative_to(root).as_posix(),
         "edit_plan_digest": edit_plan.content_digest,
         "edit_plan_planning": planning_report_path.relative_to(root).as_posix(),
+        "expert_edit_request": expert_request_path.relative_to(root).as_posix(),
+        "expert_edit_spec": expert_spec_path.relative_to(root).as_posix(),
+        "expert_edit_suggestion": expert_suggestion_path.relative_to(root).as_posix(),
         "proposal": proposal_path.relative_to(root).as_posix(),
         "repaired_finding_ids": tuple(value.finding_id for value in after_report.findings),
-        "schema": "openrtl.fifo-repair-application-case.v4",
+        "schema": "openrtl.fifo-repair-application-case.v5",
         "status": "passed",
         "visual_evidence": visual_evidence,
     }

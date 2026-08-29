@@ -19,6 +19,7 @@ from agentrig.core import (
 from agentrig.integrations import CommandInput
 from openrtl.adapters import (
     LocalDesignCatalog,
+    accept_expert_source_edit_output,
     analyze_fifo_waveform,
     apply_reviewed_source_edits,
     build_surfer_tool,
@@ -27,6 +28,7 @@ from openrtl.adapters import (
     inspect_vcd,
     load_fifo_canary_evidence,
     load_source_edit_plan,
+    prepare_expert_source_edit_request,
     propose_fifo_repairs,
     surfer_command_file,
 )
@@ -129,6 +131,24 @@ def parser() -> argparse.ArgumentParser:
         help="draft or apply evidence-bound source edits",
     )
     repair_commands = repair.add_subparsers(dest="repair_command", required=True)
+    prepare_expert_edits = repair_commands.add_parser(
+        "prepare-expert-source-edits",
+        help="prepare a provider-neutral, evidence-bound expert output request",
+    )
+    prepare_expert_edits.add_argument("--root", type=Path, default=Path.cwd())
+    prepare_expert_edits.add_argument("--proposal", type=Path, required=True)
+    prepare_expert_edits.add_argument("--debug-session", type=Path, required=True)
+    prepare_expert_edits.add_argument("--source", type=Path, required=True)
+    prepare_expert_edits.add_argument("--request-output", type=Path, required=True)
+    accept_expert_edits = repair_commands.add_parser(
+        "accept-expert-source-edits",
+        help="ingest strict expert output as an untrusted specification candidate",
+    )
+    accept_expert_edits.add_argument("--root", type=Path, default=Path.cwd())
+    accept_expert_edits.add_argument("--request", type=Path, required=True)
+    accept_expert_edits.add_argument("--response", type=Path, required=True)
+    accept_expert_edits.add_argument("--edit-spec-output", type=Path, required=True)
+    accept_expert_edits.add_argument("--suggestion-report", type=Path, required=True)
     draft_source_edits = repair_commands.add_parser(
         "draft-source-edits",
         help="qualify an external edit specification into a review-required typed plan",
@@ -233,6 +253,60 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _repair_command(arguments: argparse.Namespace) -> int:
+    if arguments.repair_command == "prepare-expert-source-edits":
+        root = arguments.root.resolve(strict=True)
+        request_path = _contained_output(root, arguments.request_output)
+        input_paths = {
+            _contained_input(root, arguments.proposal),
+            _contained_input(root, arguments.debug_session),
+            _contained_input(root, arguments.source),
+        }
+        if request_path in input_paths:
+            raise ValueError("expert source edit request output must be separate from every input")
+        request = prepare_expert_source_edit_request(
+            root,
+            proposal_path=arguments.proposal,
+            debug_session_path=arguments.debug_session,
+            source_path=arguments.source,
+        )
+        _write_exact_repair_outputs(((request_path, request.payload()),))
+        print(json.dumps(request.payload(), indent=2, sort_keys=True))
+        return 0
+    if arguments.repair_command == "accept-expert-source-edits":
+        root = arguments.root.resolve(strict=True)
+        spec_path = _contained_output(root, arguments.edit_spec_output)
+        report_path = _contained_output(root, arguments.suggestion_report)
+        input_paths = {
+            _contained_input(root, arguments.request),
+            _contained_input(root, arguments.response),
+        }
+        if spec_path == report_path or spec_path in input_paths or report_path in input_paths:
+            raise ValueError("expert source edit outputs must be separate from every input")
+        edit_spec, suggestion_report = accept_expert_source_edit_output(
+            root,
+            request_path=arguments.request,
+            response_path=arguments.response,
+        )
+        _write_exact_repair_outputs(
+            (
+                (spec_path, edit_spec),
+                (report_path, suggestion_report.payload()),
+            )
+        )
+        print(
+            json.dumps(
+                {
+                    "edit_spec": spec_path.relative_to(root).as_posix(),
+                    "edit_spec_digest": suggestion_report.edit_spec_digest,
+                    "status": "awaiting_qualification",
+                    "suggestion_report": report_path.relative_to(root).as_posix(),
+                    "suggestion_report_payload": suggestion_report.payload(),
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
     if arguments.repair_command == "draft-source-edits":
         root = arguments.root.resolve(strict=True)
         plan_path = _contained_output(root, arguments.edit_plan_output)
@@ -252,7 +326,7 @@ def _repair_command(arguments: argparse.Namespace) -> int:
             source_path=arguments.source,
             edit_spec_path=arguments.edit_spec,
         )
-        _write_exact_planning_outputs(
+        _write_exact_repair_outputs(
             (
                 (plan_path, plan.payload()),
                 (report_path, planning_report.payload()),
@@ -519,7 +593,7 @@ def _write_json(path: Path, payload: object) -> None:
     )
 
 
-def _write_exact_planning_outputs(
+def _write_exact_repair_outputs(
     outputs: tuple[tuple[Path, object], ...],
 ) -> None:
     encoded = tuple(
@@ -532,7 +606,7 @@ def _write_exact_planning_outputs(
     for path, content in encoded:
         if path.exists():
             if path.is_symlink() or not path.is_file() or path.read_bytes() != content:
-                raise ValueError("repair planning output contains unrecognized content")
+                raise ValueError("repair output contains unrecognized content")
     for path, content in encoded:
         path.parent.mkdir(parents=True, exist_ok=True)
         if not path.exists():

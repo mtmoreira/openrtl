@@ -13,6 +13,13 @@ from openrtl.application.experts import (
     ExpertInvocationPlan,
     ExpertRegistry,
 )
+from openrtl.application.expert_edits import (
+    ExpertSourceEditReport,
+    ExpertSourceEditRequest,
+    build_expert_source_edit_report,
+    build_expert_source_edit_request,
+    context_pack_payload,
+)
 from openrtl.application.evals import EvaluationCase, load_evaluation_cases
 from openrtl.application.workflow import (
     OpenRTLWorkflow,
@@ -64,6 +71,8 @@ __all__ = [
     "ExpertDefinition",
     "ExpertInvocationPlan",
     "ExpertRegistry",
+    "ExpertSourceEditReport",
+    "ExpertSourceEditRequest",
     "OpenRTLWorkflow",
     "RequirementCoverage",
     "ReviewFinding",
@@ -81,9 +90,12 @@ __all__ = [
     "WorkflowStage",
     "WorkflowState",
     "build_requirement_coverage",
+    "build_expert_source_edit_report",
+    "build_expert_source_edit_request",
     "build_repair_proposal",
     "build_source_edit_plan",
     "canonical_payload_digest",
+    "context_pack_payload",
     "load_evaluation_cases",
     "run_scripted_fifo",
 ]
