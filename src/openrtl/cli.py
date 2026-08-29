@@ -6,9 +6,19 @@ import argparse
 import asyncio
 import json
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
-from agentrig.capabilities import ToolInvocation
+from agentrig.capabilities import (
+    CapabilityDescriptor,
+    CapabilityFeature,
+    CapabilityKind,
+    CapabilityLimit,
+    DataRetention,
+    GenerationUsage,
+    ModelMetadata,
+    TextGenerationFinishReason,
+    ToolInvocation,
+)
 from agentrig.core import (
     CancellationSource,
     RunContext,
@@ -17,6 +27,7 @@ from agentrig.core import (
     Uuid4IdGenerator,
 )
 from agentrig.integrations import CommandInput
+from agentrig.testing import ScriptedStructuredGeneration, ScriptedStructuredGenerator
 from openrtl.adapters import (
     LocalDesignCatalog,
     accept_expert_source_edit_output,
@@ -26,6 +37,7 @@ from openrtl.adapters import (
     draft_source_edit_plan,
     fifo_repair_focus,
     inspect_vcd,
+    invoke_expert_source_edits,
     load_fifo_canary_evidence,
     load_source_edit_plan,
     prepare_expert_source_edit_request,
@@ -34,6 +46,7 @@ from openrtl.adapters import (
 )
 from openrtl.application import (
     EXPERT_DEFINITIONS,
+    ExpertInvocationPolicy,
     FIFO_RUN_REF,
     FIFO_SOURCE_REFS,
     OpenRTLWorkflow,
@@ -149,6 +162,34 @@ def parser() -> argparse.ArgumentParser:
     accept_expert_edits.add_argument("--response", type=Path, required=True)
     accept_expert_edits.add_argument("--edit-spec-output", type=Path, required=True)
     accept_expert_edits.add_argument("--suggestion-report", type=Path, required=True)
+    invoke_expert_edits = repair_commands.add_parser(
+        "invoke-expert-source-edits",
+        help="run one bounded provider-free scripted expert turn",
+    )
+    invoke_expert_edits.add_argument("--root", type=Path, default=Path.cwd())
+    invoke_expert_edits.add_argument("--request", type=Path, required=True)
+    invoke_expert_edits.add_argument("--proposal", type=Path, required=True)
+    invoke_expert_edits.add_argument("--debug-session", type=Path, required=True)
+    invoke_expert_edits.add_argument("--source", type=Path, required=True)
+    invoke_expert_edits.add_argument("--scripted-response", type=Path, required=True)
+    invoke_expert_edits.add_argument("--envelope-output", type=Path, required=True)
+    invoke_expert_edits.add_argument("--response-output", type=Path, required=True)
+    invoke_expert_edits.add_argument("--edit-spec-output", type=Path, required=True)
+    invoke_expert_edits.add_argument("--suggestion-report", type=Path, required=True)
+    invoke_expert_edits.add_argument("--invocation-report", type=Path, required=True)
+    invoke_expert_edits.add_argument(
+        "--runtime-binding-id",
+        default="runtime.scripted.expert-edits",
+    )
+    invoke_expert_edits.add_argument(
+        "--capability-id",
+        default="scripted.expert-source-edits",
+    )
+    invoke_expert_edits.add_argument("--model", default="scripted-expert-v1")
+    invoke_expert_edits.add_argument("--timeout-seconds", type=int, default=120)
+    invoke_expert_edits.add_argument("--max-input-bytes", type=int, default=64 * 1024)
+    invoke_expert_edits.add_argument("--max-output-bytes", type=int, default=64 * 1024)
+    invoke_expert_edits.add_argument("--max-output-tokens", type=int, default=4096)
     draft_source_edits = repair_commands.add_parser(
         "draft-source-edits",
         help="qualify an external edit specification into a review-required typed plan",
@@ -307,6 +348,8 @@ def _repair_command(arguments: argparse.Namespace) -> int:
             )
         )
         return 0
+    if arguments.repair_command == "invoke-expert-source-edits":
+        return _invoke_scripted_expert_source_edits(arguments)
     if arguments.repair_command == "draft-source-edits":
         root = arguments.root.resolve(strict=True)
         plan_path = _contained_output(root, arguments.edit_plan_output)
@@ -388,6 +431,108 @@ def _repair_command(arguments: argparse.Namespace) -> int:
     report_path.parent.mkdir(parents=True, exist_ok=True)
     _write_json(report_path, application_report.payload())
     print(json.dumps(application_report.payload(), indent=2, sort_keys=True))
+    return 0
+
+
+def _invoke_scripted_expert_source_edits(arguments: argparse.Namespace) -> int:
+    root = arguments.root.resolve(strict=True)
+    input_paths = {
+        _contained_input(root, arguments.request),
+        _contained_input(root, arguments.proposal),
+        _contained_input(root, arguments.debug_session),
+        _contained_input(root, arguments.source),
+        _contained_input(root, arguments.scripted_response),
+    }
+    output_paths = tuple(
+        _contained_output(root, value)
+        for value in (
+            arguments.envelope_output,
+            arguments.response_output,
+            arguments.edit_spec_output,
+            arguments.suggestion_report,
+            arguments.invocation_report,
+        )
+    )
+    if len(set(output_paths)) != len(output_paths) or any(
+        value in input_paths for value in output_paths
+    ):
+        raise ValueError("expert invocation outputs must be unique and separate from inputs")
+    scripted_response = _read_json_object(
+        _contained_input(root, arguments.scripted_response),
+        "scripted expert response",
+    )
+    policy = ExpertInvocationPolicy(
+        arguments.runtime_binding_id,
+        arguments.capability_id,
+        "scripted",
+        arguments.model,
+        DataRetention.NOT_RETAINED,
+        arguments.timeout_seconds,
+        arguments.max_input_bytes,
+        arguments.max_output_bytes,
+        arguments.max_output_tokens,
+    )
+    generator = ScriptedStructuredGenerator[dict[str, Any]](
+        descriptor=CapabilityDescriptor(
+            capability_id=policy.capability_id,
+            version="1",
+            kind=CapabilityKind.STRUCTURED_GENERATION,
+            features=frozenset({CapabilityFeature.STRUCTURED_OUTPUT}),
+            limits={CapabilityLimit.MAX_OUTPUT_TOKENS: policy.max_output_tokens},
+            data_retention=DataRetention.NOT_RETAINED,
+        ),
+        outcomes=(
+            ScriptedStructuredGeneration(
+                encoded_output=scripted_response,
+                usage=GenerationUsage(),
+                model=ModelMetadata(provider="scripted", model_id=policy.model),
+                finish_reason=TextGenerationFinishReason.COMPLETED,
+            ),
+        ),
+    )
+    id_generator = Uuid4IdGenerator(RunId)
+    context = RunContext.create_root(
+        clock=SystemClock(),
+        id_generator=id_generator,
+        cancellation=CancellationSource().token,
+    )
+    artifacts = asyncio.run(
+        invoke_expert_source_edits(
+            root,
+            request_path=arguments.request,
+            proposal_path=arguments.proposal,
+            debug_session_path=arguments.debug_session,
+            source_path=arguments.source,
+            generator=generator,
+            policy=policy,
+            context=context,
+        )
+    )
+    _write_exact_repair_outputs(
+        (
+            (output_paths[0], artifacts.envelope),
+            (output_paths[1], artifacts.response),
+            (output_paths[2], artifacts.edit_spec),
+            (output_paths[3], artifacts.suggestion),
+            (output_paths[4], artifacts.report.payload()),
+        )
+    )
+    print(
+        json.dumps(
+            {
+                "applies_changes": False,
+                "edit_spec": output_paths[2].relative_to(root).as_posix(),
+                "envelope": output_paths[0].relative_to(root).as_posix(),
+                "invocation_report": output_paths[4].relative_to(root).as_posix(),
+                "provider": "scripted",
+                "response": output_paths[1].relative_to(root).as_posix(),
+                "status": "awaiting_qualification",
+                "suggestion_report": output_paths[3].relative_to(root).as_posix(),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
     return 0
 
 
@@ -584,6 +729,19 @@ def _contained_input(root: Path, candidate: Path) -> Path:
     if not resolved.is_file():
         raise ValueError("repair input must be a regular file")
     return resolved
+
+
+def _read_json_object(selected: Path, label: str) -> dict[str, Any]:
+    content = selected.read_bytes()
+    if len(content) > 1024 * 1024:
+        raise ValueError(f"{label} exceeds the byte limit")
+    try:
+        value = json.loads(content)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"{label} is not valid UTF-8 JSON") from error
+    if not isinstance(value, dict):
+        raise ValueError(f"{label} must be a JSON object")
+    return value
 
 
 def _write_json(path: Path, payload: object) -> None:

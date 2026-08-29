@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from openrtl.application.expert_edits import (
     ExpertSourceEditReport,
@@ -112,7 +112,47 @@ def accept_expert_source_edit_output(
     request = _parse_request(_read_json(request_file, "expert source edit request"))
     response_bytes = response_file.read_bytes()
     response = _read_json(response_file, "expert source edit response")
-    edits = _validate_response(request, response)
+    return accept_expert_source_edit_payload(
+        request,
+        response,
+        response_bytes=response_bytes,
+    )
+
+
+def load_expert_source_edit_request(
+    root: Path,
+    request_path: Path,
+) -> ExpertSourceEditRequest:
+    """Load and re-establish the canonical identity of one reviewed request."""
+
+    resolved_root = root.resolve(strict=True)
+    request_file = _contained_file(resolved_root, request_path, "expert source edit request")
+    return _parse_request(_read_json(request_file, "expert source edit request"))
+
+
+def validate_expert_source_edit_response(
+    request: ExpertSourceEditRequest,
+    response: dict[str, Any],
+) -> dict[str, Any]:
+    """Validate exact bindings and return a detached canonical response."""
+
+    _validate_response(request, response)
+    detached = json.loads(_canonical_json(response))
+    if not isinstance(detached, dict):
+        raise AssertionError("canonical expert response stopped being an object")
+    return cast(dict[str, Any], detached)
+
+
+def accept_expert_source_edit_payload(
+    request: ExpertSourceEditRequest,
+    response: dict[str, Any],
+    *,
+    response_bytes: bytes | None = None,
+) -> tuple[dict[str, Any], ExpertSourceEditReport]:
+    """Accept an in-memory strict response only as an untrusted candidate."""
+
+    canonical_response = validate_expert_source_edit_response(request, response)
+    edits = _validate_response(request, canonical_response)
     edit_spec: dict[str, Any] = {
         "edits": edits,
         "schema": "openrtl.source-edit-spec.v1",
@@ -122,7 +162,9 @@ def accept_expert_source_edit_output(
     edit_ids = tuple(str(value["edit_id"]) for value in edits)
     report = build_expert_source_edit_report(
         request,
-        response_digest=_digest(response_bytes),
+        response_digest=_digest(
+            response_bytes if response_bytes is not None else _canonical_json(canonical_response)
+        ),
         edit_spec_digest=edit_spec_digest,
         change_ids=change_ids,
         edit_ids=edit_ids,

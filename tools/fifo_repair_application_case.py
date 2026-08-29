@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import hashlib
 import json
 import os
@@ -19,18 +20,39 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from agentrig.capabilities import (  # noqa: E402
+    CapabilityDescriptor,
+    CapabilityFeature,
+    CapabilityKind,
+    CapabilityLimit,
+    DataRetention,
+    GenerationUsage,
+    ModelMetadata,
+    TextGenerationFinishReason,
+)
+from agentrig.core import (  # noqa: E402
+    CancellationSource,
+    RunContext,
+    RunId,
+    SystemClock,
+    Uuid4IdGenerator,
+)
+from agentrig.testing import (  # noqa: E402
+    ScriptedStructuredGeneration,
+    ScriptedStructuredGenerator,
+)
 from openrtl.adapters import (  # noqa: E402
-    accept_expert_source_edit_output,
     analyze_fifo_waveform,
     apply_reviewed_source_edits,
     draft_source_edit_plan,
     fifo_repair_focus,
     inspect_vcd,
+    invoke_expert_source_edits,
     prepare_expert_source_edit_request,
     propose_fifo_repairs,
     surfer_command_file,
 )
-from openrtl.application import RepairApproval  # noqa: E402
+from openrtl.application import ExpertInvocationPolicy, RepairApproval  # noqa: E402
 from openrtl.adapters.waveforms import WaveformFocus  # noqa: E402
 from tools.verilator_canary import (  # noqa: E402
     VerilatorToolchain,
@@ -68,6 +90,8 @@ _KNOWN_OUTPUTS = frozenset(
         "expert-edit-request.json",
         "expert-edit-spec.json",
         "expert-edit-suggestion.json",
+        "expert-invocation-envelope.json",
+        "expert-invocation-report.json",
         "evidence.json",
         "focus-after.sucl",
         "focus-before.sucl",
@@ -139,6 +163,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
     expert_response_path = output / "expert-edit-response.json"
     expert_spec_path = output / "expert-edit-spec.json"
     expert_suggestion_path = output / "expert-edit-suggestion.json"
+    expert_envelope_path = output / "expert-invocation-envelope.json"
+    expert_invocation_path = output / "expert-invocation-report.json"
     application_path = output / "application.json"
     comparison_path = output / "comparison.json"
     before_focus_path = output / "focus-before.sucl"
@@ -180,14 +206,60 @@ def main(arguments: Sequence[str] | None = None) -> int:
         },
         "status": "proposed_untrusted",
     }
-    _write_json(expert_response_path, expert_response)
-    expert_spec, expert_suggestion = accept_expert_source_edit_output(
-        root,
-        request_path=expert_request_path,
-        response_path=expert_response_path,
+    invocation_policy = ExpertInvocationPolicy(
+        "runtime.scripted.expert-edits",
+        "scripted.expert-source-edits",
+        "scripted",
+        "scripted-expert-v1",
+        DataRetention.NOT_RETAINED,
     )
+    generator = ScriptedStructuredGenerator[dict[str, Any]](
+        descriptor=CapabilityDescriptor(
+            capability_id=invocation_policy.capability_id,
+            version="1",
+            kind=CapabilityKind.STRUCTURED_GENERATION,
+            features=frozenset({CapabilityFeature.STRUCTURED_OUTPUT}),
+            limits={
+                CapabilityLimit.MAX_OUTPUT_TOKENS: invocation_policy.max_output_tokens
+            },
+            data_retention=DataRetention.NOT_RETAINED,
+        ),
+        outcomes=(
+            ScriptedStructuredGeneration(
+                encoded_output=expert_response,
+                usage=GenerationUsage(),
+                model=ModelMetadata(
+                    provider="scripted",
+                    model_id=invocation_policy.model,
+                ),
+                finish_reason=TextGenerationFinishReason.COMPLETED,
+            ),
+        ),
+    )
+    id_generator = Uuid4IdGenerator(RunId)
+    invocation = asyncio.run(
+        invoke_expert_source_edits(
+            root,
+            request_path=expert_request_path,
+            proposal_path=proposal_path,
+            debug_session_path=debug_path,
+            source_path=source,
+            generator=generator,
+            policy=invocation_policy,
+            context=RunContext.create_root(
+                clock=SystemClock(),
+                id_generator=id_generator,
+                cancellation=CancellationSource().token,
+            ),
+        )
+    )
+    expert_spec = invocation.edit_spec
+    expert_suggestion = invocation.suggestion
+    _write_json(expert_envelope_path, invocation.envelope)
+    _write_json(expert_response_path, invocation.response)
     _write_json(expert_spec_path, expert_spec)
-    _write_json(expert_suggestion_path, expert_suggestion.payload())
+    _write_json(expert_suggestion_path, expert_suggestion)
+    _write_json(expert_invocation_path, invocation.report.payload())
     edit_plan, planning_report = draft_source_edit_plan(
         root,
         proposal_path=proposal_path,
@@ -285,6 +357,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
                 ("expert_edit_response", expert_response_path),
                 ("expert_edit_spec", expert_spec_path),
                 ("expert_edit_suggestion", expert_suggestion_path),
+                ("expert_invocation_envelope", expert_envelope_path),
+                ("expert_invocation_report", expert_invocation_path),
                 ("focus_after", after_focus_path),
                 ("focus_before", before_focus_path),
                 ("proposal", proposal_path),
@@ -302,8 +376,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
         },
         "qualified_application_id": application.application_id,
         "qualified_edit_plan_digest": edit_plan.content_digest,
-        "qualified_expert_suggestion_id": expert_suggestion.suggestion_id,
-        "schema": "openrtl.repair-application-evidence.v5",
+        "qualified_expert_suggestion_id": invocation.report.suggestion_id,
+        "schema": "openrtl.repair-application-evidence.v6",
         "status": "passed",
         "toolchain": {
             "cocotb_config": str(toolchain.cocotb_config),
@@ -326,9 +400,11 @@ def main(arguments: Sequence[str] | None = None) -> int:
         "expert_edit_request": expert_request_path.relative_to(root).as_posix(),
         "expert_edit_spec": expert_spec_path.relative_to(root).as_posix(),
         "expert_edit_suggestion": expert_suggestion_path.relative_to(root).as_posix(),
+        "expert_invocation_envelope": expert_envelope_path.relative_to(root).as_posix(),
+        "expert_invocation_report": expert_invocation_path.relative_to(root).as_posix(),
         "proposal": proposal_path.relative_to(root).as_posix(),
         "repaired_finding_ids": tuple(value.finding_id for value in after_report.findings),
-        "schema": "openrtl.fifo-repair-application-case.v5",
+        "schema": "openrtl.fifo-repair-application-case.v6",
         "status": "passed",
         "visual_evidence": visual_evidence,
     }

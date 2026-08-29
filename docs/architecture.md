@@ -106,6 +106,16 @@ canonical form. Its report remains `awaiting_qualification`; it cannot invoke a
 provider, approve a plan, or write RTL. Deterministic qualification and human
 review remain the two separate downstream gates.
 
+Controlled expert invocation precedes suggestion ingestion. OpenRTL gives an
+AgentRig structured generator one canonical envelope containing only bounded
+proposal data, linked waveform observations, and digest-bound source excerpts.
+The caller selects exact runtime binding, capability, provider, model,
+retention, timeout, input/output bytes, and output tokens. The lane exposes no
+tools and permits one turn. Its safe report records identities, aggregate usage,
+and canonical digests, never hidden reasoning or raw provider payloads. The
+default CLI implementation is scripted and provider-free; live composition is
+an explicit opt-in adapter boundary.
+
 ## Reuse and community boundary
 
 A passing design produces a local package candidate containing interfaces,

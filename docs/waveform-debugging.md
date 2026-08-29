@@ -179,6 +179,14 @@ focus, proposal, edit plan, application report, and repaired source by SHA-256.
 The workflow makes no provider call, does not launch Surfer, and does not modify
 production RTL.
 
+When the controlled expert-invocation lane is used, inspect
+`invocation-envelope.json` before the response. Its `diagnosis` section contains
+the exact waveform findings and bounded edge observations shown in the Surfer
+focus, while `source.excerpts` contains only the digest-bound lines named by the
+proposal. Confirm `runtime.tool_ids` is empty, `max_turns` is one, and the
+invocation report still says `awaiting_qualification`; the model output is not
+an approval or a repair application.
+
 ## Prepare and open a Surfer focus
 
 Generate reusable inspection and viewer state:

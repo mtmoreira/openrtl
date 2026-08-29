@@ -127,6 +127,29 @@ uv run openrtl repair accept-expert-source-edits \
   --suggestion-report build/fifo-repair-application/expert-edit-suggestion.json
 ```
 
+Exercise the complete invocation boundary without a provider by selecting the
+scripted runtime explicitly:
+
+```console
+uv run openrtl repair invoke-expert-source-edits \
+  --request build/fifo-repair-application/expert-edit-request.json \
+  --proposal build/fifo-repair-application/proposal.json \
+  --debug-session build/fifo-repair-application/debug-session.json \
+  --source examples/fifo/faults/sync_fifo_level_fault.sv \
+  --scripted-response build/fifo-repair-application/scripted-response.json \
+  --envelope-output build/fifo-repair-application/invocation-envelope.json \
+  --response-output build/fifo-repair-application/expert-edit-response.json \
+  --edit-spec-output build/fifo-repair-application/expert-edit-spec.json \
+  --suggestion-report build/fifo-repair-application/expert-edit-suggestion.json \
+  --invocation-report build/fifo-repair-application/invocation-report.json
+```
+
+This is one tool-free AgentRig structured-generation turn with exact scripted
+runtime/model identity, bounded context excerpts, deadline and output limits,
+and `not_retained` data handling. It never resolves credentials or falls back
+to a live provider. A live provider remains a separately authorized future
+composition point.
+
 That report is only `awaiting_qualification`. Next qualify the external
 exact-replacement specification into a typed, review-required edit plan:
 
@@ -158,7 +181,8 @@ uv run openrtl repair apply-source-edits \
   --review-note "Reviewed the linked edge and exact source anchors."
 ```
 
-The commands fail on stale context, evidence, source, edit bytes, anchors, or approval
+The commands fail on stale context, evidence, source, edit bytes, anchors, runtime
+identity, model identity, data-retention drift, tool exposure, or approval
 and never edits its input. Concrete repair text is carried by the reviewed edit
 plan, not hardcoded in Python. The opt-in
 `tools/fifo_repair_application_case.py` provider-free qualification uses the
