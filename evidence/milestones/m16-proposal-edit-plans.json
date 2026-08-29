@@ -1,0 +1,293 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "m16.production.canary-log",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/production-canary/canary.log",
+      "media_type": "text/plain",
+      "producer_id": "verilator.cocotb",
+      "review_state": "validated-pass",
+      "schema": "openrtl.bounded-log.v1",
+      "sha256": "703a1f96cd4cf4423d1bf2af26cad319b89f1861001e871fe09208510f7d157f",
+      "size_bytes": 83728
+    },
+    {
+      "artifact_id": "m16.production.canary-evidence",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/production-canary/evidence.json",
+      "media_type": "application/json",
+      "producer_id": "openrtl.verilator-canary.v1",
+      "review_state": "validated-pass",
+      "schema": "openrtl.verilator-canary-evidence.v1",
+      "sha256": "5db4cab32e9669ff21ff3c587f1a4658e6b0b5ecc24ef9d072f903f848a5537d",
+      "size_bytes": 1003
+    },
+    {
+      "artifact_id": "m16.production.canary-results",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/production-canary/results.xml",
+      "media_type": "application/xml",
+      "producer_id": "cocotb.junit",
+      "review_state": "validated-pass",
+      "schema": "junit.test-results",
+      "sha256": "d4f208a49fc12a7f7e647a2c11590dba962fef2fc2036de88dea37ccb372d38c",
+      "size_bytes": 421
+    },
+    {
+      "artifact_id": "m16.production.canary-waveform",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/production-canary/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer_id": "verilator.trace",
+      "review_state": "validated-pass",
+      "schema": "ieee.vcd",
+      "sha256": "5fc0e1558f732f9b8917fcf19c2d4d78f96bb22b38a7d16628daf29d9e546695",
+      "size_bytes": 44255
+    },
+    {
+      "artifact_id": "m16.repair.application",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/repair-case/application.json",
+      "media_type": "application/json",
+      "producer_id": "openrtl.source-edit-application.v2",
+      "review_state": "validated-candidate",
+      "schema": "openrtl.repair-application.v2",
+      "sha256": "df69dcd2cab2394fa5c8ecaad0a56c7011ababadeeffebf3de28346272d939c7",
+      "size_bytes": 1197
+    },
+    {
+      "artifact_id": "m16.repair.before-results",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/repair-case/before/results.xml",
+      "media_type": "application/xml",
+      "producer_id": "cocotb.junit",
+      "review_state": "validated-expected-failure",
+      "schema": "junit.test-results",
+      "sha256": "5ffcc9d5fa44bd003f9ecda0b7e051d247e7454df157deba05517771ad21c80a",
+      "size_bytes": 523
+    },
+    {
+      "artifact_id": "m16.repair.before-log",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/repair-case/before/run.log",
+      "media_type": "text/plain",
+      "producer_id": "verilator.cocotb",
+      "review_state": "validated-expected-failure",
+      "schema": "openrtl.bounded-log.v1",
+      "sha256": "c765e5a523b0980f9b573117ab9b99f8727b1f1b27eb3778945b5e4b0651304f",
+      "size_bytes": 13294
+    },
+    {
+      "artifact_id": "m16.repair.before-waveform",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/repair-case/before/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer_id": "verilator.trace",
+      "review_state": "validated-visible-failure",
+      "schema": "ieee.vcd",
+      "sha256": "2f274d0760f7b11ac1b775e4e1657d33ca33d455c1b600552306f3b8bd786e0f",
+      "size_bytes": 1857
+    },
+    {
+      "artifact_id": "m16.repair.candidate",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/repair-case/candidate/sync_fifo.sv",
+      "media_type": "text/x-systemverilog",
+      "producer_id": "openrtl.source-edit-application.v2",
+      "review_state": "validated-candidate",
+      "schema": "systemverilog.source",
+      "sha256": "4fea04242e4da6fe3018016bcaaf7902531174f39896200e8d86f13c71741531",
+      "size_bytes": 2681
+    },
+    {
+      "artifact_id": "m16.repair.comparison",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/repair-case/comparison.json",
+      "media_type": "application/json",
+      "producer_id": "openrtl.fifo-repair-application-case.v4",
+      "review_state": "validated-visibly-distinct",
+      "schema": "openrtl.repair-comparison.v2",
+      "sha256": "57b125bc012bf443bb5d40a3f9046f26e302ecaba80518c87de9ffc1a7ee782e",
+      "size_bytes": 1296
+    },
+    {
+      "artifact_id": "m16.repair.debug-session",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/repair-case/debug-session.json",
+      "media_type": "application/json",
+      "producer_id": "openrtl.fifo-debug.v1",
+      "review_state": "validated",
+      "schema": "openrtl.debug-session.v1",
+      "sha256": "899c52962ac6076840de3fe1c3a804d175eee42d639679052358641bf0c98bfb",
+      "size_bytes": 4625
+    },
+    {
+      "artifact_id": "m16.repair.planning-report",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/repair-case/edit-plan-planning.json",
+      "media_type": "application/json",
+      "producer_id": "openrtl.source-edit-planning-report.v1",
+      "review_state": "awaiting-human-review",
+      "schema": "openrtl.source-edit-planning-report.v1",
+      "sha256": "32ae680240e7ff8280122c90422b583838b5957592918d75555975fc118f34a0",
+      "size_bytes": 1066
+    },
+    {
+      "artifact_id": "m16.repair.edit-plan",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/repair-case/edit-plan.json",
+      "media_type": "application/json",
+      "producer_id": "openrtl.source-edit-plan.v1",
+      "review_state": "approved-for-candidate",
+      "schema": "openrtl.source-edit-plan.v1",
+      "sha256": "5141a3ea159136f7904c4055544f185e5e18e954467a020e9a512e068424bb40",
+      "size_bytes": 981
+    },
+    {
+      "artifact_id": "m16.repair.evidence",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/repair-case/evidence.json",
+      "media_type": "application/json",
+      "producer_id": "openrtl.fifo-repair-application-case.v4",
+      "review_state": "validated",
+      "schema": "openrtl.repair-application-evidence.v4",
+      "sha256": "6caee34d7ca242e6989aafbc9b9c119ab0f341eeb2356dec47c20a216e99fd22",
+      "size_bytes": 3752
+    },
+    {
+      "artifact_id": "m16.repair.focus-after",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/repair-case/focus-after.sucl",
+      "media_type": "text/x-surfer-command",
+      "producer_id": "openrtl.surfer-command.v1",
+      "review_state": "validated-visible-context",
+      "schema": "surfer.command-file",
+      "sha256": "e31a7952d15233bc635a586fb31501f051f6b4e7ba3b538e222eb167459b865a",
+      "size_bytes": 534
+    },
+    {
+      "artifact_id": "m16.repair.focus-before",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/repair-case/focus-before.sucl",
+      "media_type": "text/x-surfer-command",
+      "producer_id": "openrtl.surfer-command.v1",
+      "review_state": "validated-visible-context",
+      "schema": "surfer.command-file",
+      "sha256": "e31a7952d15233bc635a586fb31501f051f6b4e7ba3b538e222eb167459b865a",
+      "size_bytes": 534
+    },
+    {
+      "artifact_id": "m16.repair.proposal",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/repair-case/proposal.json",
+      "media_type": "application/json",
+      "producer_id": "openrtl.fifo-repair.v1",
+      "review_state": "approved-for-candidate",
+      "schema": "openrtl.repair-proposal.v1",
+      "sha256": "8a0c9191dffd24586794613709567f6b155adaff87d5840978b1538179910b7e",
+      "size_bytes": 2364
+    },
+    {
+      "artifact_id": "m16.repair.repaired-results",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/repair-case/repaired/results.xml",
+      "media_type": "application/xml",
+      "producer_id": "cocotb.junit",
+      "review_state": "validated-pass",
+      "schema": "junit.test-results",
+      "sha256": "186cfa6d015c14cd5a4dcd5d23f72852c3d600aaed8db1b11e69ef86b13ef6ba",
+      "size_bytes": 449
+    },
+    {
+      "artifact_id": "m16.repair.repaired-log",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/repair-case/repaired/run.log",
+      "media_type": "text/plain",
+      "producer_id": "verilator.cocotb",
+      "review_state": "validated-pass",
+      "schema": "openrtl.bounded-log.v1",
+      "sha256": "36f87101eab428ef6345dcfd1bd79ddd7229940025fd8664670f49296059d15d",
+      "size_bytes": 12596
+    },
+    {
+      "artifact_id": "m16.repair.repaired-waveform",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/repair-case/repaired/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer_id": "verilator.trace",
+      "review_state": "validated-visible-pass",
+      "schema": "ieee.vcd",
+      "sha256": "0bd21f42287d2fa7d8c5668d00ededddc438a8ffb867cd3add4b8d3cb12a1265",
+      "size_bytes": 1914
+    },
+    {
+      "artifact_id": "m16.validation.log",
+      "availability_class": "local-retained",
+      "locator": "build/proposal-edit-plans/m16-937694e/validation.log",
+      "media_type": "text/plain",
+      "producer_id": "openrtl.m16-validation",
+      "review_state": "validated-pass",
+      "schema": "openrtl.bounded-log.v1",
+      "sha256": "6d57c1ceb3b1510f8c63f966a77d7fe88f1650565387d627a6b4ddc7d53ebd88",
+      "size_bytes": 5575
+    }
+  ],
+  "authorization_boundary": {
+    "candidate_only": true,
+    "generated_code_executed": false,
+    "gui_launched": false,
+    "plan_generation_applies_changes": false,
+    "production_authorized": false,
+    "production_rtl_modified": false,
+    "remote_operations": false
+  },
+  "evidence_lane": "local-proposal-to-edit-plan",
+  "milestone_id": "m16-proposal-edit-plans",
+  "qualified_edit_plan_digest": "sha256:99fe70b36a53d7f46e70ae55448dde08644cfd1fa311991d3360d49d816faba3",
+  "qualified_edit_spec_digest": "sha256:33040fd721529758e92597cac841697661c08a623253cb60530a8431cfc7d396",
+  "qualified_parent": "937694e29cffc8538e74bd1ec8fa895f36bf8ca1",
+  "qualified_planning_id": "repair.planning.6d3006d0b33a46fd370b",
+  "retention_class": "local-build-collateral",
+  "review_state": "validated",
+  "schema": "openrtl.milestone-evidence.v1",
+  "validation_outcomes": {
+    "focused_tests": "18 passed",
+    "production_canary": "passed with retained VCD and evidence manifest",
+    "provider_free_suite": "70 passed",
+    "repair_case": "planning awaited review; one expected finding before and zero after approved candidate application",
+    "strict_typing": "4 focused source files passed",
+    "visible_waveform": "marker strictly inside focus; stable level 0 before and 1 after"
+  },
+  "visual_evidence": {
+    "before": {
+      "level_at_focus_end": 0,
+      "level_at_marker": 0,
+      "trace_end_fs": 20000000
+    },
+    "focus": {
+      "end_fs": 15001000,
+      "marker_fs": 10000000,
+      "signals": [
+        "sync_fifo.clk",
+        "sync_fifo.rst_n",
+        "sync_fifo.wr_valid",
+        "sync_fifo.wr_ready",
+        "sync_fifo.write_accepted",
+        "sync_fifo.rd_valid",
+        "sync_fifo.rd_ready",
+        "sync_fifo.read_accepted",
+        "sync_fifo.level",
+        "sync_fifo.full",
+        "sync_fifo.empty"
+      ],
+      "start_fs": 4999000
+    },
+    "repaired": {
+      "level_at_focus_end": 1,
+      "level_at_marker": 1,
+      "trace_end_fs": 20000000
+    },
+    "schema": "openrtl.repair-visual-comparison.v1",
+    "status": "visibly_distinct"
+  }
+}
