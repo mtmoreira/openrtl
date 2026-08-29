@@ -1,0 +1,228 @@
+{
+  "artifacts": [
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/validation.report",
+      "sha256": "b4fe095bcd366beb8e11699d10c7d43f51b1f9925ccdd6b2ac14346d24a49358",
+      "size_bytes": 6907
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/production-canary/canary.log",
+      "sha256": "63a2e9489ba544f9fef9236091a63021a1822b652cbdb7f243e956ee6851d815",
+      "size_bytes": 83868
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/production-canary/evidence.json",
+      "sha256": "267b85464ba360886e3be9152f18b91bb107d99e3a00f9040fa37887e7509743",
+      "size_bytes": 1003
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/production-canary/results.xml",
+      "sha256": "fff3baafacf73e79a477d4ca869f5eebf34b49685ef8399944c8c28f379ced55",
+      "size_bytes": 429
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/production-canary/waves.vcd",
+      "sha256": "5fc0e1558f732f9b8917fcf19c2d4d78f96bb22b38a7d16628daf29d9e546695",
+      "size_bytes": 44255
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/application.json",
+      "sha256": "84e39bdee021e857f1fa1e34fa8abdaaafddfa6d773d0d6fd5fab542028d17ec",
+      "size_bytes": 1197
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/before/results.xml",
+      "sha256": "ff1e56d4f505c73376457a7c6302df33736e9e73315574a14fec7e1a104deaf0",
+      "size_bytes": 530
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/before/run.log",
+      "sha256": "9cd93241a1587fddf2dbd0fed1fa4976dfc439d1bb2ecb956dbb3918c2f0670e",
+      "size_bytes": 13441
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/before/waves.vcd",
+      "sha256": "2f274d0760f7b11ac1b775e4e1657d33ca33d455c1b600552306f3b8bd786e0f",
+      "size_bytes": 1857
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/candidate/sync_fifo.sv",
+      "sha256": "4fea04242e4da6fe3018016bcaaf7902531174f39896200e8d86f13c71741531",
+      "size_bytes": 2681
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/comparison.json",
+      "sha256": "62e2a98c27931097c34635523831836d3b2cdf321801665e9efbdfe3ad552a7e",
+      "size_bytes": 1296
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/debug-session.json",
+      "sha256": "36bc0660325d538ccca3831f801cc4f2b2b77060bddbb03578c9d12363f58a41",
+      "size_bytes": 4625
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/edit-plan-planning.json",
+      "sha256": "95f7bd4cc793b610cf49f2fc32a7838fc8545191f89ec9ad632394ff1b005fa0",
+      "size_bytes": 1066
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/edit-plan.json",
+      "sha256": "a59d04f21559a666f0cd7a97426002dbb099210b46a83991936f6055c9a19258",
+      "size_bytes": 981
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/evidence.json",
+      "sha256": "5f52a201a753960c2c306f2014a291bb482f906d31802421f82f0cefcfd64ad9",
+      "size_bytes": 6239
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/expert-edit-request.json",
+      "sha256": "a96a19254f2258c58c21836466517f4a4683d987b3102fa134bbe2576ec6f3b6",
+      "size_bytes": 2405
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/expert-edit-response.json",
+      "sha256": "f3488c39fcf4712851679cbcbfddeace67ed695d264db8b0b5e99e67626fb48d",
+      "size_bytes": 1083
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/expert-edit-spec.json",
+      "sha256": "33040fd721529758e92597cac841697661c08a623253cb60530a8431cfc7d396",
+      "size_bytes": 333
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/expert-edit-suggestion.json",
+      "sha256": "fa5e79d9dd57c546e6f0e082c491e4ba59f3f0ccdc7b99c5fe0cd8abb259bd2a",
+      "size_bytes": 1282
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/expert-invocation-envelope.json",
+      "sha256": "3212ca71540d6aa751b14ef71505a350657c4fa76d8583db865b8cffb10f2150",
+      "size_bytes": 6636
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/expert-invocation-report.json",
+      "sha256": "d5eef2444d2f6c57d911b6de352986aa1ee3e8a29fd404a2eff162dd9a6f81a1",
+      "size_bytes": 1472
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/provider-invocation-plan.json",
+      "sha256": "8112bee746da78edba74db599589607f34af5f591b882a76b78dbee6fe298e7a",
+      "size_bytes": 1315
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/provider-invocation-envelope.json",
+      "sha256": "2715368b076fb2c478660ed9e69657e45922cfec9e26f98c62c3288bd16ba74b",
+      "size_bytes": 6660
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/provider-invocation-report.json",
+      "sha256": "9782dbb8496eef36e8694ae2141b41afa702bb85067bf6d555009837526bcb39",
+      "size_bytes": 1493
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/provider-execution-report.json",
+      "sha256": "a0b7c10c1c8bbd237b7ff5fdb7345ef3be51862277e41da28592fa0e2a2876a9",
+      "size_bytes": 765
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/focus-after.sucl",
+      "sha256": "e31a7952d15233bc635a586fb31501f051f6b4e7ba3b538e222eb167459b865a",
+      "size_bytes": 534
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/focus-before.sucl",
+      "sha256": "e31a7952d15233bc635a586fb31501f051f6b4e7ba3b538e222eb167459b865a",
+      "size_bytes": 534
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/proposal.json",
+      "sha256": "c7294ef60e43d081e4cd14e53c6f57e62af4cbbfab9027033d5ee109b1c65a4d",
+      "size_bytes": 2364
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/repaired/results.xml",
+      "sha256": "1d5ce8c328621ac74ef9d0370be6cedc91dc9cfafa077f1654545712a3899e4b",
+      "size_bytes": 456
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/repaired/run.log",
+      "sha256": "aa767825dd411d08d9ec6db4cef67eb48fbd9318df99519840ffaa7cbf97c966",
+      "size_bytes": 12729
+    },
+    {
+      "locator": "build/opt-in-provider-invocation/m19-c6e58b1/repair-case/repaired/waves.vcd",
+      "sha256": "0bd21f42287d2fa7d8c5668d00ededddc438a8ffb867cd3add4b8d3cb12a1265",
+      "size_bytes": 1914
+    }
+  ],
+  "authorization_boundary": {
+    "Production-Authorized": false,
+    "credential_value_persisted": false,
+    "gui_launch": false,
+    "provider_output_trusted": false,
+    "real_credential_resolved": false,
+    "real_provider_called": false,
+    "remote_operations": false,
+    "source_changes_applied_by_provider_lane": false
+  },
+  "base_commit": "f29bd4a138e5b9440317303a871619e7ff971d48",
+  "evidence_lane": "synthetic-opt-in-provider-invocation",
+  "implementation_commit": "c6e58b1b8c0d0dca881475210d3240d32b9317d2",
+  "milestone_id": "m19-opt-in-provider-invocation",
+  "provider_gate": {
+    "credential_resolution": "deferred_until_client_creation",
+    "explicit_digest_required": true,
+    "invocation_status": "awaiting_qualification",
+    "max_provider_calls": 1,
+    "plan_digest": "sha256:771fa373ea444aa13f495f38202aede1b02f69722f2a9b31040bb1f477c579e8",
+    "plan_status": "awaiting_explicit_approval",
+    "provider_execution_status": "awaiting_qualification",
+    "synthetic_provider_call_count": 1,
+    "tools": []
+  },
+  "retention_class": "local-build-collateral",
+  "review_state": "validated",
+  "schema": "openrtl.milestone-evidence.v1",
+  "validation_outcomes": {
+    "focused_tests": "35 passed",
+    "full_unit_suite": "87 passed",
+    "model_tests": "3 passed",
+    "production_canary": "passed with retained VCD, XML, log, evidence, and simulation build",
+    "provider_gate": "synthetic one-call lane stopped at awaiting_qualification without applying changes",
+    "strict_typing": "6 focused source files passed",
+    "text_files": "104 valid"
+  },
+  "visual_evidence": {
+    "before": {
+      "level_at_focus_end": 0,
+      "level_at_marker": 0,
+      "trace_end_fs": 20000000
+    },
+    "focus": {
+      "end_fs": 15001000,
+      "marker_fs": 10000000,
+      "signals": [
+        "sync_fifo.clk",
+        "sync_fifo.rst_n",
+        "sync_fifo.wr_valid",
+        "sync_fifo.wr_ready",
+        "sync_fifo.write_accepted",
+        "sync_fifo.rd_valid",
+        "sync_fifo.rd_ready",
+        "sync_fifo.read_accepted",
+        "sync_fifo.level",
+        "sync_fifo.full",
+        "sync_fifo.empty"
+      ],
+      "start_fs": 4999000
+    },
+    "repaired": {
+      "level_at_focus_end": 1,
+      "level_at_marker": 1,
+      "trace_end_fs": 20000000
+    },
+    "schema": "openrtl.repair-visual-comparison.v1",
+    "status": "visibly_distinct"
+  }
+}
