@@ -1,0 +1,191 @@
+{
+  "artifacts": [
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/validation.report",
+      "sha256": "4dd41ba1358ecd1eb6ea7beef857141757ce2dc7ec3f7fe5a1a7ec0417ca221a",
+      "size_bytes": 5765
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/production-canary/canary.log",
+      "sha256": "c50bb9bbee979221509d48c9c978dac6e1031ba3cf8be9e2979818b0537cf4c3",
+      "size_bytes": 83908
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/production-canary/evidence.json",
+      "sha256": "e0b196524695a776ef7cbdfdb6584c773eae25f75abbdadfe3b805fd66cd5dfc",
+      "size_bytes": 1003
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/production-canary/results.xml",
+      "sha256": "12b2466f9e46999c255b6b849d59246dc4c2c23d328b609bd6f844418c165573",
+      "size_bytes": 430
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/production-canary/waves.vcd",
+      "sha256": "5fc0e1558f732f9b8917fcf19c2d4d78f96bb22b38a7d16628daf29d9e546695",
+      "size_bytes": 44255
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/application.json",
+      "sha256": "58c6eec5cd34091e414db48425fc31238491b5ae0e0a8a1f563e2f7284056592",
+      "size_bytes": 1197
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/before/results.xml",
+      "sha256": "d601c725656a3997e9cf841faf45335ebde85073e3a4154ace48832f1cd4bc14",
+      "size_bytes": 531
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/before/run.log",
+      "sha256": "b686fac1041951768bba16c884e2870648aa3283af078648c24878fc27bc1d6f",
+      "size_bytes": 13483
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/before/waves.vcd",
+      "sha256": "2f274d0760f7b11ac1b775e4e1657d33ca33d455c1b600552306f3b8bd786e0f",
+      "size_bytes": 1857
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/candidate/sync_fifo.sv",
+      "sha256": "4fea04242e4da6fe3018016bcaaf7902531174f39896200e8d86f13c71741531",
+      "size_bytes": 2681
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/comparison.json",
+      "sha256": "8cbd1ffc80bd9d8b085003994cf1e4670c512ed1f6f78858a7db4082fc924914",
+      "size_bytes": 1296
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/debug-session.json",
+      "sha256": "f18e6b39c70a0649cda53dffc867d9776b5973001de4dc50010e2ad4abd96ece",
+      "size_bytes": 4625
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/edit-plan-planning.json",
+      "sha256": "d24fed6c2a8bab327ec7f3dd5ce525416de03056bb268db6d4a155d1e57f8588",
+      "size_bytes": 1066
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/edit-plan.json",
+      "sha256": "3cd33a984bf29a9d952a759c2829ceb370d1cd4a01c2ce808a4789020b83c40e",
+      "size_bytes": 981
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/evidence.json",
+      "sha256": "02d3e06674c36e8087dc032d89fa9d5c40ca6a18e73637d6faa46df924a89d5a",
+      "size_bytes": 5191
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/expert-edit-request.json",
+      "sha256": "f46133f5e41297d5bb3304ffb943547fae330b55ab5828312b40a87b62284754",
+      "size_bytes": 2405
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/expert-edit-response.json",
+      "sha256": "988c9e681664fd2f88900c0ea8570d2facebbdc90ee697be559890aede7c75d9",
+      "size_bytes": 1083
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/expert-edit-spec.json",
+      "sha256": "33040fd721529758e92597cac841697661c08a623253cb60530a8431cfc7d396",
+      "size_bytes": 333
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/expert-edit-suggestion.json",
+      "sha256": "289f27110e95aa440116cdeb6b7d122600e4638a911eb80d23cb886a1d012f92",
+      "size_bytes": 1282
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/expert-invocation-envelope.json",
+      "sha256": "a03eaa1872132290f1c2e1b6f6a8ab67fb1cbe0e1b9d9e9e2b177c4c13082f8d",
+      "size_bytes": 6636
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/expert-invocation-report.json",
+      "sha256": "9505272b82ff0e442ff2cfe6131156052d41cd82b09f43fa80811f04e743de3f",
+      "size_bytes": 1472
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/focus-after.sucl",
+      "sha256": "e31a7952d15233bc635a586fb31501f051f6b4e7ba3b538e222eb167459b865a",
+      "size_bytes": 534
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/focus-before.sucl",
+      "sha256": "e31a7952d15233bc635a586fb31501f051f6b4e7ba3b538e222eb167459b865a",
+      "size_bytes": 534
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/proposal.json",
+      "sha256": "2e397c77d2fc38d2ca5b393b24cec7b73999d00cc661b7d24e5926f907a28880",
+      "size_bytes": 2364
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/repaired/results.xml",
+      "sha256": "e7b913150afed4e7069343c6ac781bb93301f869d30f26a4532380fd2bad419e",
+      "size_bytes": 458
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/repaired/run.log",
+      "sha256": "9a8b1a72d97bfba08191bfa391ef3803738840022548f5e28ee2cb198ac6c05c",
+      "size_bytes": 12767
+    },
+    {
+      "locator": "build/controlled-expert-invocation/m18-f68b722/repair-case/repaired/waves.vcd",
+      "sha256": "0bd21f42287d2fa7d8c5668d00ededddc438a8ffb867cd3add4b8d3cb12a1265",
+      "size_bytes": 1914
+    }
+  ],
+  "base_commit": "ee0faaea808b454e59591c09ef6222121bc31312",
+  "evidence_lane": "local-controlled-expert-invocation",
+  "implementation_commit": "f68b72206b93b9e134da1a908a0c9bd326a0758a",
+  "invocation": {
+    "envelope_digest": "sha256:940e62e90b9619477fd97fece899dd6c568f1b65d2392bcb9445c11c659ab60a",
+    "provider_calls": "none-scripted-provider-free",
+    "review_state": "awaiting_qualification",
+    "tools": "disabled"
+  },
+  "milestone_id": "m18-controlled-expert-invocation",
+  "retention_class": "local-build-collateral",
+  "review_state": "validated",
+  "schema": "openrtl.milestone-evidence.v1",
+  "validation_outcomes": {
+    "focused_tests": "30 passed",
+    "full_unit_suite": "82 passed",
+    "invocation_gate": "bounded tool-free scripted turn stopped at awaiting_qualification",
+    "production_canary": "passed with retained VCD, XML, log, evidence, and simulation build",
+    "strict_typing": "6 focused source files passed"
+  },
+  "visual_evidence": {
+    "before": {
+      "level_at_focus_end": 0,
+      "level_at_marker": 0,
+      "trace_end_fs": 20000000
+    },
+    "focus": {
+      "end_fs": 15001000,
+      "marker_fs": 10000000,
+      "signals": [
+        "sync_fifo.clk",
+        "sync_fifo.rst_n",
+        "sync_fifo.wr_valid",
+        "sync_fifo.wr_ready",
+        "sync_fifo.write_accepted",
+        "sync_fifo.rd_valid",
+        "sync_fifo.rd_ready",
+        "sync_fifo.read_accepted",
+        "sync_fifo.level",
+        "sync_fifo.full",
+        "sync_fifo.empty"
+      ],
+      "start_fs": 4999000
+    },
+    "repaired": {
+      "level_at_focus_end": 1,
+      "level_at_marker": 1,
+      "trace_end_fs": 20000000
+    },
+    "schema": "openrtl.repair-visual-comparison.v1",
+    "status": "visibly_distinct"
+  }
+}
