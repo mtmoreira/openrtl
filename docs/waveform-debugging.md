@@ -194,6 +194,15 @@ Surfer focus. After the call, compare the invocation envelope to this trace and
 require both lifecycle reports to remain `awaiting_qualification`. A provider
 response does not change either waveform and cannot apply the proposed edit.
 
+Before reviewing provider-produced edit bytes, inspect
+`provider-output-qualification.json`. Its lineage must identify the exact
+provider plan, execution receipt, invocation, suggestion, and edit-spec
+digests, while its edit-plan and planning bindings identify the deterministic
+qualification outputs. The receipt must remain `awaiting_review`,
+`provider_output_trusted` must remain false, and `applies_changes` must remain
+false. Then inspect the same causal waveform signals above; provenance
+qualification does not replace the visible before/repaired evidence.
+
 ## Prepare and open a Surfer focus
 
 Generate reusable inspection and viewer state:

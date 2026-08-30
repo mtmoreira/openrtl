@@ -27,6 +27,7 @@ from openrtl.adapters.provider_invocation import (
     load_expert_provider_invocation_plan,
     prepare_expert_provider_invocation_plan,
 )
+from openrtl.adapters.provider_qualification import qualify_provider_source_edits
 from openrtl.adapters.canary import load_fifo_canary_evidence
 from openrtl.adapters.agentrig import (
     OpenRTLCommandTools,
@@ -90,6 +91,7 @@ __all__ = [
     "invoke_approved_openai_expert_source_edits",
     "load_expert_provider_invocation_plan",
     "prepare_expert_provider_invocation_plan",
+    "qualify_provider_source_edits",
     "propose_fifo_repairs",
     "surfer_command_file",
 ]

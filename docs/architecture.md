@@ -121,6 +121,14 @@ Credential resolution and short-lived client creation occur only after every
 local preflight passes. Its value-safe execution report remains
 `awaiting_qualification`; no provider output can qualify or apply RTL.
 
+Provider-output qualification is a separate deterministic adapter. It
+reconstructs the reviewed provider plan, execution receipt, invocation report,
+and suggestion report; binds them to the exact edit-spec file, proposal,
+failed session, and source; and only then produces the typed edit plan plus a
+content-addressed qualification receipt. The receipt is `awaiting_review`,
+keeps provider output untrusted, applies no changes, reads no credential, and
+makes no provider call.
+
 ## Reuse and community boundary
 
 A passing design produces a local package candidate containing interfaces,

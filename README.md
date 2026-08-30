@@ -206,6 +206,29 @@ against the proposal evidence and writes an `awaiting_review` report. Neither
 the expert-output gate nor qualification applies or approves the plan. After
 reviewing those artifacts, application remains a separate explicit command:
 
+For provider-produced output, preserve and verify the complete provider
+lineage instead of qualifying the edit specification alone:
+
+```console
+uv run openrtl repair qualify-provider-source-edits \
+  --proposal build/fifo-repair-application/proposal.json \
+  --debug-session build/fifo-repair-application/debug-session.json \
+  --source examples/fifo/faults/sync_fifo_level_fault.sv \
+  --provider-plan build/fifo-repair-application/provider-plan.json \
+  --provider-execution-report build/fifo-repair-application/provider-execution.json \
+  --invocation-report build/fifo-repair-application/provider-invocation.json \
+  --suggestion-report build/fifo-repair-application/provider-suggestion.json \
+  --edit-spec build/fifo-repair-application/provider-edit-spec.json \
+  --edit-plan-output build/fifo-repair-application/edit-plan.json \
+  --planning-report build/fifo-repair-application/edit-plan-planning.json \
+  --qualification-report build/fifo-repair-application/provider-qualification.json
+```
+
+This command makes no provider call and reads no credential. It proves that
+the plan, one-call execution receipt, invocation, suggestion, edit bytes,
+proposal, failed session, source, and deterministic edit plan form one exact
+chain. Its result is still non-applying and `awaiting_review`.
+
 ```console
 uv run openrtl repair apply-source-edits \
   --proposal build/fifo-repair-application/proposal.json \

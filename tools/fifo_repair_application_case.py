@@ -51,7 +51,6 @@ from openrtl.adapters import (  # noqa: E402
     EnvironmentOpenAIAuthenticationSource,
     analyze_fifo_waveform,
     apply_reviewed_source_edits,
-    draft_source_edit_plan,
     fifo_repair_focus,
     inspect_vcd,
     invoke_expert_source_edits,
@@ -59,6 +58,7 @@ from openrtl.adapters import (  # noqa: E402
     prepare_expert_provider_invocation_plan,
     prepare_expert_source_edit_request,
     propose_fifo_repairs,
+    qualify_provider_source_edits,
     surfer_command_file,
 )
 from openrtl.application import (  # noqa: E402
@@ -106,9 +106,12 @@ _KNOWN_OUTPUTS = frozenset(
         "expert-invocation-envelope.json",
         "expert-invocation-report.json",
         "provider-execution-report.json",
+        "provider-edit-spec.json",
         "provider-invocation-envelope.json",
         "provider-invocation-plan.json",
         "provider-invocation-report.json",
+        "provider-output-qualification.json",
+        "provider-suggestion.json",
         "evidence.json",
         "focus-after.sucl",
         "focus-before.sucl",
@@ -216,6 +219,9 @@ def main(arguments: Sequence[str] | None = None) -> int:
     provider_envelope_path = output / "provider-invocation-envelope.json"
     provider_invocation_path = output / "provider-invocation-report.json"
     provider_execution_path = output / "provider-execution-report.json"
+    provider_spec_path = output / "provider-edit-spec.json"
+    provider_suggestion_path = output / "provider-suggestion.json"
+    provider_qualification_path = output / "provider-output-qualification.json"
     application_path = output / "application.json"
     comparison_path = output / "comparison.json"
     before_focus_path = output / "focus-before.sucl"
@@ -353,15 +359,22 @@ def main(arguments: Sequence[str] | None = None) -> int:
     _write_json(provider_envelope_path, provider_artifacts.invocation.envelope)
     _write_json(provider_invocation_path, provider_artifacts.invocation.report.payload())
     _write_json(provider_execution_path, provider_artifacts.provider_report.payload())
-    edit_plan, planning_report = draft_source_edit_plan(
+    _write_json(provider_spec_path, provider_artifacts.invocation.edit_spec)
+    _write_json(provider_suggestion_path, provider_artifacts.invocation.suggestion)
+    edit_plan, planning_report, provider_qualification = qualify_provider_source_edits(
         root,
         proposal_path=proposal_path,
         debug_session_path=debug_path,
         source_path=source,
-        edit_spec_path=expert_spec_path,
+        provider_plan_path=provider_plan_path,
+        provider_execution_report_path=provider_execution_path,
+        invocation_report_path=provider_invocation_path,
+        suggestion_report_path=provider_suggestion_path,
+        edit_spec_path=provider_spec_path,
     )
     _write_json(edit_plan_path, edit_plan.payload())
     _write_json(planning_report_path, planning_report.payload())
+    _write_json(provider_qualification_path, provider_qualification.payload())
     before_focus = fifo_repair_focus(before_report)
     before_focus_path.write_text(surfer_command_file(before_focus), encoding="utf-8")
 
@@ -453,9 +466,12 @@ def main(arguments: Sequence[str] | None = None) -> int:
                 ("expert_invocation_envelope", expert_envelope_path),
                 ("expert_invocation_report", expert_invocation_path),
                 ("provider_execution_report", provider_execution_path),
+                ("provider_edit_spec", provider_spec_path),
                 ("provider_invocation_envelope", provider_envelope_path),
                 ("provider_invocation_plan", provider_plan_path),
                 ("provider_invocation_report", provider_invocation_path),
+                ("provider_output_qualification", provider_qualification_path),
+                ("provider_suggestion", provider_suggestion_path),
                 ("focus_after", after_focus_path),
                 ("focus_before", before_focus_path),
                 ("proposal", proposal_path),
@@ -477,7 +493,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
         "qualified_application_id": application.application_id,
         "qualified_edit_plan_digest": edit_plan.content_digest,
         "qualified_expert_suggestion_id": invocation.report.suggestion_id,
-        "schema": "openrtl.repair-application-evidence.v7",
+        "qualified_provider_output_id": provider_qualification.qualification_id,
+        "schema": "openrtl.repair-application-evidence.v8",
         "status": "passed",
         "toolchain": {
             "cocotb_config": str(toolchain.cocotb_config),
@@ -504,10 +521,12 @@ def main(arguments: Sequence[str] | None = None) -> int:
         "expert_invocation_report": expert_invocation_path.relative_to(root).as_posix(),
         "proposal": proposal_path.relative_to(root).as_posix(),
         "provider_execution_report": provider_execution_path.relative_to(root).as_posix(),
+        "provider_output_qualification": provider_qualification_path.relative_to(root).as_posix(),
+        "provider_qualification_digest": provider_qualification.content_digest,
         "provider_invocation_plan": provider_plan_path.relative_to(root).as_posix(),
         "provider_invocation_report": provider_invocation_path.relative_to(root).as_posix(),
         "repaired_finding_ids": tuple(value.finding_id for value in after_report.findings),
-        "schema": "openrtl.fifo-repair-application-case.v7",
+        "schema": "openrtl.fifo-repair-application-case.v8",
         "status": "passed",
         "visual_evidence": visual_evidence,
     }

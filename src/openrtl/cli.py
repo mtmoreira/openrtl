@@ -45,6 +45,7 @@ from openrtl.adapters import (
     load_source_edit_plan,
     prepare_expert_source_edit_request,
     prepare_expert_provider_invocation_plan,
+    qualify_provider_source_edits,
     propose_fifo_repairs,
     surfer_command_file,
 )
@@ -258,6 +259,26 @@ def parser() -> argparse.ArgumentParser:
     draft_source_edits.add_argument("--edit-spec", type=Path, required=True)
     draft_source_edits.add_argument("--edit-plan-output", type=Path, required=True)
     draft_source_edits.add_argument("--planning-report", type=Path, required=True)
+    qualify_provider_edits = repair_commands.add_parser(
+        "qualify-provider-source-edits",
+        help="bind exact provider lifecycle evidence to a review-required edit plan",
+    )
+    qualify_provider_edits.add_argument("--root", type=Path, default=Path.cwd())
+    qualify_provider_edits.add_argument("--proposal", type=Path, required=True)
+    qualify_provider_edits.add_argument("--debug-session", type=Path, required=True)
+    qualify_provider_edits.add_argument("--source", type=Path, required=True)
+    qualify_provider_edits.add_argument("--provider-plan", type=Path, required=True)
+    qualify_provider_edits.add_argument(
+        "--provider-execution-report", type=Path, required=True
+    )
+    qualify_provider_edits.add_argument("--invocation-report", type=Path, required=True)
+    qualify_provider_edits.add_argument("--suggestion-report", type=Path, required=True)
+    qualify_provider_edits.add_argument("--edit-spec", type=Path, required=True)
+    qualify_provider_edits.add_argument("--edit-plan-output", type=Path, required=True)
+    qualify_provider_edits.add_argument("--planning-report", type=Path, required=True)
+    qualify_provider_edits.add_argument(
+        "--qualification-report", type=Path, required=True
+    )
     apply_source_edits = repair_commands.add_parser(
         "apply-source-edits",
         help="apply an approved evidence-bound source edit plan to a candidate",
@@ -450,6 +471,8 @@ def _repair_command(arguments: argparse.Namespace) -> int:
             )
         )
         return 0
+    if arguments.repair_command == "qualify-provider-source-edits":
+        return _qualify_provider_source_edits(arguments)
     if arguments.repair_command != "apply-source-edits":
         raise AssertionError("argparse returned an unknown repair command")
     root = arguments.root.resolve(strict=True)
@@ -589,6 +612,69 @@ def _invoke_scripted_expert_source_edits(arguments: argparse.Namespace) -> int:
                 "response": output_paths[1].relative_to(root).as_posix(),
                 "status": "awaiting_qualification",
                 "suggestion_report": output_paths[3].relative_to(root).as_posix(),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
+def _qualify_provider_source_edits(arguments: argparse.Namespace) -> int:
+    root = arguments.root.resolve(strict=True)
+    input_paths = {
+        _contained_input(root, arguments.proposal),
+        _contained_input(root, arguments.debug_session),
+        _contained_input(root, arguments.source),
+        _contained_input(root, arguments.provider_plan),
+        _contained_input(root, arguments.provider_execution_report),
+        _contained_input(root, arguments.invocation_report),
+        _contained_input(root, arguments.suggestion_report),
+        _contained_input(root, arguments.edit_spec),
+    }
+    output_paths = tuple(
+        _contained_output(root, value)
+        for value in (
+            arguments.edit_plan_output,
+            arguments.planning_report,
+            arguments.qualification_report,
+        )
+    )
+    if len(set(output_paths)) != len(output_paths) or any(
+        value in input_paths for value in output_paths
+    ):
+        raise ValueError(
+            "provider qualification outputs must be unique and separate from inputs"
+        )
+    edit_plan, planning, qualification = qualify_provider_source_edits(
+        root,
+        proposal_path=arguments.proposal,
+        debug_session_path=arguments.debug_session,
+        source_path=arguments.source,
+        provider_plan_path=arguments.provider_plan,
+        provider_execution_report_path=arguments.provider_execution_report,
+        invocation_report_path=arguments.invocation_report,
+        suggestion_report_path=arguments.suggestion_report,
+        edit_spec_path=arguments.edit_spec,
+    )
+    _write_exact_repair_outputs(
+        (
+            (output_paths[0], edit_plan.payload()),
+            (output_paths[1], planning.payload()),
+            (output_paths[2], qualification.payload()),
+        )
+    )
+    print(
+        json.dumps(
+            {
+                "applies_changes": False,
+                "edit_plan": output_paths[0].relative_to(root).as_posix(),
+                "edit_plan_digest": edit_plan.content_digest,
+                "planning_report": output_paths[1].relative_to(root).as_posix(),
+                "provider_output_trusted": False,
+                "qualification_digest": qualification.content_digest,
+                "qualification_report": output_paths[2].relative_to(root).as_posix(),
+                "status": "awaiting_review",
             },
             indent=2,
             sort_keys=True,

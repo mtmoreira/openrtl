@@ -73,6 +73,11 @@ evidence attaches to the same artifact graph and requirement IDs.
   runtime, capability, model, retention, credential-environment name, and
   single-call bound. Credential resolution is late, validation stays synthetic
   and network-free, and successful output remains `awaiting_qualification`.
+- Provider-produced edit specifications reach review only through an exact
+  provenance chain binding the provider plan, one-call execution receipt,
+  invocation report, suggestion report, edit-spec bytes, proposal, failed
+  session, source, and deterministic edit plan. Qualification is provider-free,
+  emits a non-applying `awaiting_review` receipt, and rejects cross-run mixing.
 
 ## Convergence
 
