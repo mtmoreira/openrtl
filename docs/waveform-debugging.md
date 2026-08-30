@@ -203,6 +203,18 @@ qualification outputs. The receipt must remain `awaiting_review`,
 false. Then inspect the same causal waveform signals above; provenance
 qualification does not replace the visible before/repaired evidence.
 
+After explicit review, retain `qualified-provider-application.json` beside the
+generic application report. It binds the candidate write to the exact provider
+qualification and approval digests. The receipt does not replace renewed
+simulation: the before trace must retain the finding and the repaired candidate
+trace must remove it.
+
+Surfer 0.7 adds the listed variables but does not position the cursor from
+OpenRTL's focus comments. Open the exact `before/waves.vcd` or
+`repaired/waves.vcd` path and manually select 10 ns (10,000 ps). Both windows
+otherwise display the same `waves.vcd` title. At that edge the faulty FIFO keeps
+`level` at zero while the repaired candidate changes it to one.
+
 ## Prepare and open a Surfer focus
 
 Generate reusable inspection and viewer state:

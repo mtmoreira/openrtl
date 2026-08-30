@@ -229,6 +229,31 @@ the plan, one-call execution receipt, invocation, suggestion, edit bytes,
 proposal, failed session, source, and deterministic edit plan form one exact
 chain. Its result is still non-applying and `awaiting_review`.
 
+For a provider-qualified plan, bind the human review to the exact qualification
+and edit-plan digests before creating a candidate:
+
+```console
+uv run openrtl repair apply-qualified-provider-source-edits \
+  --proposal build/fifo-repair-application/proposal.json \
+  --debug-session build/fifo-repair-application/debug-session.json \
+  --edit-plan build/fifo-repair-application/edit-plan.json \
+  --planning-report build/fifo-repair-application/edit-plan-planning.json \
+  --qualification-report build/fifo-repair-application/provider-qualification.json \
+  --output build/fifo-repair-application/candidate/sync_fifo.sv \
+  --application-report build/fifo-repair-application/application.json \
+  --qualified-application-report build/fifo-repair-application/qualified-application.json \
+  --approve-qualification REPAIR_PROVIDER_QUALIFICATION_ID \
+  --approve-qualification-digest SHA256_QUALIFICATION_DIGEST \
+  --approve-proposal REPAIR_PROPOSAL_ID \
+  --approve-change repair.change.level \
+  --approve-edit-plan-digest SHA256_EDIT_PLAN_DIGEST \
+  --review-note "Reviewed exact provider qualification and candidate-only edit."
+```
+
+This path reconstructs the qualification, planning report, and edit plan before
+delegating to the generic exact-byte engine. It writes only the separate
+candidate and two reviewable receipts. The original RTL remains unchanged.
+
 ```console
 uv run openrtl repair apply-source-edits \
   --proposal build/fifo-repair-application/proposal.json \

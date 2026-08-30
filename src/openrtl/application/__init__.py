@@ -41,6 +41,12 @@ from openrtl.application.provider_qualification import (
     build_provider_output_qualification_report,
     provider_qualification_digest,
 )
+from openrtl.application.qualified_provider_application import (
+    QualifiedProviderApplicationReport,
+    QualifiedProviderRepairApproval,
+    build_qualified_provider_application_report,
+    qualified_provider_application_digest,
+)
 from openrtl.application.evals import EvaluationCase, load_evaluation_cases
 from openrtl.application.workflow import (
     OpenRTLWorkflow,
@@ -100,6 +106,8 @@ __all__ = [
     "ExpertProviderInvocationApproval",
     "ExpertProviderInvocationPlan",
     "ProviderOutputQualificationReport",
+    "QualifiedProviderApplicationReport",
+    "QualifiedProviderRepairApproval",
     "OpenRTLWorkflow",
     "OPENAI_RESPONSES_ADAPTER_ID",
     "OPENAI_RESPONSES_RUNTIME_BINDING_ID",
@@ -125,6 +133,7 @@ __all__ = [
     "build_expert_provider_execution_report",
     "build_expert_provider_invocation_plan",
     "build_provider_output_qualification_report",
+    "build_qualified_provider_application_report",
     "build_repair_proposal",
     "build_source_edit_plan",
     "canonical_payload_digest",
@@ -132,6 +141,7 @@ __all__ = [
     "invocation_payload_digest",
     "provider_invocation_digest",
     "provider_qualification_digest",
+    "qualified_provider_application_digest",
     "load_evaluation_cases",
     "run_scripted_fifo",
 ]

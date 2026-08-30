@@ -78,6 +78,13 @@ evidence attaches to the same artifact graph and requirement IDs.
   invocation report, suggestion report, edit-spec bytes, proposal, failed
   session, source, and deterministic edit plan. Qualification is provider-free,
   emits a non-applying `awaiting_review` receipt, and rejects cross-run mixing.
+- Applying a provider-qualified plan requires a separate human approval bound
+  to the exact qualification and edit-plan digests, proposal, ordered changes,
+  and review note. The adapter revalidates the canonical qualification,
+  planning report, edit plan, failed session, and source before writing only a
+  separate candidate and emitting a qualification-bound application receipt.
+  Production RTL remains unchanged and renewed simulation plus visibly distinct
+  before/after waveforms remain mandatory evidence.
 
 ## Convergence
 

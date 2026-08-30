@@ -50,7 +50,7 @@ from agentrig.integrations.openai import (  # noqa: E402
 from openrtl.adapters import (  # noqa: E402
     EnvironmentOpenAIAuthenticationSource,
     analyze_fifo_waveform,
-    apply_reviewed_source_edits,
+    apply_qualified_provider_source_edits,
     fifo_repair_focus,
     inspect_vcd,
     invoke_expert_source_edits,
@@ -64,7 +64,7 @@ from openrtl.adapters import (  # noqa: E402
 from openrtl.application import (  # noqa: E402
     ExpertInvocationPolicy,
     ExpertProviderInvocationApproval,
-    RepairApproval,
+    QualifiedProviderRepairApproval,
 )
 from openrtl.adapters.waveforms import WaveformFocus  # noqa: E402
 from tools.verilator_canary import (  # noqa: E402
@@ -111,6 +111,7 @@ _KNOWN_OUTPUTS = frozenset(
         "provider-invocation-plan.json",
         "provider-invocation-report.json",
         "provider-output-qualification.json",
+        "qualified-provider-application.json",
         "provider-suggestion.json",
         "evidence.json",
         "focus-after.sucl",
@@ -222,6 +223,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
     provider_spec_path = output / "provider-edit-spec.json"
     provider_suggestion_path = output / "provider-suggestion.json"
     provider_qualification_path = output / "provider-output-qualification.json"
+    qualified_application_path = output / "qualified-provider-application.json"
     application_path = output / "application.json"
     comparison_path = output / "comparison.json"
     before_focus_path = output / "focus-before.sucl"
@@ -378,20 +380,25 @@ def main(arguments: Sequence[str] | None = None) -> int:
     before_focus = fifo_repair_focus(before_report)
     before_focus_path.write_text(surfer_command_file(before_focus), encoding="utf-8")
 
-    application = apply_reviewed_source_edits(
+    application, qualified_application = apply_qualified_provider_source_edits(
         root,
         proposal_path=proposal_path,
         debug_session_path=debug_path,
         edit_plan_path=edit_plan_path,
+        planning_report_path=planning_report_path,
+        qualification_report_path=provider_qualification_path,
         output_path=repaired_source,
-        approval=RepairApproval(
+        approval=QualifiedProviderRepairApproval(
+            provider_qualification.qualification_id,
+            provider_qualification.content_digest,
             proposal.proposal_id,
             ("repair.change.level",),
             edit_plan.content_digest,
-            "Reviewed the linked FIFO level finding, waveform edge, and exact source anchors.",
+            "Reviewed the provider qualification, linked FIFO finding, waveform edge, and exact source anchors.",
         ),
     )
     _write_json(application_path, application.payload())
+    _write_json(qualified_application_path, qualified_application.payload())
 
     after = _run_simulation(
         root,
@@ -471,6 +478,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
                 ("provider_invocation_plan", provider_plan_path),
                 ("provider_invocation_report", provider_invocation_path),
                 ("provider_output_qualification", provider_qualification_path),
+                ("qualified_provider_application", qualified_application_path),
                 ("provider_suggestion", provider_suggestion_path),
                 ("focus_after", after_focus_path),
                 ("focus_before", before_focus_path),
@@ -491,10 +499,11 @@ def main(arguments: Sequence[str] | None = None) -> int:
             "synthetic_provider_adapter_calls": 1,
         },
         "qualified_application_id": application.application_id,
+        "qualified_provider_application_id": qualified_application.qualified_application_id,
         "qualified_edit_plan_digest": edit_plan.content_digest,
         "qualified_expert_suggestion_id": invocation.report.suggestion_id,
         "qualified_provider_output_id": provider_qualification.qualification_id,
-        "schema": "openrtl.repair-application-evidence.v8",
+        "schema": "openrtl.repair-application-evidence.v9",
         "status": "passed",
         "toolchain": {
             "cocotb_config": str(toolchain.cocotb_config),
@@ -523,10 +532,12 @@ def main(arguments: Sequence[str] | None = None) -> int:
         "provider_execution_report": provider_execution_path.relative_to(root).as_posix(),
         "provider_output_qualification": provider_qualification_path.relative_to(root).as_posix(),
         "provider_qualification_digest": provider_qualification.content_digest,
+        "qualified_provider_application": qualified_application_path.relative_to(root).as_posix(),
+        "qualified_provider_application_id": qualified_application.qualified_application_id,
         "provider_invocation_plan": provider_plan_path.relative_to(root).as_posix(),
         "provider_invocation_report": provider_invocation_path.relative_to(root).as_posix(),
         "repaired_finding_ids": tuple(value.finding_id for value in after_report.findings),
-        "schema": "openrtl.fifo-repair-application-case.v8",
+        "schema": "openrtl.fifo-repair-application-case.v9",
         "status": "passed",
         "visual_evidence": visual_evidence,
     }

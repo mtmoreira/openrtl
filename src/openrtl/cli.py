@@ -33,6 +33,7 @@ from openrtl.adapters import (
     EnvironmentOpenAIAuthenticationSource,
     accept_expert_source_edit_output,
     analyze_fifo_waveform,
+    apply_qualified_provider_source_edits,
     apply_reviewed_source_edits,
     build_surfer_tool,
     draft_source_edit_plan,
@@ -56,6 +57,7 @@ from openrtl.application import (
     FIFO_RUN_REF,
     FIFO_SOURCE_REFS,
     OpenRTLWorkflow,
+    QualifiedProviderRepairApproval,
     RepairApproval,
     run_scripted_fifo,
 )
@@ -279,6 +281,41 @@ def parser() -> argparse.ArgumentParser:
     qualify_provider_edits.add_argument(
         "--qualification-report", type=Path, required=True
     )
+    apply_qualified_provider_edits = repair_commands.add_parser(
+        "apply-qualified-provider-source-edits",
+        help="apply an explicitly approved provider qualification to a candidate",
+    )
+    apply_qualified_provider_edits.add_argument("--root", type=Path, default=Path.cwd())
+    apply_qualified_provider_edits.add_argument("--proposal", type=Path, required=True)
+    apply_qualified_provider_edits.add_argument(
+        "--debug-session", type=Path, required=True
+    )
+    apply_qualified_provider_edits.add_argument("--edit-plan", type=Path, required=True)
+    apply_qualified_provider_edits.add_argument(
+        "--planning-report", type=Path, required=True
+    )
+    apply_qualified_provider_edits.add_argument(
+        "--qualification-report", type=Path, required=True
+    )
+    apply_qualified_provider_edits.add_argument("--output", type=Path, required=True)
+    apply_qualified_provider_edits.add_argument(
+        "--application-report", type=Path, required=True
+    )
+    apply_qualified_provider_edits.add_argument(
+        "--qualified-application-report", type=Path, required=True
+    )
+    apply_qualified_provider_edits.add_argument("--approve-qualification", required=True)
+    apply_qualified_provider_edits.add_argument(
+        "--approve-qualification-digest", required=True
+    )
+    apply_qualified_provider_edits.add_argument("--approve-proposal", required=True)
+    apply_qualified_provider_edits.add_argument(
+        "--approve-change", action="append", required=True
+    )
+    apply_qualified_provider_edits.add_argument(
+        "--approve-edit-plan-digest", required=True
+    )
+    apply_qualified_provider_edits.add_argument("--review-note", required=True)
     apply_source_edits = repair_commands.add_parser(
         "apply-source-edits",
         help="apply an approved evidence-bound source edit plan to a candidate",
@@ -473,6 +510,8 @@ def _repair_command(arguments: argparse.Namespace) -> int:
         return 0
     if arguments.repair_command == "qualify-provider-source-edits":
         return _qualify_provider_source_edits(arguments)
+    if arguments.repair_command == "apply-qualified-provider-source-edits":
+        return _apply_qualified_provider_source_edits(arguments)
     if arguments.repair_command != "apply-source-edits":
         raise AssertionError("argparse returned an unknown repair command")
     root = arguments.root.resolve(strict=True)
@@ -675,6 +714,75 @@ def _qualify_provider_source_edits(arguments: argparse.Namespace) -> int:
                 "qualification_digest": qualification.content_digest,
                 "qualification_report": output_paths[2].relative_to(root).as_posix(),
                 "status": "awaiting_review",
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
+def _apply_qualified_provider_source_edits(arguments: argparse.Namespace) -> int:
+    root = arguments.root.resolve(strict=True)
+    input_paths = {
+        _contained_input(root, arguments.proposal),
+        _contained_input(root, arguments.debug_session),
+        _contained_input(root, arguments.edit_plan),
+        _contained_input(root, arguments.planning_report),
+        _contained_input(root, arguments.qualification_report),
+    }
+    edit_plan = load_source_edit_plan(root, arguments.edit_plan)
+    source_path = _contained_input(root, Path(edit_plan.source_path))
+    input_paths.add(source_path)
+    output_paths = tuple(
+        _contained_output(root, value)
+        for value in (
+            arguments.output,
+            arguments.application_report,
+            arguments.qualified_application_report,
+        )
+    )
+    if len(set(output_paths)) != len(output_paths) or any(
+        value in input_paths for value in output_paths
+    ):
+        raise ValueError(
+            "qualified provider application outputs must be unique and separate from inputs"
+        )
+    approval = QualifiedProviderRepairApproval(
+        arguments.approve_qualification,
+        arguments.approve_qualification_digest,
+        arguments.approve_proposal,
+        tuple(arguments.approve_change),
+        arguments.approve_edit_plan_digest,
+        arguments.review_note,
+    )
+    application, qualified = apply_qualified_provider_source_edits(
+        root,
+        proposal_path=arguments.proposal,
+        debug_session_path=arguments.debug_session,
+        edit_plan_path=arguments.edit_plan,
+        planning_report_path=arguments.planning_report,
+        qualification_report_path=arguments.qualification_report,
+        output_path=arguments.output,
+        approval=approval,
+    )
+    _write_exact_repair_outputs(
+        (
+            (output_paths[1], application.payload()),
+            (output_paths[2], qualified.payload()),
+        )
+    )
+    print(
+        json.dumps(
+            {
+                "application_report": output_paths[1].relative_to(root).as_posix(),
+                "candidate": output_paths[0].relative_to(root).as_posix(),
+                "qualification_digest": qualified.qualification_digest,
+                "qualified_application_id": qualified.qualified_application_id,
+                "qualified_application_report": output_paths[2]
+                .relative_to(root)
+                .as_posix(),
+                "status": "applied_to_candidate",
             },
             indent=2,
             sort_keys=True,

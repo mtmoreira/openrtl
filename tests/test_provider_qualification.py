@@ -22,13 +22,17 @@ from examples.fifo.faults import render_fifo_trace
 from openrtl.adapters import (
     EnvironmentOpenAIAuthenticationSource,
     analyze_fifo_waveform,
+    apply_qualified_provider_source_edits,
     invoke_approved_openai_expert_source_edits,
     prepare_expert_provider_invocation_plan,
     prepare_expert_source_edit_request,
     propose_fifo_repairs,
     qualify_provider_source_edits,
 )
-from openrtl.application import ExpertProviderInvocationApproval
+from openrtl.application import (
+    ExpertProviderInvocationApproval,
+    QualifiedProviderRepairApproval,
+)
 from openrtl.cli import main
 
 
@@ -75,6 +79,7 @@ class ProviderOutputQualificationTest(unittest.TestCase):
         source_text = (
             repository / "examples/fifo/faults/sync_fifo_level_fault.sv"
         ).read_text()
+        self.source_text = source_text
         edit_spec = json.loads(
             (repository / "examples/fifo/faults/level_update_edit_spec.json").read_text()
         )
@@ -190,6 +195,23 @@ class ProviderOutputQualificationTest(unittest.TestCase):
             edit_spec_path=self.edit_spec_path,
         )
 
+    def _qualified_files(self) -> tuple[Any, Any, Any, Path, Path, Path]:
+        edit_plan, planning, qualification = self._qualify()
+        edit_plan_path = self._write("build/qualified/edit-plan.json", edit_plan.payload())
+        planning_path = self._write("build/qualified/planning.json", planning.payload())
+        qualification_path = self._write(
+            "build/qualified/qualification.json",
+            qualification.payload(),
+        )
+        return (
+            edit_plan,
+            planning,
+            qualification,
+            edit_plan_path,
+            planning_path,
+            qualification_path,
+        )
+
     def test_exact_provider_lineage_qualifies_only_to_review(self) -> None:
         edit_plan, planning, qualification = self._qualify()
         payload = qualification.payload()
@@ -272,6 +294,157 @@ class ProviderOutputQualificationTest(unittest.TestCase):
         self.assertTrue((self.root / "build/qualified/planning.json").is_file())
         self.assertTrue((self.root / "build/qualified/qualification.json").is_file())
         self.assertFalse((self.root / "build/provider/candidate.sv").exists())
+
+    def test_exact_qualification_approval_applies_only_to_candidate(self) -> None:
+        (
+            edit_plan,
+            _,
+            qualification,
+            edit_plan_path,
+            planning_path,
+            qualification_path,
+        ) = self._qualified_files()
+        candidate = self.root / "build/approved/candidate.sv"
+        application, receipt = apply_qualified_provider_source_edits(
+            self.root,
+            proposal_path=self.proposal_path,
+            debug_session_path=self.debug_path,
+            edit_plan_path=edit_plan_path,
+            planning_report_path=planning_path,
+            qualification_report_path=qualification_path,
+            output_path=candidate,
+            approval=QualifiedProviderRepairApproval(
+                qualification.qualification_id,
+                qualification.content_digest,
+                qualification.proposal_id,
+                qualification.change_ids,
+                edit_plan.content_digest,
+                "Reviewed exact provider qualification and candidate-only edit.",
+            ),
+        )
+        self.assertTrue(candidate.is_file())
+        self.assertNotEqual(candidate.read_text(), self.source_text)
+        self.assertEqual(self.source.read_text(), self.source_text)
+        self.assertEqual(application.output_path, "build/approved/candidate.sv")
+        payload = receipt.payload()
+        self.assertEqual(payload["status"], "applied_to_candidate")
+        self.assertTrue(payload["authorization"]["candidate_only"])
+        self.assertFalse(payload["authorization"]["production_source_modified"])
+        self.assertEqual(
+            payload["qualification"]["content_digest"],
+            qualification.content_digest,
+        )
+
+    def test_wrong_approval_or_review_artifact_fails_before_candidate(self) -> None:
+        (
+            edit_plan,
+            planning,
+            qualification,
+            edit_plan_path,
+            planning_path,
+            qualification_path,
+        ) = self._qualified_files()
+        candidate = self.root / "build/rejected/candidate.sv"
+
+        with self.assertRaisesRegex(ValueError, "exact qualification"):
+            apply_qualified_provider_source_edits(
+                self.root,
+                proposal_path=self.proposal_path,
+                debug_session_path=self.debug_path,
+                edit_plan_path=edit_plan_path,
+                planning_report_path=planning_path,
+                qualification_report_path=qualification_path,
+                output_path=candidate,
+                approval=QualifiedProviderRepairApproval(
+                    qualification.qualification_id,
+                    "sha256:" + "0" * 64,
+                    qualification.proposal_id,
+                    qualification.change_ids,
+                    edit_plan.content_digest,
+                    "Rejected mismatched qualification.",
+                ),
+            )
+        self.assertFalse(candidate.exists())
+
+        tampered_planning = planning.payload()
+        tampered_planning["planning_id"] += ".other"
+        self._write("build/qualified/planning.json", tampered_planning)
+        with self.assertRaisesRegex(ValueError, "planning report"):
+            apply_qualified_provider_source_edits(
+                self.root,
+                proposal_path=self.proposal_path,
+                debug_session_path=self.debug_path,
+                edit_plan_path=edit_plan_path,
+                planning_report_path=planning_path,
+                qualification_report_path=qualification_path,
+                output_path=candidate,
+                approval=QualifiedProviderRepairApproval(
+                    qualification.qualification_id,
+                    qualification.content_digest,
+                    qualification.proposal_id,
+                    qualification.change_ids,
+                    edit_plan.content_digest,
+                    "Reviewed qualification with stale planning artifact.",
+                ),
+            )
+        self.assertFalse(candidate.exists())
+
+    def test_cli_applies_exact_qualification_and_writes_two_receipts(self) -> None:
+        (
+            edit_plan,
+            _,
+            qualification,
+            edit_plan_path,
+            planning_path,
+            qualification_path,
+        ) = self._qualified_files()
+        with redirect_stdout(io.StringIO()) as captured:
+            self.assertEqual(
+                main(
+                    (
+                        "repair",
+                        "apply-qualified-provider-source-edits",
+                        "--root",
+                        str(self.root),
+                        "--proposal",
+                        str(self.proposal_path),
+                        "--debug-session",
+                        str(self.debug_path),
+                        "--edit-plan",
+                        str(edit_plan_path),
+                        "--planning-report",
+                        str(planning_path),
+                        "--qualification-report",
+                        str(qualification_path),
+                        "--output",
+                        "build/cli/candidate.sv",
+                        "--application-report",
+                        "build/cli/application.json",
+                        "--qualified-application-report",
+                        "build/cli/qualified-application.json",
+                        "--approve-qualification",
+                        qualification.qualification_id,
+                        "--approve-qualification-digest",
+                        qualification.content_digest,
+                        "--approve-proposal",
+                        qualification.proposal_id,
+                        "--approve-change",
+                        qualification.change_ids[0],
+                        "--approve-edit-plan-digest",
+                        edit_plan.content_digest,
+                        "--review-note",
+                        "Reviewed exact qualification and edit plan.",
+                    )
+                ),
+                0,
+            )
+        summary = json.loads(captured.getvalue())
+        self.assertEqual(summary["status"], "applied_to_candidate")
+        self.assertEqual(summary["qualification_digest"], qualification.content_digest)
+        self.assertTrue((self.root / "build/cli/candidate.sv").is_file())
+        self.assertTrue((self.root / "build/cli/application.json").is_file())
+        self.assertTrue((self.root / "build/cli/qualified-application.json").is_file())
+        self.assertEqual(self.source.read_text(), self.source_text)
 
 
 if __name__ == "__main__":

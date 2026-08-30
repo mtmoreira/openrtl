@@ -129,6 +129,14 @@ content-addressed qualification receipt. The receipt is `awaiting_review`,
 keeps provider output untrusted, applies no changes, reads no credential, and
 makes no provider call.
 
+Provider-qualified application is another explicit boundary. A human approval
+names the exact qualification identity and digest, proposal, ordered changes,
+edit-plan digest, and review note. The adapter reconstructs the qualification,
+planning report, and plan before delegating to the generic exact-byte engine.
+Only a separate candidate may be written; a qualification-bound receipt records
+the application while production RTL, provider access, and publication remain
+unchanged.
+
 ## Reuse and community boundary
 
 A passing design produces a local package candidate containing interfaces,
