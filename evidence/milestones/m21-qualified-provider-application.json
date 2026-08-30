@@ -1,0 +1,406 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "m21.validation.report",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/validation.report",
+      "media_type": "text/plain",
+      "producer": "openrtl-m21-validation",
+      "sha256": "8d064c2fedef3ebdd4a4f01973763fbd565159bb49f2bf3fe7b85ed924c7df3b",
+      "size_bytes": 8215
+    },
+    {
+      "artifact_id": "m21.full-validation.log",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/full-validation.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m21-validation",
+      "sha256": "c59678334e5a5215c6d0e71c712830fceba4d3e4a359cdbdf8751d6f347cddd0",
+      "size_bytes": 1911
+    },
+    {
+      "artifact_id": "m21.repair-case.log",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m21-validation",
+      "sha256": "81c4999a976ed50982017f6643509446eddb797a3247757d8169c96e07cc2b15",
+      "size_bytes": 2811
+    },
+    {
+      "artifact_id": "m21.production-canary.canary.log",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/production-canary/canary.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m21-validation",
+      "sha256": "f13238a2ff2897c60c25dc3394eed4fbf77afe3fc60cae7a7cbf8fc82c898282",
+      "size_bytes": 83948
+    },
+    {
+      "artifact_id": "m21.production-canary.evidence.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/production-canary/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "7800d82cd4550592c9fb5a64b6183e3d6abdac862c5f01c92db947af570f48d5",
+      "size_bytes": 1003
+    },
+    {
+      "artifact_id": "m21.production-canary.results.xml",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/production-canary/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m21-validation",
+      "sha256": "a88a63a237de72f8c0550a4d590fce5f1ebe329292a197cc6a0bc342119c00a4",
+      "size_bytes": 433
+    },
+    {
+      "artifact_id": "m21.production-canary.waves.vcd",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/production-canary/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m21-validation",
+      "sha256": "5fc0e1558f732f9b8917fcf19c2d4d78f96bb22b38a7d16628daf29d9e546695",
+      "size_bytes": 44255
+    },
+    {
+      "artifact_id": "m21.repair-case.application.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/application.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "e3a2cbf2179b9be3fca64445eedf39daea7d1ff2b0711e61a4a9b33ba60dfada",
+      "size_bytes": 1215
+    },
+    {
+      "artifact_id": "m21.repair-case.before.results.xml",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/before/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m21-validation",
+      "sha256": "f728e8b785703d116125dfab29102f101289ba84c04cafa730a2daa588ffd60d",
+      "size_bytes": 533
+    },
+    {
+      "artifact_id": "m21.repair-case.before.run.log",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/before/run.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m21-validation",
+      "sha256": "253ac2e8c2df07a4e841e59f2681531e1e09c857ed146fce6f7ca8b2e9ab9628",
+      "size_bytes": 13525
+    },
+    {
+      "artifact_id": "m21.repair-case.before.waves.vcd",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/before/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m21-validation",
+      "sha256": "2f274d0760f7b11ac1b775e4e1657d33ca33d455c1b600552306f3b8bd786e0f",
+      "size_bytes": 1857
+    },
+    {
+      "artifact_id": "m21.repair-case.candidate.sync_fifo.sv",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/candidate/sync_fifo.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m21-validation",
+      "sha256": "4fea04242e4da6fe3018016bcaaf7902531174f39896200e8d86f13c71741531",
+      "size_bytes": 2681
+    },
+    {
+      "artifact_id": "m21.repair-case.comparison.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/comparison.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "05951d6c9683d08ba466396cd309ac1ff8075ac8ac82ffffdd4f90841d8bdb52",
+      "size_bytes": 1296
+    },
+    {
+      "artifact_id": "m21.repair-case.debug-session.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/debug-session.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "6c742ff2e46bb793dfe821690d530b5008f650c781cef0a5179350285d0c09f4",
+      "size_bytes": 4625
+    },
+    {
+      "artifact_id": "m21.repair-case.edit-plan-planning.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/edit-plan-planning.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "267cc37dcc986f6334d97eae6f6a58f79a6b434c84bac8ecb8dd488a655d89b7",
+      "size_bytes": 1066
+    },
+    {
+      "artifact_id": "m21.repair-case.edit-plan.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/edit-plan.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "7f87b32504acb90d128148b2ec8b51318ec4bd8c017f4f058f0b30046d7d1973",
+      "size_bytes": 981
+    },
+    {
+      "artifact_id": "m21.repair-case.evidence.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "f1de5ca8462009353b8e4e7583315dc7d956edf8392e7ead69e03745beff4c46",
+      "size_bytes": 7342
+    },
+    {
+      "artifact_id": "m21.repair-case.expert-edit-request.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/expert-edit-request.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "5c88bd639e7d1114c6f7cf780fab9e983c34d43fe59a9044823743ff4c2b9da7",
+      "size_bytes": 2405
+    },
+    {
+      "artifact_id": "m21.repair-case.expert-edit-response.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/expert-edit-response.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "e5871d9aa36ba134a033fd31f8eb3bf1e23b95f042ef03b16f22162893c2be9b",
+      "size_bytes": 1083
+    },
+    {
+      "artifact_id": "m21.repair-case.expert-edit-spec.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/expert-edit-spec.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "33040fd721529758e92597cac841697661c08a623253cb60530a8431cfc7d396",
+      "size_bytes": 333
+    },
+    {
+      "artifact_id": "m21.repair-case.expert-edit-suggestion.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/expert-edit-suggestion.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "b7856823b38271b8eab8be4b234f1a119e1017d5d1ad90dac45f70501159527f",
+      "size_bytes": 1282
+    },
+    {
+      "artifact_id": "m21.repair-case.expert-invocation-envelope.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/expert-invocation-envelope.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "5f5e67715a6c0586451692d320e4d44f992c43baab90ecbc39035f9f7274fc3e",
+      "size_bytes": 6636
+    },
+    {
+      "artifact_id": "m21.repair-case.expert-invocation-report.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/expert-invocation-report.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "6b9272d23b00757dfdd5d0d5a5de09dd78e66fcaf2b7e7baeb75888a241ccc74",
+      "size_bytes": 1472
+    },
+    {
+      "artifact_id": "m21.repair-case.focus-after.sucl",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/focus-after.sucl",
+      "media_type": "text/plain",
+      "producer": "openrtl-m21-validation",
+      "sha256": "e31a7952d15233bc635a586fb31501f051f6b4e7ba3b538e222eb167459b865a",
+      "size_bytes": 534
+    },
+    {
+      "artifact_id": "m21.repair-case.focus-before.sucl",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/focus-before.sucl",
+      "media_type": "text/plain",
+      "producer": "openrtl-m21-validation",
+      "sha256": "e31a7952d15233bc635a586fb31501f051f6b4e7ba3b538e222eb167459b865a",
+      "size_bytes": 534
+    },
+    {
+      "artifact_id": "m21.repair-case.proposal.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/proposal.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "b44c8c1a64ebb42e8a9a5ee7275c4d931481225ee2494ee1bdcbde0e5f457650",
+      "size_bytes": 2364
+    },
+    {
+      "artifact_id": "m21.repair-case.provider-edit-spec.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/provider-edit-spec.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "33040fd721529758e92597cac841697661c08a623253cb60530a8431cfc7d396",
+      "size_bytes": 333
+    },
+    {
+      "artifact_id": "m21.repair-case.provider-execution-report.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/provider-execution-report.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "783d76ca54d1c018d6e0bd7154ce4753c8be348f739d338f0f116859c79250d0",
+      "size_bytes": 765
+    },
+    {
+      "artifact_id": "m21.repair-case.provider-invocation-envelope.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/provider-invocation-envelope.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "e570eae3c860489d327933e18254e16f946487f23a85f4f60055541f1b60eef5",
+      "size_bytes": 6660
+    },
+    {
+      "artifact_id": "m21.repair-case.provider-invocation-plan.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/provider-invocation-plan.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "bf0865ca236c6e79039a44bd4d3fb61800744e162f746bfb92e3113e62dc309d",
+      "size_bytes": 1315
+    },
+    {
+      "artifact_id": "m21.repair-case.provider-invocation-report.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/provider-invocation-report.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "2a4bf24fbfe07d5d1fc948c8211726378554073bf700cf9e0f904742303bf2e1",
+      "size_bytes": 1493
+    },
+    {
+      "artifact_id": "m21.repair-case.provider-output-qualification.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/provider-output-qualification.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "50160bc2b63c6c7329a7faf1651149c331e334f65801ccf7f2aecbfe7fbbfd64",
+      "size_bytes": 2338
+    },
+    {
+      "artifact_id": "m21.repair-case.provider-suggestion.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/provider-suggestion.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "b7856823b38271b8eab8be4b234f1a119e1017d5d1ad90dac45f70501159527f",
+      "size_bytes": 1282
+    },
+    {
+      "artifact_id": "m21.repair-case.qualified-provider-application.json",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/qualified-provider-application.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m21-validation",
+      "sha256": "bb10a161eb206292ffc4d0e3a509bc8369041ff14543cebd59d02202e6179a84",
+      "size_bytes": 1116
+    },
+    {
+      "artifact_id": "m21.repair-case.repaired.results.xml",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/repaired/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m21-validation",
+      "sha256": "05e5590358fee4d5d34b607187367697868b066f0eebeb64da188c553cc100d2",
+      "size_bytes": 460
+    },
+    {
+      "artifact_id": "m21.repair-case.repaired.run.log",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/repaired/run.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m21-validation",
+      "sha256": "565ce5b87dfd44f6777c31b0ffc7c68ea03097ce6a65d74fe8d2e5533baeba30",
+      "size_bytes": 12805
+    },
+    {
+      "artifact_id": "m21.repair-case.repaired.waves.vcd",
+      "availability": "local",
+      "locator": "build/qualified-provider-application/m21-c95ad48/repair-case/repaired/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m21-validation",
+      "sha256": "0bd21f42287d2fa7d8c5668d00ededddc438a8ffb867cd3add4b8d3cb12a1265",
+      "size_bytes": 1914
+    }
+  ],
+  "authorization_boundary": {
+    "Production-Authorized": false,
+    "candidate_only": true,
+    "credential_value_persisted": false,
+    "gui_launch": false,
+    "production_source_modified": false,
+    "provider_output_trusted": false,
+    "real_credential_resolved": false,
+    "real_provider_called": false,
+    "remote_operations": false
+  },
+  "base_commit": "ab9b36a0802cb0ac4d2bb727ed57063d2523c80a",
+  "evidence_lane": "synthetic-qualified-provider-application",
+  "implementation_commit": "c95ad48184a305fe3f37c6bca253aef6bd18df91",
+  "milestone_id": "m21-qualified-provider-application",
+  "qualified_application": {
+    "application_digest": "sha256:dcc5ff47462e623bac325587b71243af557fc16647a86035c4554601c71f1729",
+    "application_id": "repair.application.026102fded273ee2bfe1",
+    "approval_digest": "sha256:987186ff157af5e90888d8362efbfde6030f385a29ee7a8acab09b17ab3e3b82",
+    "edit_plan_digest": "sha256:46816e69508912d35d461dc9578335e7bcd47c7c8cd9c82ed613c03a3a26ef19",
+    "qualification_digest": "sha256:9445329cb66a619daec80614f29b1a0907c59221cf3bfa14471b559a9b102506",
+    "qualification_id": "repair.provider-qualification.449af17f054bd307f135",
+    "qualified_application_id": "repair.qualified-application.2746ae9bb906c27f66bc",
+    "status": "applied_to_candidate"
+  },
+  "retention_class": "local-build-collateral",
+  "review_state": "validated",
+  "schema": "openrtl.milestone-evidence.v1",
+  "validation_outcomes": {
+    "focused_tests": "42 passed",
+    "full_unit_suite": "94 passed",
+    "model_tests": "3 passed",
+    "production_canary": "passed with retained VCD, XML, log, evidence, and simulation build",
+    "qualified_provider_application": "exact qualification-bound human approval applied typed edits to candidate only",
+    "strict_typing": "6 focused source files passed",
+    "text_files": "113 valid"
+  },
+  "visual_evidence": {
+    "before": {
+      "level_at_focus_end": 0,
+      "level_at_marker": 0,
+      "trace_end_fs": 20000000
+    },
+    "focus": {
+      "end_fs": 15001000,
+      "marker_fs": 10000000,
+      "signals": [
+        "sync_fifo.clk",
+        "sync_fifo.rst_n",
+        "sync_fifo.wr_valid",
+        "sync_fifo.wr_ready",
+        "sync_fifo.write_accepted",
+        "sync_fifo.rd_valid",
+        "sync_fifo.rd_ready",
+        "sync_fifo.read_accepted",
+        "sync_fifo.level",
+        "sync_fifo.full",
+        "sync_fifo.empty"
+      ],
+      "start_fs": 4999000
+    },
+    "repaired": {
+      "level_at_focus_end": 1,
+      "level_at_marker": 1,
+      "trace_end_fs": 20000000
+    },
+    "schema": "openrtl.repair-visual-comparison.v1",
+    "status": "visibly_distinct"
+  }
+}
