@@ -1,4 +1,4 @@
-// Intentional review fixture: an accepted write leaves count unchanged.
+// Intentional regression fixture: an accepted write leaves count unchanged.
 module sync_fifo #(
   parameter int unsigned WIDTH = 8,
   parameter int unsigned DEPTH = 4,
@@ -70,7 +70,7 @@ module sync_fifo #(
         read_pointer <= (read_pointer == LAST_POINTER) ? '0 : read_pointer + 1'b1;
       end
       unique case ({write_accepted, read_accepted})
-        2'b10: count <= count + 1'b1;
+        2'b10: count <= count;
         2'b01: count <= count - 1'b1;
         default: count <= count;
       endcase

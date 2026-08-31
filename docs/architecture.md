@@ -143,6 +143,13 @@ current target, comparison, evidence, results, and waveform, and emits one
 `awaiting_promotion_approval` artifact. It is deliberately non-applying:
 independent signoff and production-source replacement remain a separate gate.
 
+Qualified candidate promotion is that separate applying gate. It requires
+independent signoff over the exact canonical plan, target path and digest, and
+candidate digest. The adapter rehashes both files, atomically replaces only the
+named target with the exact candidate bytes, verifies the final digest, and
+emits a promotion receipt. The intentionally broken regression source remains
+separate from the promoted tracked target.
+
 ## Reuse and community boundary
 
 A passing design produces a local package candidate containing interfaces,

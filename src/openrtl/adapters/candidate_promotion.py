@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
+import tempfile
 from typing import Any, cast
 
 from openrtl.adapters.qualified_provider_application import (
@@ -12,15 +14,156 @@ from openrtl.adapters.qualified_provider_application import (
 )
 from openrtl.application import (
     CandidatePromotionPlan,
+    CandidatePromotionApproval,
+    CandidatePromotionReceipt,
     QualifiedProviderApplicationReport,
     RepairApplicationReport,
     build_candidate_promotion_plan,
+    build_candidate_promotion_receipt,
     canonical_payload_digest,
     qualified_provider_application_digest,
 )
 
 
 _MAX_JSON_BYTES = 2 * 1024 * 1024
+
+
+def promote_qualified_provider_candidate(
+    root: Path,
+    *,
+    promotion_plan_path: Path,
+    candidate_path: Path,
+    target_path: Path,
+    approval: CandidatePromotionApproval,
+) -> CandidatePromotionReceipt:
+    """Replace one exact target with the approved candidate bytes."""
+
+    resolved_root = root.resolve(strict=True)
+    plan_file = _contained_file(
+        resolved_root, promotion_plan_path, "candidate promotion plan"
+    )
+    candidate_file = _contained_file(
+        resolved_root, candidate_path, "promotion candidate"
+    )
+    target_file = _contained_file(resolved_root, target_path, "promotion target")
+    plan = parse_candidate_promotion_plan(
+        _read_json(plan_file, "candidate promotion plan")
+    )
+    approval.require_matches(plan)
+    if candidate_file.relative_to(resolved_root).as_posix() != plan.candidate_path:
+        raise ValueError("promotion candidate path differs from exact plan")
+    if target_file.relative_to(resolved_root).as_posix() != plan.target_path:
+        raise ValueError("promotion target path differs from exact plan")
+    candidate_bytes = candidate_file.read_bytes()
+    if _digest_bytes(candidate_bytes) != plan.candidate_digest:
+        raise ValueError("promotion candidate bytes differ from exact plan")
+    if _file_digest(target_file) != plan.target_digest:
+        raise ValueError("promotion target bytes differ from exact plan")
+    receipt = build_candidate_promotion_receipt(plan, approval)
+    _replace_exact_bytes(target_file, candidate_bytes)
+    if _file_digest(target_file) != receipt.target_digest_after:
+        raise RuntimeError("promoted target verification failed")
+    return receipt
+
+
+def parse_candidate_promotion_plan(payload: dict[str, Any]) -> CandidatePromotionPlan:
+    """Reconstruct one exact canonical promotion plan."""
+
+    if set(payload) != {
+        "applies_changes",
+        "candidate",
+        "content_digest",
+        "lineage",
+        "next_gate",
+        "promotion_plan_id",
+        "review",
+        "schema",
+        "status",
+        "target",
+        "validation",
+    }:
+        raise ValueError("candidate promotion plan fields are invalid")
+    candidate = _object(payload.get("candidate"), "promotion candidate")
+    target = _object(payload.get("target"), "promotion target")
+    lineage = _object(payload.get("lineage"), "promotion lineage")
+    application = _object(lineage.get("application"), "promotion application")
+    qualification = _object(
+        lineage.get("qualification"), "promotion qualification"
+    )
+    qualified = _object(
+        lineage.get("qualified_application"), "promotion qualified application"
+    )
+    validation = _object(payload.get("validation"), "promotion validation")
+    comparison = _object(validation.get("comparison"), "promotion comparison")
+    evidence = _object(validation.get("evidence"), "promotion evidence")
+    before_results = _object(
+        validation.get("before_results"), "promotion before results"
+    )
+    before_waveform = _object(
+        validation.get("before_waveform"), "promotion before waveform"
+    )
+    repaired_results = _object(
+        validation.get("repaired_results"), "promotion repaired results"
+    )
+    repaired_waveform = _object(
+        validation.get("repaired_waveform"), "promotion repaired waveform"
+    )
+    try:
+        plan = CandidatePromotionPlan(
+            cast(str, payload.get("promotion_plan_id")),
+            cast(str, qualified.get("qualified_application_id")),
+            cast(str, qualified.get("content_digest")),
+            cast(str, application.get("application_id")),
+            cast(str, application.get("content_digest")),
+            cast(str, qualification.get("qualification_id")),
+            cast(str, qualification.get("content_digest")),
+            cast(str, lineage.get("proposal_id")),
+            cast(str, lineage.get("edit_plan_digest")),
+            tuple(_strings(lineage.get("change_ids"), "promotion change ids")),
+            cast(str, candidate.get("path")),
+            cast(str, candidate.get("content_digest")),
+            cast(str, target.get("path")),
+            cast(str, target.get("content_digest")),
+            cast(str, comparison.get("path")),
+            cast(str, comparison.get("content_digest")),
+            cast(str, evidence.get("path")),
+            cast(str, evidence.get("content_digest")),
+            cast(str, before_results.get("path")),
+            cast(str, before_results.get("content_digest")),
+            cast(str, before_waveform.get("path")),
+            cast(str, before_waveform.get("content_digest")),
+            cast(str, repaired_results.get("path")),
+            cast(str, repaired_results.get("content_digest")),
+            cast(str, repaired_waveform.get("path")),
+            cast(str, repaired_waveform.get("content_digest")),
+        )
+    except (TypeError, ValueError):
+        raise ValueError("candidate promotion plan is invalid") from None
+    if plan.payload() != payload:
+        raise ValueError("candidate promotion plan is not canonical")
+    return plan
+
+
+def _replace_exact_bytes(target: Path, content: bytes) -> None:
+    mode = target.stat().st_mode & 0o777
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{target.name}.promotion-", dir=target.parent
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.chmod(temporary, mode)
+        os.replace(temporary, target)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+
+
+def _digest_bytes(content: bytes) -> str:
+    return f"sha256:{hashlib.sha256(content).hexdigest()}"
 
 
 def plan_qualified_provider_candidate_promotion(

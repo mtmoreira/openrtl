@@ -26,8 +26,10 @@ At the 25 ns marker, inspect `wr_valid`, `wr_ready`, `write_accepted`, and
 proposal therefore points to the sequential count-update lines rather than the
 handshake assignments.
 
-`sync_fifo_level_fault.sv` is the equivalent intentional RTL fixture. Run the
-explicit Verilator qualification to produce failing and repaired waveforms:
+`sync_fifo_level_fault_fixture.sv` preserves the intentional broken RTL used by
+regression and provider-free qualification. `sync_fifo_level_fault.sv` is the
+tracked target selected by the candidate-promotion example. Run the explicit
+Verilator qualification to produce failing and repaired waveforms:
 
 ```sh
 uv run python tools/fifo_repair_application_case.py \
@@ -40,6 +42,7 @@ exact provider-neutral request and ingests a strict synthetic response as an
 `awaiting_qualification` specification. The deterministic planner then creates
 `edit-plan.json`, pins the source and every edit by SHA-256, and leaves the plan
 `awaiting_review`. The generic Python engine contains no FIFO statement
-replacement. The candidate is written only after exact approval and only to
-the build directory; the tracked fault fixture and production FIFO remain
-unchanged.
+replacement. The candidate is first written only to the build directory. A
+later independent promotion approval may replace only the exact tracked target
+named by the canonical promotion plan. The regression fixture and production
+FIFO under `examples/fifo/rtl` remain unchanged.

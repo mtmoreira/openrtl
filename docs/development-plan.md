@@ -90,6 +90,9 @@ evidence attaches to the same artifact graph and requirement IDs.
   exact candidate and current target digests and remains
   `awaiting_promotion_approval`; production replacement is a later explicit
   human-signoff gate.
+- Qualified promotion requires an independent exact-plan signoff, atomically
+  replaces only the named target with the approved candidate bytes, and emits a
+  digest-bound receipt. The broken regression fixture remains separately named.
 
 ## Convergence
 

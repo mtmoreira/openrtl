@@ -185,7 +185,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
         make=parsed.make_executable,
         cocotb_config=parsed.cocotb_config_executable,
     )
-    source = root / "examples/fifo/faults/sync_fifo_level_fault.sv"
+    source = root / "examples/fifo/faults/sync_fifo_level_fault_fixture.sv"
     if not source.is_file() or source.is_symlink():
         raise RuntimeError("reviewed FIFO fault source is unavailable")
 

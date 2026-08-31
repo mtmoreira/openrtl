@@ -33,13 +33,13 @@ class ReviewedRepairApplicationTest(unittest.TestCase):
         self.edit_spec = spec["edits"][0]
         fixture = (
             Path(__file__).resolve().parents[1]
-            / "examples/fifo/faults/sync_fifo_level_fault.sv"
+            / "examples/fifo/faults/sync_fifo_level_fault_fixture.sv"
         ).read_text(encoding="utf-8")
         self.fixture_source = fixture.replace(
             self.edit_spec["expected_before"],
             self.edit_spec["expected_before"] + " // unit-test-anchor",
         )
-        self.source = self.root / "examples/fifo/faults/sync_fifo_level_fault.sv"
+        self.source = self.root / "examples/fifo/faults/sync_fifo_level_fault_fixture.sv"
         self.source.parent.mkdir(parents=True)
         self.source.write_text(self.fixture_source, encoding="utf-8")
         self.trace = self.root / "build/fault/waves.vcd"

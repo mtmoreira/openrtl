@@ -79,6 +79,7 @@ def _validate_architecture() -> None:
         "docs/adr/0012-provider-output-qualification.md",
         "docs/adr/0013-qualified-provider-candidate-application.md",
         "docs/adr/0014-candidate-promotion-planning.md",
+        "docs/adr/0015-qualified-candidate-promotion.md",
         "pyproject.toml",
         "src/openrtl/__init__.py",
         "src/openrtl/adapters/canary.py",
@@ -114,6 +115,7 @@ def _validate_architecture() -> None:
         "tools/fifo_fault_case.py",
         "tools/fifo_repair_application_case.py",
         "examples/fifo/faults/sync_fifo_level_fault.sv",
+        "examples/fifo/faults/sync_fifo_level_fault_fixture.sv",
         "examples/fifo/faults/level_update_edit_spec.json",
         "examples/fifo/dv/test_fifo_level_repair.py",
     }

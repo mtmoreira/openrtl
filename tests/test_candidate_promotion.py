@@ -9,8 +9,12 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from typing import Any
 
-from openrtl.adapters import plan_qualified_provider_candidate_promotion
+from openrtl.adapters import (
+    plan_qualified_provider_candidate_promotion,
+    promote_qualified_provider_candidate,
+)
 from openrtl.application import (
+    CandidatePromotionApproval,
     ProviderOutputQualificationReport,
     QualifiedProviderApplicationReport,
     RepairApplicationReport,
@@ -194,6 +198,16 @@ class CandidatePromotionPlanningTest(unittest.TestCase):
             evidence_path=self.evidence_path,
         )
 
+    def _approval(self, plan: Any) -> CandidatePromotionApproval:
+        return CandidatePromotionApproval(
+            plan.promotion_plan_id,
+            plan.content_digest,
+            plan.target_path,
+            plan.target_digest,
+            plan.candidate_digest,
+            "Independently reviewed the exact plan, source pair, and renewed evidence.",
+        )
+
     def test_exact_lineage_builds_non_applying_review_gate(self) -> None:
         target_before = self.target.read_bytes()
         plan = self._plan()
@@ -274,6 +288,96 @@ class CandidatePromotionPlanningTest(unittest.TestCase):
         self.assertFalse(summary["applies_changes"])
         self.assertEqual(json.loads(output.read_text())["content_digest"], summary["promotion_plan_digest"])
         self.assertEqual(self.target.read_bytes(), target_before)
+
+    def test_exact_independent_approval_promotes_candidate_bytes(self) -> None:
+        plan = self._plan()
+        plan_path = self._json("build/repair/promotion-plan.json", plan.payload())
+        receipt = promote_qualified_provider_candidate(
+            self.root,
+            promotion_plan_path=plan_path,
+            candidate_path=self.candidate,
+            target_path=self.target,
+            approval=self._approval(plan),
+        )
+        self.assertEqual(self.target.read_bytes(), self.candidate.read_bytes())
+        self.assertEqual(receipt.payload()["status"], "promoted_to_production")
+        self.assertTrue(receipt.payload()["applies_changes"])
+        self.assertEqual(receipt.target_digest_after, _digest(self.target.read_bytes()))
+
+    def test_stale_or_mismatched_promotion_fails_before_target_write(self) -> None:
+        plan = self._plan()
+        plan_path = self._json("build/repair/promotion-plan.json", plan.payload())
+        target_before = self.target.read_bytes()
+        wrong = CandidatePromotionApproval(
+            plan.promotion_plan_id,
+            "sha256:" + "f" * 64,
+            plan.target_path,
+            plan.target_digest,
+            plan.candidate_digest,
+            "Independent signoff with the wrong plan digest.",
+        )
+        with self.assertRaisesRegex(ValueError, "does not match exact plan"):
+            promote_qualified_provider_candidate(
+                self.root,
+                promotion_plan_path=plan_path,
+                candidate_path=self.candidate,
+                target_path=self.target,
+                approval=wrong,
+            )
+        self.assertEqual(self.target.read_bytes(), target_before)
+
+        self.candidate.write_bytes(self.candidate.read_bytes() + b"// stale\n")
+        with self.assertRaisesRegex(ValueError, "candidate bytes differ"):
+            promote_qualified_provider_candidate(
+                self.root,
+                promotion_plan_path=plan_path,
+                candidate_path=self.candidate,
+                target_path=self.target,
+                approval=self._approval(plan),
+            )
+        self.assertEqual(self.target.read_bytes(), target_before)
+
+    def test_cli_promotes_and_writes_separate_receipt(self) -> None:
+        plan = self._plan()
+        plan_path = self._json("build/repair/promotion-plan.json", plan.payload())
+        receipt_path = self.root / "build/repair/promotion-receipt.json"
+        with redirect_stdout(io.StringIO()) as captured:
+            self.assertEqual(
+                main(
+                    (
+                        "repair",
+                        "promote-qualified-provider-candidate",
+                        "--root",
+                        str(self.root),
+                        "--promotion-plan",
+                        str(plan_path),
+                        "--candidate",
+                        str(self.candidate),
+                        "--target-source",
+                        str(self.target),
+                        "--promotion-receipt-output",
+                        str(receipt_path),
+                        "--approve-promotion-plan-id",
+                        plan.promotion_plan_id,
+                        "--approve-promotion-plan-digest",
+                        plan.content_digest,
+                        "--approve-target-path",
+                        plan.target_path,
+                        "--approve-target-digest",
+                        plan.target_digest,
+                        "--approve-candidate-digest",
+                        plan.candidate_digest,
+                        "--signoff-note",
+                        "Independently reviewed the exact promotion plan and evidence.",
+                    )
+                ),
+                0,
+            )
+        summary = json.loads(captured.getvalue())
+        receipt = json.loads(receipt_path.read_text())
+        self.assertEqual(summary["status"], "promoted_to_production")
+        self.assertEqual(receipt["status"], "promoted_to_production")
+        self.assertEqual(self.target.read_bytes(), self.candidate.read_bytes())
 
 
 if __name__ == "__main__":

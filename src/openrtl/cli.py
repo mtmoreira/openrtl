@@ -45,6 +45,7 @@ from openrtl.adapters import (
     load_fifo_canary_evidence,
     load_source_edit_plan,
     plan_qualified_provider_candidate_promotion,
+    promote_qualified_provider_candidate,
     prepare_expert_source_edit_request,
     prepare_expert_provider_invocation_plan,
     qualify_provider_source_edits,
@@ -58,6 +59,7 @@ from openrtl.application import (
     FIFO_RUN_REF,
     FIFO_SOURCE_REFS,
     OpenRTLWorkflow,
+    CandidatePromotionApproval,
     QualifiedProviderRepairApproval,
     RepairApproval,
     run_scripted_fifo,
@@ -338,6 +340,23 @@ def parser() -> argparse.ArgumentParser:
     plan_candidate_promotion.add_argument(
         "--promotion-plan-output", type=Path, required=True
     )
+    promote_candidate = repair_commands.add_parser(
+        "promote-qualified-provider-candidate",
+        help="replace one exact target with an independently approved candidate",
+    )
+    promote_candidate.add_argument("--root", type=Path, default=Path.cwd())
+    promote_candidate.add_argument("--promotion-plan", type=Path, required=True)
+    promote_candidate.add_argument("--candidate", type=Path, required=True)
+    promote_candidate.add_argument("--target-source", type=Path, required=True)
+    promote_candidate.add_argument(
+        "--promotion-receipt-output", type=Path, required=True
+    )
+    promote_candidate.add_argument("--approve-promotion-plan-id", required=True)
+    promote_candidate.add_argument("--approve-promotion-plan-digest", required=True)
+    promote_candidate.add_argument("--approve-target-path", required=True)
+    promote_candidate.add_argument("--approve-target-digest", required=True)
+    promote_candidate.add_argument("--approve-candidate-digest", required=True)
+    promote_candidate.add_argument("--signoff-note", required=True)
     apply_source_edits = repair_commands.add_parser(
         "apply-source-edits",
         help="apply an approved evidence-bound source edit plan to a candidate",
@@ -536,6 +555,8 @@ def _repair_command(arguments: argparse.Namespace) -> int:
         return _apply_qualified_provider_source_edits(arguments)
     if arguments.repair_command == "plan-qualified-provider-candidate-promotion":
         return _plan_qualified_provider_candidate_promotion(arguments)
+    if arguments.repair_command == "promote-qualified-provider-candidate":
+        return _promote_qualified_provider_candidate(arguments)
     if arguments.repair_command != "apply-source-edits":
         raise AssertionError("argparse returned an unknown repair command")
     root = arguments.root.resolve(strict=True)
@@ -852,6 +873,47 @@ def _plan_qualified_provider_candidate_promotion(
                 "promotion_plan_id": plan.promotion_plan_id,
                 "status": "awaiting_promotion_approval",
                 "target": plan.target_path,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
+def _promote_qualified_provider_candidate(arguments: argparse.Namespace) -> int:
+    root = arguments.root.resolve(strict=True)
+    plan_path = _contained_input(root, arguments.promotion_plan)
+    candidate_path = _contained_input(root, arguments.candidate)
+    target_path = _contained_input(root, arguments.target_source)
+    receipt_path = _contained_output(root, arguments.promotion_receipt_output)
+    if receipt_path in {plan_path, candidate_path, target_path}:
+        raise ValueError("promotion receipt must be separate from every input")
+    approval = CandidatePromotionApproval(
+        arguments.approve_promotion_plan_id,
+        arguments.approve_promotion_plan_digest,
+        arguments.approve_target_path,
+        arguments.approve_target_digest,
+        arguments.approve_candidate_digest,
+        arguments.signoff_note,
+    )
+    receipt = promote_qualified_provider_candidate(
+        root,
+        promotion_plan_path=arguments.promotion_plan,
+        candidate_path=arguments.candidate,
+        target_path=arguments.target_source,
+        approval=approval,
+    )
+    _write_exact_repair_outputs(((receipt_path, receipt.payload()),))
+    print(
+        json.dumps(
+            {
+                "applies_changes": True,
+                "promotion_id": receipt.promotion_id,
+                "promotion_receipt": receipt_path.relative_to(root).as_posix(),
+                "status": "promoted_to_production",
+                "target": receipt.target_path,
+                "target_digest_after": receipt.target_digest_after,
             },
             indent=2,
             sort_keys=True,

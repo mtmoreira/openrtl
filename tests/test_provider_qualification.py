@@ -77,13 +77,13 @@ class ProviderOutputQualificationTest(unittest.TestCase):
         self.root = Path(self.temporary.name).resolve()
         repository = Path(__file__).resolve().parents[1]
         source_text = (
-            repository / "examples/fifo/faults/sync_fifo_level_fault.sv"
+            repository / "examples/fifo/faults/sync_fifo_level_fault_fixture.sv"
         ).read_text()
         self.source_text = source_text
         edit_spec = json.loads(
             (repository / "examples/fifo/faults/level_update_edit_spec.json").read_text()
         )
-        self.source = self.root / "examples/fifo/faults/sync_fifo_level_fault.sv"
+        self.source = self.root / "examples/fifo/faults/sync_fifo_level_fault_fixture.sv"
         self.source.parent.mkdir(parents=True)
         self.source.write_text(source_text)
         trace = self.root / "build/fault/waves.vcd"

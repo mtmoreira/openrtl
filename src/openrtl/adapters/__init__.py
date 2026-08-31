@@ -33,7 +33,9 @@ from openrtl.adapters.qualified_provider_application import (
     parse_provider_qualification_report,
 )
 from openrtl.adapters.candidate_promotion import (
+    parse_candidate_promotion_plan,
     plan_qualified_provider_candidate_promotion,
+    promote_qualified_provider_candidate,
 )
 from openrtl.adapters.canary import load_fifo_canary_evidence
 from openrtl.adapters.agentrig import (
@@ -102,6 +104,8 @@ __all__ = [
     "apply_qualified_provider_source_edits",
     "parse_provider_qualification_report",
     "plan_qualified_provider_candidate_promotion",
+    "parse_candidate_promotion_plan",
+    "promote_qualified_provider_candidate",
     "propose_fifo_repairs",
     "surfer_command_file",
 ]

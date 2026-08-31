@@ -221,6 +221,12 @@ bindings must identify this comparison, repaired results, and repaired waveform.
 The status is `awaiting_promotion_approval`; generating it does not replace the
 fault source or any production RTL.
 
+After independent signoff, `repair promote-qualified-provider-candidate`
+rehashes the exact plan, candidate, and target before changing the target. Its
+receipt must show `promoted_to_production` and a final target digest identical
+to the candidate digest. This operation does not call a provider or alter the
+separately named failing regression fixture.
+
 ## Prepare and open a Surfer focus
 
 Generate reusable inspection and viewer state:

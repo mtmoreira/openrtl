@@ -111,7 +111,7 @@ Prepare an exact, provider-neutral request for source-edit suggestions:
 uv run openrtl repair prepare-expert-source-edits \
   --proposal build/fifo-repair-application/proposal.json \
   --debug-session build/fifo-repair-application/debug-session.json \
-  --source examples/fifo/faults/sync_fifo_level_fault.sv \
+  --source examples/fifo/faults/sync_fifo_level_fault_fixture.sv \
   --request-output build/fifo-repair-application/expert-edit-request.json
 ```
 
@@ -135,7 +135,7 @@ uv run openrtl repair invoke-expert-source-edits \
   --request build/fifo-repair-application/expert-edit-request.json \
   --proposal build/fifo-repair-application/proposal.json \
   --debug-session build/fifo-repair-application/debug-session.json \
-  --source examples/fifo/faults/sync_fifo_level_fault.sv \
+  --source examples/fifo/faults/sync_fifo_level_fault_fixture.sv \
   --scripted-response build/fifo-repair-application/scripted-response.json \
   --envelope-output build/fifo-repair-application/invocation-envelope.json \
   --response-output build/fifo-repair-application/expert-edit-response.json \
@@ -170,7 +170,7 @@ uv run openrtl repair invoke-openai-expert-source-edits \
   --request build/fifo-repair-application/expert-edit-request.json \
   --proposal build/fifo-repair-application/proposal.json \
   --debug-session build/fifo-repair-application/debug-session.json \
-  --source examples/fifo/faults/sync_fifo_level_fault.sv \
+  --source examples/fifo/faults/sync_fifo_level_fault_fixture.sv \
   --plan build/fifo-repair-application/provider-plan.json \
   --with-openai-provider \
   --approve-provider-plan-digest sha256:REVIEWED_PLAN_DIGEST \
@@ -195,7 +195,7 @@ exact-replacement specification into a typed, review-required edit plan:
 uv run openrtl repair draft-source-edits \
   --proposal build/fifo-repair-application/proposal.json \
   --debug-session build/fifo-repair-application/debug-session.json \
-  --source examples/fifo/faults/sync_fifo_level_fault.sv \
+  --source examples/fifo/faults/sync_fifo_level_fault_fixture.sv \
   --edit-spec build/fifo-repair-application/expert-edit-spec.json \
   --edit-plan-output build/fifo-repair-application/edit-plan.json \
   --planning-report build/fifo-repair-application/edit-plan-planning.json
@@ -213,7 +213,7 @@ lineage instead of qualifying the edit specification alone:
 uv run openrtl repair qualify-provider-source-edits \
   --proposal build/fifo-repair-application/proposal.json \
   --debug-session build/fifo-repair-application/debug-session.json \
-  --source examples/fifo/faults/sync_fifo_level_fault.sv \
+  --source examples/fifo/faults/sync_fifo_level_fault_fixture.sv \
   --provider-plan build/fifo-repair-application/provider-plan.json \
   --provider-execution-report build/fifo-repair-application/provider-execution.json \
   --invocation-report build/fifo-repair-application/provider-invocation.json \
@@ -270,7 +270,25 @@ uv run openrtl repair plan-qualified-provider-candidate-promotion \
 ```
 
 The plan remains `awaiting_promotion_approval` and cannot modify either source.
-Production promotion is intentionally a separate, future explicit operation.
+After independent review, promotion requires every exact plan and byte binding:
+
+```console
+uv run openrtl repair promote-qualified-provider-candidate \
+  --promotion-plan build/fifo-repair-application/promotion-plan.json \
+  --candidate build/fifo-repair-application/candidate/sync_fifo.sv \
+  --target-source examples/fifo/faults/sync_fifo_level_fault.sv \
+  --promotion-receipt-output build/fifo-repair-application/promotion-receipt.json \
+  --approve-promotion-plan-id REPAIR_PROMOTION_PLAN_ID \
+  --approve-promotion-plan-digest SHA256_PROMOTION_PLAN_DIGEST \
+  --approve-target-path examples/fifo/faults/sync_fifo_level_fault.sv \
+  --approve-target-digest SHA256_TARGET_DIGEST \
+  --approve-candidate-digest SHA256_CANDIDATE_DIGEST \
+  --signoff-note "Independently reviewed exact candidate and renewed evidence."
+```
+
+The command reconstructs the canonical plan, rehashes both source files, writes
+the target atomically, verifies that its final digest equals the candidate, and
+emits a separate receipt. It never calls a provider or resolves credentials.
 
 ```console
 uv run openrtl repair apply-source-edits \

@@ -48,8 +48,11 @@ from openrtl.application.qualified_provider_application import (
     qualified_provider_application_digest,
 )
 from openrtl.application.candidate_promotion import (
+    CandidatePromotionApproval,
     CandidatePromotionPlan,
+    CandidatePromotionReceipt,
     build_candidate_promotion_plan,
+    build_candidate_promotion_receipt,
     candidate_promotion_digest,
 )
 from openrtl.application.evals import EvaluationCase, load_evaluation_cases
@@ -111,7 +114,9 @@ __all__ = [
     "ExpertProviderInvocationApproval",
     "ExpertProviderInvocationPlan",
     "ProviderOutputQualificationReport",
+    "CandidatePromotionApproval",
     "CandidatePromotionPlan",
+    "CandidatePromotionReceipt",
     "QualifiedProviderApplicationReport",
     "QualifiedProviderRepairApproval",
     "OpenRTLWorkflow",
@@ -140,6 +145,7 @@ __all__ = [
     "build_expert_provider_invocation_plan",
     "build_provider_output_qualification_report",
     "build_candidate_promotion_plan",
+    "build_candidate_promotion_receipt",
     "build_qualified_provider_application_report",
     "build_repair_proposal",
     "build_source_edit_plan",

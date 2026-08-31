@@ -45,9 +45,9 @@ class ControlledExpertInvocationTest(unittest.TestCase):
             )
         )
         source_text = (
-            repository / "examples/fifo/faults/sync_fifo_level_fault.sv"
+            repository / "examples/fifo/faults/sync_fifo_level_fault_fixture.sv"
         ).read_text(encoding="utf-8")
-        self.source = self.root / "examples/fifo/faults/sync_fifo_level_fault.sv"
+        self.source = self.root / "examples/fifo/faults/sync_fifo_level_fault_fixture.sv"
         self.source.parent.mkdir(parents=True)
         self.source.write_text(source_text, encoding="utf-8")
         trace = self.root / "build/fault/waves.vcd"

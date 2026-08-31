@@ -7,7 +7,13 @@ import hashlib
 import json
 from typing import Any
 
-from openrtl.domain._validation import digest, identifier, relative_path, unique_identifiers
+from openrtl.domain._validation import (
+    digest,
+    identifier,
+    nonempty,
+    relative_path,
+    unique_identifiers,
+)
 
 
 def candidate_promotion_digest(payload: object) -> str:
@@ -187,6 +193,170 @@ class CandidatePromotionPlan:
 
     def payload(self) -> dict[str, Any]:
         return {**self._content(), "content_digest": self.content_digest}
+
+
+@dataclass(frozen=True)
+class CandidatePromotionApproval:
+    """Independent signoff bound to one exact promotion plan and byte pair."""
+
+    promotion_plan_id: str
+    promotion_plan_digest: str
+    target_path: str
+    target_digest: str
+    candidate_digest: str
+    signoff_note: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "promotion_plan_id",
+            identifier(self.promotion_plan_id, "promotion_plan_id"),
+        )
+        for field_name in (
+            "promotion_plan_digest",
+            "target_digest",
+            "candidate_digest",
+        ):
+            object.__setattr__(
+                self,
+                field_name,
+                digest(getattr(self, field_name), field_name),
+            )
+        object.__setattr__(
+            self,
+            "target_path",
+            relative_path(self.target_path, "target_path"),
+        )
+        note = nonempty(self.signoff_note, "signoff_note")
+        if len(note) > 512:
+            raise ValueError("candidate promotion signoff note exceeds its bound")
+        object.__setattr__(self, "signoff_note", note)
+
+    def payload(self) -> dict[str, Any]:
+        return {
+            "candidate_digest": self.candidate_digest,
+            "promotion_plan": {
+                "content_digest": self.promotion_plan_digest,
+                "promotion_plan_id": self.promotion_plan_id,
+            },
+            "schema": "openrtl.candidate-promotion-approval.v1",
+            "signoff_note": self.signoff_note,
+            "signoff_role": "independent_signoff_reviewer",
+            "target": {
+                "content_digest": self.target_digest,
+                "path": self.target_path,
+            },
+        }
+
+    @property
+    def content_digest(self) -> str:
+        return candidate_promotion_digest(self.payload())
+
+    def require_matches(self, plan: CandidatePromotionPlan) -> None:
+        if (
+            self.promotion_plan_id != plan.promotion_plan_id
+            or self.promotion_plan_digest != plan.content_digest
+            or self.target_path != plan.target_path
+            or self.target_digest != plan.target_digest
+            or self.candidate_digest != plan.candidate_digest
+        ):
+            raise ValueError("candidate promotion approval does not match exact plan")
+
+
+@dataclass(frozen=True)
+class CandidatePromotionReceipt:
+    """Receipt proving exact approved candidate bytes replaced the target."""
+
+    promotion_id: str
+    promotion_plan_id: str
+    promotion_plan_digest: str
+    approval_digest: str
+    target_path: str
+    target_digest_before: str
+    target_digest_after: str
+    candidate_digest: str
+
+    def __post_init__(self) -> None:
+        for field_name in ("promotion_id", "promotion_plan_id"):
+            object.__setattr__(
+                self,
+                field_name,
+                identifier(getattr(self, field_name), field_name),
+            )
+        for field_name in (
+            "promotion_plan_digest",
+            "approval_digest",
+            "target_digest_before",
+            "target_digest_after",
+            "candidate_digest",
+        ):
+            object.__setattr__(
+                self,
+                field_name,
+                digest(getattr(self, field_name), field_name),
+            )
+        object.__setattr__(
+            self,
+            "target_path",
+            relative_path(self.target_path, "target_path"),
+        )
+        if self.target_digest_before == self.target_digest_after:
+            raise ValueError("candidate promotion receipt requires changed target bytes")
+        if self.target_digest_after != self.candidate_digest:
+            raise ValueError("promoted target does not equal exact candidate bytes")
+
+    def payload(self) -> dict[str, Any]:
+        return {
+            "applies_changes": True,
+            "authorization": {
+                "approval_digest": self.approval_digest,
+                "human_signoff_required": True,
+                "production_source_modified": True,
+            },
+            "candidate_digest": self.candidate_digest,
+            "promotion_id": self.promotion_id,
+            "promotion_plan": {
+                "content_digest": self.promotion_plan_digest,
+                "promotion_plan_id": self.promotion_plan_id,
+            },
+            "schema": "openrtl.candidate-promotion-receipt.v1",
+            "status": "promoted_to_production",
+            "target": {
+                "content_digest_after": self.target_digest_after,
+                "content_digest_before": self.target_digest_before,
+                "path": self.target_path,
+            },
+        }
+
+    @property
+    def content_digest(self) -> str:
+        return candidate_promotion_digest(self.payload())
+
+
+def build_candidate_promotion_receipt(
+    plan: CandidatePromotionPlan,
+    approval: CandidatePromotionApproval,
+) -> CandidatePromotionReceipt:
+    approval.require_matches(plan)
+    seed = {
+        "approval_digest": approval.content_digest,
+        "candidate_digest": plan.candidate_digest,
+        "promotion_plan_digest": plan.content_digest,
+        "target_digest": plan.target_digest,
+    }
+    token = hashlib.sha256(
+        json.dumps(seed, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()[:20]
+    return CandidatePromotionReceipt(
+        f"repair.promotion.{token}",
+        plan.promotion_plan_id,
+        plan.content_digest,
+        approval.content_digest,
+        plan.target_path,
+        plan.target_digest,
+        plan.candidate_digest,
+        plan.candidate_digest,
+    )
 
 
 def build_candidate_promotion_plan(

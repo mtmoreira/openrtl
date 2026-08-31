@@ -80,9 +80,9 @@ class OptInProviderInvocationTest(unittest.TestCase):
             (repository / "examples/fifo/faults/level_update_edit_spec.json").read_text()
         )
         source_text = (
-            repository / "examples/fifo/faults/sync_fifo_level_fault.sv"
+            repository / "examples/fifo/faults/sync_fifo_level_fault_fixture.sv"
         ).read_text()
-        self.source = self.root / "examples/fifo/faults/sync_fifo_level_fault.sv"
+        self.source = self.root / "examples/fifo/faults/sync_fifo_level_fault_fixture.sv"
         self.source.parent.mkdir(parents=True)
         self.source.write_text(source_text)
         trace = self.root / "build/fault/waves.vcd"
