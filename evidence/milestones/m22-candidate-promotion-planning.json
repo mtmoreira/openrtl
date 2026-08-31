@@ -1,0 +1,395 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "m22.validation.report",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/validation.report",
+      "media_type": "text/plain",
+      "producer": "openrtl-m22-validation",
+      "sha256": "bf06ce08756c9f21525c1741014efabe2f28cbae776ebc72a481800a1708e9a3",
+      "size_bytes": 7296
+    },
+    {
+      "artifact_id": "m22.production-canary.canary.log",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/production-canary/canary.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m22-validation",
+      "sha256": "c46aab202b2198314b317e27fd79a1817d7fb24babd1da53ee18a66a510aa2e1",
+      "size_bytes": 83909
+    },
+    {
+      "artifact_id": "m22.production-canary.evidence.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/production-canary/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "703472f5b9a500561be0440e7419fb9ed4bade81148a0fc3c7764e87f25bc581",
+      "size_bytes": 1003
+    },
+    {
+      "artifact_id": "m22.production-canary.results.xml",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/production-canary/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m22-validation",
+      "sha256": "8ee3f20725918db2a580173402f34cbde829f8af3454b77e818d9e38524477c1",
+      "size_bytes": 431
+    },
+    {
+      "artifact_id": "m22.production-canary.waves.vcd",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/production-canary/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m22-validation",
+      "sha256": "5fc0e1558f732f9b8917fcf19c2d4d78f96bb22b38a7d16628daf29d9e546695",
+      "size_bytes": 44255
+    },
+    {
+      "artifact_id": "m22.repair-case.application.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/application.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "83161c0b073056eca73c82b82d0b9c49bf001b9612f346fd807a1bc030c89e57",
+      "size_bytes": 1215
+    },
+    {
+      "artifact_id": "m22.repair-case.before.results.xml",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/before/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m22-validation",
+      "sha256": "b20441867b5b06181b187a67ae5a433bfd1cfe008c30f0e7b4402217e948270b",
+      "size_bytes": 532
+    },
+    {
+      "artifact_id": "m22.repair-case.before.run.log",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/before/run.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m22-validation",
+      "sha256": "66ce0efcbf44ef7b8a43a6c0f458cc4a5ccb69231a722ee5b92d7f9b8acd5eb0",
+      "size_bytes": 13484
+    },
+    {
+      "artifact_id": "m22.repair-case.before.waves.vcd",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/before/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m22-validation",
+      "sha256": "2f274d0760f7b11ac1b775e4e1657d33ca33d455c1b600552306f3b8bd786e0f",
+      "size_bytes": 1857
+    },
+    {
+      "artifact_id": "m22.repair-case.candidate.sync_fifo.sv",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/candidate/sync_fifo.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m22-validation",
+      "sha256": "4fea04242e4da6fe3018016bcaaf7902531174f39896200e8d86f13c71741531",
+      "size_bytes": 2681
+    },
+    {
+      "artifact_id": "m22.repair-case.comparison.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/comparison.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "ca88b62b0f1f68c2333654079410d4da9b75c62e5bef58920db7dea4dc98a399",
+      "size_bytes": 1296
+    },
+    {
+      "artifact_id": "m22.repair-case.debug-session.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/debug-session.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "e30dbe7b00b588c9e93b8d69eba0b0a0856587e0c29fa8b80e6236a2e95663d0",
+      "size_bytes": 4625
+    },
+    {
+      "artifact_id": "m22.repair-case.edit-plan-planning.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/edit-plan-planning.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "eed26e86069c8bc72f4f31fc9a2e0921973f9d552fb46217a2712df12db8e39b",
+      "size_bytes": 1066
+    },
+    {
+      "artifact_id": "m22.repair-case.edit-plan.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/edit-plan.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "797cad4f5d7851b606040e82bc305aa66dee74b74ce3ee8f16ae70d8746dbe7f",
+      "size_bytes": 981
+    },
+    {
+      "artifact_id": "m22.repair-case.evidence.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "32bce3a3b229a0c56bec9d04f67eb21a49510565973c1e0f7969bcf5eaf09dcc",
+      "size_bytes": 7340
+    },
+    {
+      "artifact_id": "m22.repair-case.expert-edit-request.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/expert-edit-request.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "6c9aa0d89c83532023a9bf52091635dbd2b325da7163fe24ec729f7c002c6b86",
+      "size_bytes": 2405
+    },
+    {
+      "artifact_id": "m22.repair-case.expert-edit-response.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/expert-edit-response.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "13e6d1e85c6dc54810b3a51d95e8c1a475a99094bac0a246aab7f050dac23a03",
+      "size_bytes": 1083
+    },
+    {
+      "artifact_id": "m22.repair-case.expert-edit-spec.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/expert-edit-spec.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "33040fd721529758e92597cac841697661c08a623253cb60530a8431cfc7d396",
+      "size_bytes": 333
+    },
+    {
+      "artifact_id": "m22.repair-case.expert-edit-suggestion.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/expert-edit-suggestion.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "caf7dc4e366f2b1957551228b432371bfb4dde30ff4b02f58edd7f2f26690f45",
+      "size_bytes": 1282
+    },
+    {
+      "artifact_id": "m22.repair-case.expert-invocation-envelope.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/expert-invocation-envelope.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "3c7dfcf233eb1116c24c3fb1e0dbb305c40972da50cb8bf695c27c2a296122ee",
+      "size_bytes": 6636
+    },
+    {
+      "artifact_id": "m22.repair-case.expert-invocation-report.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/expert-invocation-report.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "8e5ff9850622f669cbc39200a8b27671bf7d5640ab74164dce4a8918208f6bcf",
+      "size_bytes": 1472
+    },
+    {
+      "artifact_id": "m22.repair-case.focus-after.sucl",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/focus-after.sucl",
+      "media_type": "text/plain",
+      "producer": "openrtl-m22-validation",
+      "sha256": "e31a7952d15233bc635a586fb31501f051f6b4e7ba3b538e222eb167459b865a",
+      "size_bytes": 534
+    },
+    {
+      "artifact_id": "m22.repair-case.focus-before.sucl",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/focus-before.sucl",
+      "media_type": "text/plain",
+      "producer": "openrtl-m22-validation",
+      "sha256": "e31a7952d15233bc635a586fb31501f051f6b4e7ba3b538e222eb167459b865a",
+      "size_bytes": 534
+    },
+    {
+      "artifact_id": "m22.repair-case.promotion-plan.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/promotion-plan.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "c8e10e730bd64c837607516f02717957165bc9d4e3e43ca8ff576026f8ecf33d",
+      "size_bytes": 3250
+    },
+    {
+      "artifact_id": "m22.repair-case.proposal.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/proposal.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "264a1d9cec6531b6c5b1bf1824472b93b9610220148a65f89c9428f221ca6be2",
+      "size_bytes": 2364
+    },
+    {
+      "artifact_id": "m22.repair-case.provider-edit-spec.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/provider-edit-spec.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "33040fd721529758e92597cac841697661c08a623253cb60530a8431cfc7d396",
+      "size_bytes": 333
+    },
+    {
+      "artifact_id": "m22.repair-case.provider-execution-report.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/provider-execution-report.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "25830ea4786558775a4e458d3342c7ad97fdb4e4eb7fd3a1e1682fa53af0d045",
+      "size_bytes": 765
+    },
+    {
+      "artifact_id": "m22.repair-case.provider-invocation-envelope.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/provider-invocation-envelope.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "be48c9583fe50ad809e0847f57f8a7ce0b52b380eae73d75313562a21e3cc8f4",
+      "size_bytes": 6660
+    },
+    {
+      "artifact_id": "m22.repair-case.provider-invocation-plan.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/provider-invocation-plan.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "0b9617a886de2581432c4e32f3b9e03fb89f7d16391d7189338b367347749a6c",
+      "size_bytes": 1315
+    },
+    {
+      "artifact_id": "m22.repair-case.provider-invocation-report.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/provider-invocation-report.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "1550daa7bc5c39b9711768f7a748369a6ee6ad0f6718aa4ad36516c3cdb0bf8a",
+      "size_bytes": 1493
+    },
+    {
+      "artifact_id": "m22.repair-case.provider-output-qualification.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/provider-output-qualification.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "56ce7d0392a3b7a326f9d5eb5b5cdc1ccd17faffa7317181840e82a5afe2710b",
+      "size_bytes": 2338
+    },
+    {
+      "artifact_id": "m22.repair-case.provider-suggestion.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/provider-suggestion.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "caf7dc4e366f2b1957551228b432371bfb4dde30ff4b02f58edd7f2f26690f45",
+      "size_bytes": 1282
+    },
+    {
+      "artifact_id": "m22.repair-case.qualified-provider-application.json",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/qualified-provider-application.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m22-validation",
+      "sha256": "c8cedeeed2be32452620cfcbca98eb5aa96500d8ba73ea706651b84fa19b94d4",
+      "size_bytes": 1116
+    },
+    {
+      "artifact_id": "m22.repair-case.repaired.results.xml",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/repaired/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m22-validation",
+      "sha256": "fc32f15fa4f39aa334b0e965a78be8d630752b1d8958edc2b1132abaf20765e0",
+      "size_bytes": 458
+    },
+    {
+      "artifact_id": "m22.repair-case.repaired.run.log",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/repaired/run.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m22-validation",
+      "sha256": "64de19a406c569ad357ec6795f3bae4bfc3e4abe979a7a2f5fe3ddaf19899c05",
+      "size_bytes": 12768
+    },
+    {
+      "artifact_id": "m22.repair-case.repaired.waves.vcd",
+      "availability": "local",
+      "locator": "build/candidate-promotion-planning/m22-6e88cfa/repair-case/repaired/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m22-validation",
+      "sha256": "0bd21f42287d2fa7d8c5668d00ededddc438a8ffb867cd3add4b8d3cb12a1265",
+      "size_bytes": 1914
+    }
+  ],
+  "authorization_boundary": {
+    "Production-Authorized": false,
+    "candidate_only": true,
+    "credential_value_persisted": false,
+    "gui_launch": false,
+    "production_promotion_performed": false,
+    "production_source_modified": false,
+    "provider_output_trusted_without_qualification": false,
+    "real_credential_resolved": false,
+    "real_provider_called": false,
+    "remote_operations": false
+  },
+  "base_commit": "caae65d475a382a7690cb186002dfdd1e8aa6614",
+  "evidence_lane": "synthetic-candidate-promotion-planning",
+  "implementation_commit": "6e88cfaa672f7f53664bd7673059e3f4033bd4a9",
+  "milestone_id": "m22-candidate-promotion-planning",
+  "promotion_plan": {
+    "candidate_digest": "sha256:4fea04242e4da6fe3018016bcaaf7902531174f39896200e8d86f13c71741531",
+    "content_digest": "sha256:ca30c447c05c07901340c9d6d0863a802929c83a86f54d0cc4f0b180bf7cb23d",
+    "promotion_plan_id": "repair.promotion-plan.2e44a10838e6b262209c",
+    "status": "awaiting_promotion_approval",
+    "target_digest": "sha256:eb138c59cab00cae887eb5a1513ee4c35aee83a45818ce4aa3f874447183d06d"
+  },
+  "retention_class": "local-build-collateral",
+  "review_state": "validated",
+  "schema": "openrtl.milestone-evidence.v1",
+  "validation_outcomes": {
+    "focused_tests": "29 passed",
+    "full_unit_suite": "98 passed",
+    "model_tests": "3 passed",
+    "production_canary": "passed with retained VCD, XML, log, evidence, and simulation build",
+    "promotion_planning": "exact candidate and target with failing/repaired artifacts bound; non-applying and awaiting independent approval",
+    "strict_typing": "6 focused source files passed",
+    "text_files": "118 valid"
+  },
+  "visual_evidence": {
+    "before": {
+      "level_at_focus_end": 0,
+      "level_at_marker": 0,
+      "trace_end_fs": 20000000
+    },
+    "focus": {
+      "end_fs": 15001000,
+      "marker_fs": 10000000,
+      "signals": [
+        "sync_fifo.clk",
+        "sync_fifo.rst_n",
+        "sync_fifo.wr_valid",
+        "sync_fifo.wr_ready",
+        "sync_fifo.write_accepted",
+        "sync_fifo.rd_valid",
+        "sync_fifo.rd_ready",
+        "sync_fifo.read_accepted",
+        "sync_fifo.level",
+        "sync_fifo.full",
+        "sync_fifo.empty"
+      ],
+      "start_fs": 4999000
+    },
+    "repaired": {
+      "level_at_focus_end": 1,
+      "level_at_marker": 1,
+      "trace_end_fs": 20000000
+    },
+    "schema": "openrtl.repair-visual-comparison.v1",
+    "status": "visibly_distinct"
+  }
+}
