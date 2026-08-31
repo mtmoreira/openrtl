@@ -1,0 +1,156 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "m24.dist.wheel",
+      "availability": "local",
+      "locator": "build/release-package-0.2.0/m24-83fb441/dist/openrtl-0.2.0-py3-none-any.whl",
+      "media_type": "application/zip",
+      "producer": "openrtl-m24-release-package-0.2.0",
+      "sha256": "00af29b0bebdb409f7f4eb191c3a4330ca825ee3d5a07eb2d87c88379f2bc072",
+      "size_bytes": 103934
+    },
+    {
+      "artifact_id": "m24.dist.sdist",
+      "availability": "local",
+      "locator": "build/release-package-0.2.0/m24-83fb441/dist/openrtl-0.2.0.tar.gz",
+      "media_type": "application/gzip",
+      "producer": "openrtl-m24-release-package-0.2.0",
+      "sha256": "6f92af2f28f3e450b466c748d4fb2561e57e84fff1ebb8771dd73dff810d8c51",
+      "size_bytes": 93505
+    },
+    {
+      "artifact_id": "m24.dist.examples",
+      "availability": "local",
+      "locator": "build/release-package-0.2.0/m24-83fb441/dist/openrtl-examples-0.2.0.tar.gz",
+      "media_type": "application/gzip",
+      "producer": "openrtl-m24-release-package-0.2.0",
+      "sha256": "4e0961c2f560b8b202fbd412380bcaee38eae95a8a132047e93f6f411bf7c614",
+      "size_bytes": 16643
+    },
+    {
+      "artifact_id": "m24.dist.release-manifest",
+      "availability": "local",
+      "locator": "build/release-package-0.2.0/m24-83fb441/dist/openrtl-0.2.0-release.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m24-release-package-0.2.0",
+      "sha256": "0bdc307bd5b4bd974fc6f5710f201d074fd83555b2dc974f2fbcb95af15a27fc",
+      "size_bytes": 869
+    },
+    {
+      "artifact_id": "m24.validation.report",
+      "availability": "local",
+      "locator": "build/release-package-0.2.0/m24-83fb441/validation/validation.report",
+      "media_type": "text/plain",
+      "producer": "openrtl-m24-release-package-0.2.0",
+      "sha256": "0b99e658ac7f039ac022cdf01dec89b491db503bb65a18ce79f668f1fd56bcf8",
+      "size_bytes": 6529
+    },
+    {
+      "artifact_id": "m24.validation.full",
+      "availability": "local",
+      "locator": "build/release-package-0.2.0/m24-83fb441/validation/full-validation.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m24-release-package-0.2.0",
+      "sha256": "9e5d5c56030a4982e856b040e455b1bff1bb4f3177ae8db5581ef1e087a56ad4",
+      "size_bytes": 1886
+    },
+    {
+      "artifact_id": "m24.canary.log",
+      "availability": "local",
+      "locator": "build/release-package-0.2.0/m24-83fb441/validation/production-canary/canary.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m24-release-package-0.2.0",
+      "sha256": "b2b04336f2ff1a8f21f60cf4245dc7ffc0e2bf3e84c2e73e4ed5df3881164bd2",
+      "size_bytes": 83792
+    },
+    {
+      "artifact_id": "m24.canary.evidence",
+      "availability": "local",
+      "locator": "build/release-package-0.2.0/m24-83fb441/validation/production-canary/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m24-release-package-0.2.0",
+      "sha256": "56b443671f55846ab4e2f0d911ae71df969d39c1b4d211e977a19aa26c6cfa69",
+      "size_bytes": 1012
+    },
+    {
+      "artifact_id": "m24.canary.results",
+      "availability": "local",
+      "locator": "build/release-package-0.2.0/m24-83fb441/validation/production-canary/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m24-release-package-0.2.0",
+      "sha256": "8bff700a048a9268df9eee3748ffd71d8d4878026e9fc0676a86e29a49f43bde",
+      "size_bytes": 423
+    },
+    {
+      "artifact_id": "m24.canary.waveform",
+      "availability": "local",
+      "locator": "build/release-package-0.2.0/m24-83fb441/validation/production-canary/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m24-release-package-0.2.0",
+      "sha256": "5fc0e1558f732f9b8917fcf19c2d4d78f96bb22b38a7d16628daf29d9e546695",
+      "size_bytes": 44255
+    },
+    {
+      "artifact_id": "m24.examples.comparison",
+      "availability": "local",
+      "locator": "build/release-package-0.2.0/m24-83fb441/validation/repair-case/comparison.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m24-release-package-0.2.0",
+      "sha256": "1881c553db55129d8aaf14505dfd211173a4a60250d5ad80db853faeea7a419c",
+      "size_bytes": 1282
+    },
+    {
+      "artifact_id": "m24.examples.before-waveform",
+      "availability": "local",
+      "locator": "build/release-package-0.2.0/m24-83fb441/validation/repair-case/before/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m24-release-package-0.2.0",
+      "sha256": "2f274d0760f7b11ac1b775e4e1657d33ca33d455c1b600552306f3b8bd786e0f",
+      "size_bytes": 1857
+    },
+    {
+      "artifact_id": "m24.examples.repaired-waveform",
+      "availability": "local",
+      "locator": "build/release-package-0.2.0/m24-83fb441/validation/repair-case/repaired/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m24-release-package-0.2.0",
+      "sha256": "0bd21f42287d2fa7d8c5668d00ededddc438a8ffb867cd3add4b8d3cb12a1265",
+      "size_bytes": 1914
+    }
+  ],
+  "authorization_boundary": {
+    "Production-Authorized": false,
+    "credential_value_persisted": false,
+    "github_release_created": false,
+    "gui_launch": false,
+    "package_registry_publication": false,
+    "real_credential_resolved": false,
+    "real_provider_called": false,
+    "remote_operations": false,
+    "tag_created": false
+  },
+  "base_commit": "9bed6cdd5fa61a6ec5ca4770936cb5e52887217d",
+  "evidence_lane": "immutable-release-bundle",
+  "implementation_commit": "83fb441a29dd655397fc6cfd7615538c0aecde5a",
+  "milestone_id": "m24-release-package-0.2.0",
+  "release": {
+    "distribution": "openrtl",
+    "release_manifest_sha256": "sha256:0bdc307bd5b4bd974fc6f5710f201d074fd83555b2dc974f2fbcb95af15a27fc",
+    "tag_created": false,
+    "tag_planned": "v0.2.0",
+    "version": "0.2.0"
+  },
+  "retention_class": "local-build-collateral",
+  "review_state": "validated_release_candidate",
+  "schema": "openrtl.milestone-evidence.v1",
+  "validation_outcomes": {
+    "clean_install": "exact OpenRTL 0.2.0 wheel and AgentRig 0.2.2 wheel installed in an isolated environment",
+    "focused_release_tests": "7 passed",
+    "full_validation": "passed with Verilator/cocotb production canary",
+    "release_artifacts": "wheel, source distribution, and examples archive passed exact structure and metadata validation",
+    "reproducibility": "committed-tree wheel, source distribution, and examples archive exactly match the validated bytes",
+    "runnable_examples": "model, fault diagnosis, and full Verilator repair passed from the extracted examples archive",
+    "strict_typing": "3 focused files passed",
+    "visible_waveform_evidence": "level at marker changed from 0 before repair to 1 after repair"
+  }
+}
