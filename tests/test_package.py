@@ -7,7 +7,7 @@ import openrtl
 
 class PackageTest(unittest.TestCase):
     def test_version_is_exposed(self) -> None:
-        self.assertEqual(openrtl.__version__, "0.1.0")
+        self.assertEqual(openrtl.__version__, "0.2.0")
 
 
 if __name__ == "__main__":

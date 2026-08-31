@@ -17,6 +17,12 @@ OpenRTL uses AgentRig for portable agent/runtime/tool contracts. OpenRTL owns
 the hardware-design schemas, artifact graph, evidence, EDA adapters, reuse
 catalog, and convergence rules.
 
+The current release candidate is OpenRTL 0.2.0. Its checked release bundle
+contains a library-only wheel, a source distribution, and a deterministic
+companion archive with the complete FIFO model, RTL, DV, waveform, fault, and
+repair examples. See [docs/releases.md](docs/releases.md) for the immutable
+artifact and clean-install verification contract.
+
 ## V1 toolchain
 
 - SystemVerilog

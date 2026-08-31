@@ -93,6 +93,12 @@ evidence attaches to the same artifact graph and requirement IDs.
 - Qualified promotion requires an independent exact-plan signoff, atomically
   replaces only the named target with the approved candidate bytes, and emits a
   digest-bound receipt. The broken regression fixture remains separately named.
+- The 0.2.0 release candidate binds a library-only wheel, source distribution,
+  and deterministic examples archive to one exact commit. A clean environment
+  must install the wheel with AgentRig 0.2.2, extract the examples archive, and
+  pass the model, fault-diagnosis, and Verilator repair walkthroughs without
+  importing OpenRTL from the repository checkout. Tagging and publication are
+  separate owner-authorized operations.
 
 ## Convergence
 
