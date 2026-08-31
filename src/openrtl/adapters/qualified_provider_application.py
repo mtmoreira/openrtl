@@ -55,7 +55,7 @@ def apply_qualified_provider_source_edits(
         ),
         "source edit planning report",
     )
-    qualification = _parse_qualification(qualification_payload)
+    qualification = parse_provider_qualification_report(qualification_payload)
     planning = _parse_planning_report(planning_payload)
     edit_plan = load_source_edit_plan(resolved_root, edit_plan_path)
     approval.require_matches(qualification)
@@ -109,7 +109,10 @@ def _validate_review_artifacts(
         raise ValueError("source edit plan does not match provider qualification")
 
 
-def _parse_qualification(payload: dict[str, Any]) -> ProviderOutputQualificationReport:
+def parse_provider_qualification_report(
+    payload: dict[str, Any],
+) -> ProviderOutputQualificationReport:
+    """Reconstruct one exact canonical provider qualification receipt."""
     if set(payload) != {
         "applies_changes",
         "content_digest",

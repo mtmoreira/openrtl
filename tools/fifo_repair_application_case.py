@@ -55,6 +55,7 @@ from openrtl.adapters import (  # noqa: E402
     inspect_vcd,
     invoke_expert_source_edits,
     invoke_approved_openai_expert_source_edits,
+    plan_qualified_provider_candidate_promotion,
     prepare_expert_provider_invocation_plan,
     prepare_expert_source_edit_request,
     propose_fifo_repairs,
@@ -111,6 +112,7 @@ _KNOWN_OUTPUTS = frozenset(
         "provider-invocation-plan.json",
         "provider-invocation-report.json",
         "provider-output-qualification.json",
+        "promotion-plan.json",
         "qualified-provider-application.json",
         "provider-suggestion.json",
         "evidence.json",
@@ -226,6 +228,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
     qualified_application_path = output / "qualified-provider-application.json"
     application_path = output / "application.json"
     comparison_path = output / "comparison.json"
+    promotion_plan_path = output / "promotion-plan.json"
     before_focus_path = output / "focus-before.sucl"
     after_focus_path = output / "focus-after.sucl"
     repaired_source = output / "candidate/sync_fifo.sv"
@@ -512,6 +515,17 @@ def main(arguments: Sequence[str] | None = None) -> int:
         },
     }
     _write_json(evidence_path, evidence)
+    promotion_plan = plan_qualified_provider_candidate_promotion(
+        root,
+        qualification_report_path=provider_qualification_path,
+        application_report_path=application_path,
+        qualified_application_report_path=qualified_application_path,
+        candidate_path=repaired_source,
+        target_path=source,
+        comparison_path=comparison_path,
+        evidence_path=evidence_path,
+    )
+    _write_json(promotion_plan_path, promotion_plan.payload())
 
     summary = {
         "after_waveform": after.waveform.relative_to(root).as_posix(),
@@ -532,12 +546,15 @@ def main(arguments: Sequence[str] | None = None) -> int:
         "provider_execution_report": provider_execution_path.relative_to(root).as_posix(),
         "provider_output_qualification": provider_qualification_path.relative_to(root).as_posix(),
         "provider_qualification_digest": provider_qualification.content_digest,
+        "promotion_plan": promotion_plan_path.relative_to(root).as_posix(),
+        "promotion_plan_digest": promotion_plan.content_digest,
+        "promotion_plan_status": "awaiting_promotion_approval",
         "qualified_provider_application": qualified_application_path.relative_to(root).as_posix(),
         "qualified_provider_application_id": qualified_application.qualified_application_id,
         "provider_invocation_plan": provider_plan_path.relative_to(root).as_posix(),
         "provider_invocation_report": provider_invocation_path.relative_to(root).as_posix(),
         "repaired_finding_ids": tuple(value.finding_id for value in after_report.findings),
-        "schema": "openrtl.fifo-repair-application-case.v9",
+        "schema": "openrtl.fifo-repair-application-case.v10",
         "status": "passed",
         "visual_evidence": visual_evidence,
     }

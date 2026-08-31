@@ -30,6 +30,10 @@ from openrtl.adapters.provider_invocation import (
 from openrtl.adapters.provider_qualification import qualify_provider_source_edits
 from openrtl.adapters.qualified_provider_application import (
     apply_qualified_provider_source_edits,
+    parse_provider_qualification_report,
+)
+from openrtl.adapters.candidate_promotion import (
+    plan_qualified_provider_candidate_promotion,
 )
 from openrtl.adapters.canary import load_fifo_canary_evidence
 from openrtl.adapters.agentrig import (
@@ -96,6 +100,8 @@ __all__ = [
     "prepare_expert_provider_invocation_plan",
     "qualify_provider_source_edits",
     "apply_qualified_provider_source_edits",
+    "parse_provider_qualification_report",
+    "plan_qualified_provider_candidate_promotion",
     "propose_fifo_repairs",
     "surfer_command_file",
 ]

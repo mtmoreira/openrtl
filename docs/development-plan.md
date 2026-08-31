@@ -85,6 +85,11 @@ evidence attaches to the same artifact graph and requirement IDs.
   separate candidate and emitting a qualification-bound application receipt.
   Production RTL remains unchanged and renewed simulation plus visibly distinct
   before/after waveforms remain mandatory evidence.
+- Candidate promotion review starts only after those receipts and renewed
+  artifacts are rehashed into a canonical non-applying plan. The plan binds the
+  exact candidate and current target digests and remains
+  `awaiting_promotion_approval`; production replacement is a later explicit
+  human-signoff gate.
 
 ## Convergence
 

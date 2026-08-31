@@ -44,6 +44,7 @@ from openrtl.adapters import (
     load_expert_provider_invocation_plan,
     load_fifo_canary_evidence,
     load_source_edit_plan,
+    plan_qualified_provider_candidate_promotion,
     prepare_expert_source_edit_request,
     prepare_expert_provider_invocation_plan,
     qualify_provider_source_edits,
@@ -316,6 +317,27 @@ def parser() -> argparse.ArgumentParser:
         "--approve-edit-plan-digest", required=True
     )
     apply_qualified_provider_edits.add_argument("--review-note", required=True)
+    plan_candidate_promotion = repair_commands.add_parser(
+        "plan-qualified-provider-candidate-promotion",
+        help="bind validated candidate evidence into a non-applying promotion plan",
+    )
+    plan_candidate_promotion.add_argument("--root", type=Path, default=Path.cwd())
+    plan_candidate_promotion.add_argument(
+        "--qualification-report", type=Path, required=True
+    )
+    plan_candidate_promotion.add_argument(
+        "--application-report", type=Path, required=True
+    )
+    plan_candidate_promotion.add_argument(
+        "--qualified-application-report", type=Path, required=True
+    )
+    plan_candidate_promotion.add_argument("--candidate", type=Path, required=True)
+    plan_candidate_promotion.add_argument("--target-source", type=Path, required=True)
+    plan_candidate_promotion.add_argument("--comparison", type=Path, required=True)
+    plan_candidate_promotion.add_argument("--evidence", type=Path, required=True)
+    plan_candidate_promotion.add_argument(
+        "--promotion-plan-output", type=Path, required=True
+    )
     apply_source_edits = repair_commands.add_parser(
         "apply-source-edits",
         help="apply an approved evidence-bound source edit plan to a candidate",
@@ -512,6 +534,8 @@ def _repair_command(arguments: argparse.Namespace) -> int:
         return _qualify_provider_source_edits(arguments)
     if arguments.repair_command == "apply-qualified-provider-source-edits":
         return _apply_qualified_provider_source_edits(arguments)
+    if arguments.repair_command == "plan-qualified-provider-candidate-promotion":
+        return _plan_qualified_provider_candidate_promotion(arguments)
     if arguments.repair_command != "apply-source-edits":
         raise AssertionError("argparse returned an unknown repair command")
     root = arguments.root.resolve(strict=True)
@@ -783,6 +807,51 @@ def _apply_qualified_provider_source_edits(arguments: argparse.Namespace) -> int
                 .relative_to(root)
                 .as_posix(),
                 "status": "applied_to_candidate",
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
+def _plan_qualified_provider_candidate_promotion(
+    arguments: argparse.Namespace,
+) -> int:
+    root = arguments.root.resolve(strict=True)
+    input_paths = {
+        _contained_input(root, arguments.qualification_report),
+        _contained_input(root, arguments.application_report),
+        _contained_input(root, arguments.qualified_application_report),
+        _contained_input(root, arguments.candidate),
+        _contained_input(root, arguments.target_source),
+        _contained_input(root, arguments.comparison),
+        _contained_input(root, arguments.evidence),
+    }
+    output_path = _contained_output(root, arguments.promotion_plan_output)
+    if output_path in input_paths:
+        raise ValueError("candidate promotion plan output must be separate from every input")
+    plan = plan_qualified_provider_candidate_promotion(
+        root,
+        qualification_report_path=arguments.qualification_report,
+        application_report_path=arguments.application_report,
+        qualified_application_report_path=arguments.qualified_application_report,
+        candidate_path=arguments.candidate,
+        target_path=arguments.target_source,
+        comparison_path=arguments.comparison,
+        evidence_path=arguments.evidence,
+    )
+    _write_exact_repair_outputs(((output_path, plan.payload()),))
+    print(
+        json.dumps(
+            {
+                "applies_changes": False,
+                "candidate": plan.candidate_path,
+                "promotion_plan": output_path.relative_to(root).as_posix(),
+                "promotion_plan_digest": plan.content_digest,
+                "promotion_plan_id": plan.promotion_plan_id,
+                "status": "awaiting_promotion_approval",
+                "target": plan.target_path,
             },
             indent=2,
             sort_keys=True,

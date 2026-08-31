@@ -215,6 +215,12 @@ OpenRTL's focus comments. Open the exact `before/waves.vcd` or
 otherwise display the same `waves.vcd` title. At that edge the faulty FIFO keeps
 `level` at zero while the repaired candidate changes it to one.
 
+Once that difference is confirmed, inspect `promotion-plan.json`. Its candidate
+and target digests must match the exact files being reviewed, and its validation
+bindings must identify this comparison, repaired results, and repaired waveform.
+The status is `awaiting_promotion_approval`; generating it does not replace the
+fault source or any production RTL.
+
 ## Prepare and open a Surfer focus
 
 Generate reusable inspection and viewer state:

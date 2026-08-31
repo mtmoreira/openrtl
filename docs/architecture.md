@@ -137,6 +137,12 @@ Only a separate candidate may be written; a qualification-bound receipt records
 the application while production RTL, provider access, and publication remain
 unchanged.
 
+Candidate promotion planning follows renewed simulation. The planner replays
+the canonical qualification and application lineage, rehashes the candidate,
+current target, comparison, evidence, results, and waveform, and emits one
+`awaiting_promotion_approval` artifact. It is deliberately non-applying:
+independent signoff and production-source replacement remain a separate gate.
+
 ## Reuse and community boundary
 
 A passing design produces a local package candidate containing interfaces,

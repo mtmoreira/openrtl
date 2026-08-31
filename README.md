@@ -254,6 +254,24 @@ This path reconstructs the qualification, planning report, and edit plan before
 delegating to the generic exact-byte engine. It writes only the separate
 candidate and two reviewable receipts. The original RTL remains unchanged.
 
+After renewed simulation, bind the candidate, current target, receipts, visible
+comparison, and evidence into one non-applying promotion review artifact:
+
+```console
+uv run openrtl repair plan-qualified-provider-candidate-promotion \
+  --qualification-report build/fifo-repair-application/provider-output-qualification.json \
+  --application-report build/fifo-repair-application/application.json \
+  --qualified-application-report build/fifo-repair-application/qualified-provider-application.json \
+  --candidate build/fifo-repair-application/candidate/sync_fifo.sv \
+  --target-source examples/fifo/faults/sync_fifo_level_fault.sv \
+  --comparison build/fifo-repair-application/comparison.json \
+  --evidence build/fifo-repair-application/evidence.json \
+  --promotion-plan-output build/fifo-repair-application/promotion-plan.json
+```
+
+The plan remains `awaiting_promotion_approval` and cannot modify either source.
+Production promotion is intentionally a separate, future explicit operation.
+
 ```console
 uv run openrtl repair apply-source-edits \
   --proposal build/fifo-repair-application/proposal.json \
