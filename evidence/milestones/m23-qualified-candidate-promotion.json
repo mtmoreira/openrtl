@@ -1,0 +1,168 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "m23.validation.log",
+      "availability": "local",
+      "locator": "build/qualified-candidate-promotion/m23-ab7cb9f/validation.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m23-qualified-candidate-promotion",
+      "sha256": "72b92a0d4a50cf4310c5d5ab2a0f34923bb3092486677e937df4908ba9000fde",
+      "size_bytes": 1858
+    },
+    {
+      "artifact_id": "m23.production-canary.canary.log",
+      "availability": "local",
+      "locator": "build/qualified-candidate-promotion/m23-ab7cb9f/production-canary/canary.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m23-qualified-candidate-promotion",
+      "sha256": "441cb33ebd89203964b747ae249ae40b1509b012469dec42859a7ca2fae12b26",
+      "size_bytes": 83841
+    },
+    {
+      "artifact_id": "m23.production-canary.evidence.json",
+      "availability": "local",
+      "locator": "build/qualified-candidate-promotion/m23-ab7cb9f/production-canary/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m23-qualified-candidate-promotion",
+      "sha256": "fa2fe6b4e94183f6591fe02be8c69bace54c7b7d6a45a1fe056d21192aebc431",
+      "size_bytes": 970
+    },
+    {
+      "artifact_id": "m23.production-canary.results.xml",
+      "availability": "local",
+      "locator": "build/qualified-candidate-promotion/m23-ab7cb9f/production-canary/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m23-qualified-candidate-promotion",
+      "sha256": "bc329bf2745d845da734ae27707512c42b207d9b79099b565fbd0861b6a38be1",
+      "size_bytes": 432
+    },
+    {
+      "artifact_id": "m23.production-canary.waves.vcd",
+      "availability": "local",
+      "locator": "build/qualified-candidate-promotion/m23-ab7cb9f/production-canary/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m23-qualified-candidate-promotion",
+      "sha256": "5fc0e1558f732f9b8917fcf19c2d4d78f96bb22b38a7d16628daf29d9e546695",
+      "size_bytes": 44255
+    },
+    {
+      "artifact_id": "m23.repair-case.promotion-plan.json",
+      "availability": "local",
+      "locator": "build/qualified-candidate-promotion/m23-ab7cb9f/repair-case/promotion-plan.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m23-qualified-candidate-promotion",
+      "sha256": "c8e10e730bd64c837607516f02717957165bc9d4e3e43ca8ff576026f8ecf33d",
+      "size_bytes": 3250
+    },
+    {
+      "artifact_id": "m23.repair-case.promotion-receipt.json",
+      "availability": "local",
+      "locator": "build/qualified-candidate-promotion/m23-ab7cb9f/repair-case/promotion-receipt.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m23-qualified-candidate-promotion",
+      "sha256": "bb7ff9281a0fe67a1abb321e69c3a1f7ead42699d97bbccfac4599e1368a8911",
+      "size_bytes": 957
+    },
+    {
+      "artifact_id": "m23.repair-case.candidate.sv",
+      "availability": "local",
+      "locator": "build/qualified-candidate-promotion/m23-ab7cb9f/repair-case/candidate.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m23-qualified-candidate-promotion",
+      "sha256": "4fea04242e4da6fe3018016bcaaf7902531174f39896200e8d86f13c71741531",
+      "size_bytes": 2681
+    },
+    {
+      "artifact_id": "m23.repair-case.promoted-target.sv",
+      "availability": "local",
+      "locator": "build/qualified-candidate-promotion/m23-ab7cb9f/repair-case/promoted-target.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m23-qualified-candidate-promotion",
+      "sha256": "4fea04242e4da6fe3018016bcaaf7902531174f39896200e8d86f13c71741531",
+      "size_bytes": 2681
+    },
+    {
+      "artifact_id": "m23.repair-case.comparison.json",
+      "availability": "local",
+      "locator": "build/qualified-candidate-promotion/m23-ab7cb9f/repair-case/comparison.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m23-qualified-candidate-promotion",
+      "sha256": "ca88b62b0f1f68c2333654079410d4da9b75c62e5bef58920db7dea4dc98a399",
+      "size_bytes": 1296
+    },
+    {
+      "artifact_id": "m23.repair-case.before.results.xml",
+      "availability": "local",
+      "locator": "build/qualified-candidate-promotion/m23-ab7cb9f/repair-case/before/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m23-qualified-candidate-promotion",
+      "sha256": "b20441867b5b06181b187a67ae5a433bfd1cfe008c30f0e7b4402217e948270b",
+      "size_bytes": 532
+    },
+    {
+      "artifact_id": "m23.repair-case.before.waves.vcd",
+      "availability": "local",
+      "locator": "build/qualified-candidate-promotion/m23-ab7cb9f/repair-case/before/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m23-qualified-candidate-promotion",
+      "sha256": "2f274d0760f7b11ac1b775e4e1657d33ca33d455c1b600552306f3b8bd786e0f",
+      "size_bytes": 1857
+    },
+    {
+      "artifact_id": "m23.repair-case.repaired.results.xml",
+      "availability": "local",
+      "locator": "build/qualified-candidate-promotion/m23-ab7cb9f/repair-case/repaired/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m23-qualified-candidate-promotion",
+      "sha256": "fc32f15fa4f39aa334b0e965a78be8d630752b1d8958edc2b1132abaf20765e0",
+      "size_bytes": 458
+    },
+    {
+      "artifact_id": "m23.repair-case.repaired.waves.vcd",
+      "availability": "local",
+      "locator": "build/qualified-candidate-promotion/m23-ab7cb9f/repair-case/repaired/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m23-qualified-candidate-promotion",
+      "sha256": "0bd21f42287d2fa7d8c5668d00ededddc438a8ffb867cd3add4b8d3cb12a1265",
+      "size_bytes": 1914
+    }
+  ],
+  "authorization_boundary": {
+    "Production-Authorized": true,
+    "canonical_fifo_rtl_modified": false,
+    "credential_value_persisted": false,
+    "gui_launch": false,
+    "production_promotion_performed": true,
+    "production_source_modified": true,
+    "real_credential_resolved": false,
+    "real_provider_called": false,
+    "remote_operations": false
+  },
+  "base_commit": "cfad7b7e3c5fae10826b2a7d11c11ea61cb931ac",
+  "evidence_lane": "approved-qualified-candidate-promotion",
+  "implementation_commit": "ab7cb9ffee70eb2873e3bd9914b236aac6d3196a",
+  "milestone_id": "m23-qualified-candidate-promotion",
+  "promotion": {
+    "approval_digest": "sha256:5677d9f17cfe34b71c6a6cc0ed92773325f7d3c14810f4303eb498fb0cd73fe9",
+    "candidate_digest": "sha256:4fea04242e4da6fe3018016bcaaf7902531174f39896200e8d86f13c71741531",
+    "promotion_id": "repair.promotion.07801aae30205c70e854",
+    "promotion_plan_digest": "sha256:ca30c447c05c07901340c9d6d0863a802929c83a86f54d0cc4f0b180bf7cb23d",
+    "promotion_plan_id": "repair.promotion-plan.2e44a10838e6b262209c",
+    "status": "promoted_to_production",
+    "target_digest_after": "sha256:4fea04242e4da6fe3018016bcaaf7902531174f39896200e8d86f13c71741531",
+    "target_digest_before": "sha256:eb138c59cab00cae887eb5a1513ee4c35aee83a45818ce4aa3f874447183d06d",
+    "target_path": "examples/fifo/faults/sync_fifo_level_fault.sv"
+  },
+  "retention_class": "local-build-collateral",
+  "review_state": "validated_and_promoted",
+  "schema": "openrtl.milestone-evidence.v1",
+  "validation_outcomes": {
+    "focused_tests": "49 passed",
+    "full_unit_suite": "101 passed",
+    "model_tests": "3 passed",
+    "production_canary": "passed with retained VCD, XML, log, and evidence",
+    "promotion": "exact approved candidate bytes atomically replaced the selected target and receipt verified",
+    "strict_typing": "4 focused source files passed",
+    "text_files": "121 valid"
+  }
+}
