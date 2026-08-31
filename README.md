@@ -17,11 +17,24 @@ OpenRTL uses AgentRig for portable agent/runtime/tool contracts. OpenRTL owns
 the hardware-design schemas, artifact graph, evidence, EDA adapters, reuse
 catalog, and convergence rules.
 
-The current release candidate is OpenRTL 0.2.0. Its checked release bundle
+The current release is [OpenRTL 0.2.0](https://github.com/mtmoreira/openrtl/releases/tag/v0.2.0). Its checked release bundle
 contains a library-only wheel, a source distribution, and a deterministic
 companion archive with the complete FIFO model, RTL, DV, waveform, fault, and
 repair examples. See [docs/releases.md](docs/releases.md) for the immutable
 artifact and clean-install verification contract.
+
+OpenRTL 0.2.0 pins AgentRig 0.2.2. The public acceptance lane installs that
+dependency from its exact public source commit, installs the released OpenRTL
+wheel, and runs the downloaded examples in isolation:
+
+```sh
+python tools/validate_public_release.py \
+  --output-directory build/public-release-acceptance \
+  --with-verilator
+```
+
+This command performs public GitHub reads and local package installation only.
+It does not invoke a provider or modify either repository.
 
 ## V1 toolchain
 

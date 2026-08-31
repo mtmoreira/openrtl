@@ -99,6 +99,12 @@ evidence attaches to the same artifact graph and requirement IDs.
   pass the model, fault-diagnosis, and Verilator repair walkthroughs without
   importing OpenRTL from the repository checkout. Tagging and publication are
   separate owner-authorized operations.
+- Published-release acceptance starts only from the public GitHub release and
+  exact public AgentRig 0.2.2 source commit. It verifies immutable asset bytes,
+  installs into an isolated environment without inherited repository imports,
+  safely extracts the companion archive, and repeats the model, diagnosis, and
+  Verilator repair examples. The retained acceptance report contains only
+  public identities, hashes, versions, and pass/fail state.
 
 ## Convergence
 
