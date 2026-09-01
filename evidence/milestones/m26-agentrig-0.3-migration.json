@@ -1,0 +1,107 @@
+{
+  "agentrig_release": {
+    "commit": "31b2ecae0605f0d6b63b5f060c929ca567ae16f2",
+    "version": "0.3.0"
+  },
+  "artifacts": [
+    {
+      "artifact_id": "m26.validation.report",
+      "availability": "local",
+      "locator": "build/agentrig-0.3-migration/m26-9ebde9d/validation.report",
+      "media_type": "text/plain",
+      "producer": "openrtl-m26-agentrig-0.3-migration",
+      "sha256": "4fa054617a40db0c9c1b326a5e3212f23cdb8f2fe1073d03de6c89f1da9f0fb4",
+      "size_bytes": 4937
+    },
+    {
+      "artifact_id": "m26.validation.full-log",
+      "availability": "local",
+      "locator": "build/agentrig-0.3-migration/m26-9ebde9d/full-validation.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m26-agentrig-0.3-migration",
+      "sha256": "43cb104d2a2278da98105398b4ac1b12b16ade474cc7f534982ec0aae6dbad26",
+      "size_bytes": 2986
+    },
+    {
+      "artifact_id": "m26.package.agentrig-wheel",
+      "availability": "local",
+      "locator": "build/agentrig-0.3-migration/m26-9ebde9d/agentrig-0.3.0-py3-none-any.whl",
+      "media_type": "application/zip",
+      "producer": "openrtl-m26-agentrig-0.3-migration",
+      "sha256": "0f501f1cd107d47cdf6eec2e6117374cb95284faf221ebe2db643b21fe947495",
+      "size_bytes": 169862
+    },
+    {
+      "artifact_id": "m26.package.openrtl-wheel",
+      "availability": "local",
+      "locator": "build/agentrig-0.3-migration/m26-9ebde9d/openrtl-0.3.0-py3-none-any.whl",
+      "media_type": "application/zip",
+      "producer": "openrtl-m26-agentrig-0.3-migration",
+      "sha256": "43b518d6aa9a295880d1b5ea6da825f8bb68d09e18db34e0575b4f13b0dfb559",
+      "size_bytes": 104188
+    },
+    {
+      "artifact_id": "m26.canary.log",
+      "availability": "local",
+      "locator": "build/agentrig-0.3-migration/m26-9ebde9d/production-canary/canary.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m26-agentrig-0.3-migration",
+      "sha256": "e629a6f5a1c4cc9b0fb7825cf55ced9c8b6f80722f334451aaa2defde57c5459",
+      "size_bytes": 83788
+    },
+    {
+      "artifact_id": "m26.canary.results",
+      "availability": "local",
+      "locator": "build/agentrig-0.3-migration/m26-9ebde9d/production-canary/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m26-agentrig-0.3-migration",
+      "sha256": "f37572c69f977fd8356e3fffe6f773a24ace3bcaea9e9b6bbc3d71aaab0ad75f",
+      "size_bytes": 424
+    },
+    {
+      "artifact_id": "m26.canary.waveform",
+      "availability": "local",
+      "locator": "build/agentrig-0.3-migration/m26-9ebde9d/production-canary/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m26-agentrig-0.3-migration",
+      "sha256": "5fc0e1558f732f9b8917fcf19c2d4d78f96bb22b38a7d16628daf29d9e546695",
+      "size_bytes": 44255
+    },
+    {
+      "artifact_id": "m26.canary.evidence",
+      "availability": "local",
+      "locator": "build/agentrig-0.3-migration/m26-9ebde9d/production-canary/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m26-agentrig-0.3-migration",
+      "sha256": "be7473908f489293be7f8b069c9d9e08947a45ef8c929c7d1f14b28461f0b221",
+      "size_bytes": 1003
+    }
+  ],
+  "authorization_boundary": {
+    "Production-Authorized": false,
+    "credential_value_persisted": false,
+    "github_actions_executed": false,
+    "package_registry_publication": false,
+    "publication_mutation": false,
+    "real_credential_resolved": false,
+    "real_provider_called": false,
+    "remote_reads": false,
+    "remote_writes": false
+  },
+  "base_commit": "a1a282071ab60335a2ba8fa1457f3f3c7d3fb5be",
+  "evidence_lane": "agentrig-0-3-compatibility",
+  "implementation_commit": "9ebde9d63f29bec1526f67ab82e9ace8b137559f",
+  "milestone_id": "m26-agentrig-0.3-migration",
+  "openrtl_development_version": "0.3.0",
+  "retention_class": "local-build-collateral",
+  "review_state": "validated_local_compatibility",
+  "schema": "openrtl.milestone-evidence.v1",
+  "validation_outcomes": {
+    "focused_compatibility_tests": "21 passed",
+    "full_unit_suite": "116 passed",
+    "full_validation": "passed with Verilator/cocotb canary",
+    "isolated_packages": "AgentRig 0.3.0 and OpenRTL 0.3.0 wheels installed together with exact public imports",
+    "lockfile": "uv lock --check passed with AgentRig 0.3.0 sibling source",
+    "strict_typing": "70 source files passed"
+  }
+}
