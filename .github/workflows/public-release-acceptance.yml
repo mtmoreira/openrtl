@@ -34,6 +34,19 @@ jobs:
           python tools/validate_public_release.py \
             --output-directory build/public-release-acceptance \
             --with-verilator
+      - name: Show bounded simulator diagnostics
+        if: failure()
+        run: |
+          python --version
+          verilator --version
+          python - <<'PY'
+          from pathlib import Path
+
+          for path in sorted(Path("build").glob("**/run.log")):
+              content = path.read_bytes()
+              print(f"===== {path} ({len(content)} bytes; final 65536 bytes) =====")
+              print(content[-65536:].decode("utf-8", errors="replace"))
+          PY
 
   openrtl-0-3-0:
     runs-on: ubuntu-latest
@@ -52,3 +65,16 @@ jobs:
           python tools/validate_public_release_v030.py \
             --output-directory build/public-release-v0.3.0-acceptance \
             --with-verilator
+      - name: Show bounded simulator diagnostics
+        if: failure()
+        run: |
+          python --version
+          verilator --version
+          python - <<'PY'
+          from pathlib import Path
+
+          for path in sorted(Path("build").glob("**/run.log")):
+              content = path.read_bytes()
+              print(f"===== {path} ({len(content)} bytes; final 65536 bytes) =====")
+              print(content[-65536:].decode("utf-8", errors="replace"))
+          PY
