@@ -11,6 +11,7 @@ from tools.validate_release_candidate import (
     PUBLIC_AGENTRIG_COMMIT,
     PUBLIC_AGENTRIG_REPOSITORY,
     PUBLIC_AGENTRIG_TAG,
+    candidate_python_executable,
     extract_examples,
     validate_candidate_metadata,
     validate_public_agentrig_checkout,
@@ -19,6 +20,16 @@ from tools.validate_release import ReleaseManifest
 
 
 class ReleaseCandidateTest(unittest.TestCase):
+    def test_candidate_python_preserves_virtualenv_symlink_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / "base-python"
+            target.write_bytes(b"python")
+            link = root / "candidate-venv-python"
+            link.symlink_to(target)
+            self.assertEqual(candidate_python_executable(link), link.absolute())
+            self.assertNotEqual(candidate_python_executable(link), link.resolve())
+
     def test_candidate_metadata_requires_exact_agentrig_pin(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

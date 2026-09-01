@@ -86,6 +86,14 @@ def _artifact_documents(manifest: ReleaseManifest) -> list[dict[str, str | int]]
     return [artifact.to_dict() for artifact in manifest.artifacts]
 
 
+def candidate_python_executable(candidate_python: Path) -> Path:
+    """Keep the virtualenv entry path; resolving its symlink loses the venv."""
+    executable = candidate_python.absolute()
+    if not executable.is_file():
+        raise ReleaseValidationError("candidate Python executable is unavailable")
+    return executable
+
+
 def qualify_candidate(
     root: Path,
     dist: Path,
@@ -106,7 +114,7 @@ def qualify_candidate(
     extracted = extract_examples(examples, output_directory / "examples", manifest.version)
     verifier = extracted / "tools/verify_release_install.py"
     command = [
-        str(candidate_python.resolve(strict=True)),
+        str(candidate_python_executable(candidate_python)),
         str(verifier),
         "--examples-root",
         str(extracted),
