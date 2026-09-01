@@ -35,6 +35,12 @@ python tools/validate_public_release.py \
   --with-verilator
 ```
 
+OpenRTL 0.3.0 candidate qualification is a separate, local-only gate. It builds
+deterministic wheel, source, and examples artifacts, installs AgentRig from the
+exact public `v0.3.0` source commit, and reruns the model, diagnosis, visibly
+distinct repair-waveform, and Verilator examples outside the repository. It
+does not create a tag or publish a release; see [docs/releases.md](docs/releases.md).
+
 This command performs public GitHub reads and local package installation only.
 It does not invoke a provider or modify either repository.
 

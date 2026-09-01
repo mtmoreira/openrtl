@@ -17,6 +17,8 @@ from tools.validate_release import (
 
 
 _COMMIT = "0123456789abcdef0123456789abcdef01234567"
+_VERSION = "0.3.0"
+_AGENTRIG_VERSION = "0.3.0"
 
 
 class ReleaseValidationTest(unittest.TestCase):
@@ -24,37 +26,37 @@ class ReleaseValidationTest(unittest.TestCase):
         with self._candidate() as candidate:
             root, dist = candidate
             first = build_examples_archive(root, dist).read_bytes()
-            (dist / "openrtl-examples-0.2.0.tar.gz").unlink()
+            (dist / f"openrtl-examples-{_VERSION}.tar.gz").unlink()
             second = build_examples_archive(root, dist).read_bytes()
             self.assertEqual(first, second)
-            with tarfile.open(dist / "openrtl-examples-0.2.0.tar.gz", "r:gz") as archive:
+            with tarfile.open(dist / f"openrtl-examples-{_VERSION}.tar.gz", "r:gz") as archive:
                 self.assertEqual(
                     tuple(member.name for member in archive.getmembers()),
-                    tuple(f"openrtl-examples-0.2.0/{name}" for name in _EXAMPLE_FILES),
+                    tuple(f"openrtl-examples-{_VERSION}/{name}" for name in _EXAMPLE_FILES),
                 )
 
     def test_release_binds_wheel_sdist_and_examples(self) -> None:
         with self._candidate() as candidate:
             root, dist = candidate
             manifest = validate_release(root, dist, commit=_COMMIT)
-            self.assertEqual(manifest.version, "0.2.0")
+            self.assertEqual(manifest.version, _VERSION)
             self.assertEqual(
                 tuple(artifact.filename for artifact in manifest.artifacts),
                 (
-                    "openrtl-examples-0.2.0.tar.gz",
-                    "openrtl-0.2.0-py3-none-any.whl",
-                    "openrtl-0.2.0.tar.gz",
+                    f"openrtl-examples-{_VERSION}.tar.gz",
+                    f"openrtl-{_VERSION}-py3-none-any.whl",
+                    f"openrtl-{_VERSION}.tar.gz",
                 ),
             )
             document = manifest.to_json()
             self.assertIn('"tag_created": false', document)
-            self.assertIn('"tag_planned": "v0.2.0"', document)
+            self.assertIn(f'"tag_planned": "v{_VERSION}"', document)
 
     def test_missing_example_fails_closed(self) -> None:
         with self._candidate() as candidate:
             root, dist = candidate
             (root / _EXAMPLE_FILES[-1]).unlink()
-            (dist / "openrtl-examples-0.2.0.tar.gz").unlink()
+            (dist / f"openrtl-examples-{_VERSION}.tar.gz").unlink()
             with self.assertRaisesRegex(ReleaseValidationError, "incomplete"):
                 build_examples_archive(root, dist)
 
@@ -66,17 +68,17 @@ class ReleaseValidationTest(unittest.TestCase):
             replacement.write_text("replacement\n", encoding="utf-8")
             target.unlink()
             target.symlink_to(replacement)
-            (dist / "openrtl-examples-0.2.0.tar.gz").unlink()
+            (dist / f"openrtl-examples-{_VERSION}.tar.gz").unlink()
             with self.assertRaisesRegex(ReleaseValidationError, "incomplete"):
                 build_examples_archive(root, dist)
 
     def test_extra_examples_archive_member_is_rejected(self) -> None:
         with self._candidate() as candidate:
             root, dist = candidate
-            archive_path = dist / "openrtl-examples-0.2.0.tar.gz"
+            archive_path = dist / f"openrtl-examples-{_VERSION}.tar.gz"
             with tarfile.open(archive_path, "w:gz") as archive:
                 data = b"unexpected\n"
-                info = tarfile.TarInfo("openrtl-examples-0.2.0/unexpected.txt")
+                info = tarfile.TarInfo(f"openrtl-examples-{_VERSION}/unexpected.txt")
                 info.size = len(data)
                 import io
                 archive.addfile(info, io.BytesIO(data))
@@ -99,7 +101,7 @@ class ReleaseValidationTest(unittest.TestCase):
         dist = root / "dist"
         dist.mkdir()
         (root / "pyproject.toml").write_text(
-            "[project]\nname = \"openrtl\"\nversion = \"0.2.0\"\nrequires-python = \">=3.12\"\ndependencies = [\"agentrig==0.2.2\"]\n\n[project.optional-dependencies]\nsimulation = [\"cocotb==2.0.1\"]\n",
+            f"[project]\nname = \"openrtl\"\nversion = \"{_VERSION}\"\nrequires-python = \">=3.12\"\ndependencies = [\"agentrig=={_AGENTRIG_VERSION}\"]\n\n[project.optional-dependencies]\nsimulation = [\"cocotb==2.0.1\"]\n",
             encoding="utf-8",
         )
         for relative in _EXAMPLE_FILES:
@@ -115,29 +117,29 @@ class ReleaseValidationTest(unittest.TestCase):
         message = EmailMessage()
         message["Metadata-Version"] = "2.4"
         message["Name"] = "openrtl"
-        message["Version"] = "0.2.0"
+        message["Version"] = _VERSION
         message["Requires-Python"] = ">=3.12"
-        message["Requires-Dist"] = "agentrig==0.2.2"
+        message["Requires-Dist"] = f"agentrig=={_AGENTRIG_VERSION}"
         message["Requires-Dist"] = "cocotb==2.0.1 ; extra == 'simulation'"
         message["Provides-Extra"] = "simulation"
         return message.as_bytes()
 
     def _wheel(self, dist: Path) -> None:
-        with ZipFile(dist / "openrtl-0.2.0-py3-none-any.whl", "w", ZIP_DEFLATED) as archive:
-            archive.writestr("openrtl/__init__.py", '__version__ = "0.2.0"\n')
+        with ZipFile(dist / f"openrtl-{_VERSION}-py3-none-any.whl", "w", ZIP_DEFLATED) as archive:
+            archive.writestr("openrtl/__init__.py", f'__version__ = "{_VERSION}"\n')
             archive.writestr("openrtl/py.typed", "")
-            archive.writestr("openrtl-0.2.0.dist-info/METADATA", self._metadata())
-            archive.writestr("openrtl-0.2.0.dist-info/WHEEL", "Wheel-Version: 1.0\n")
-            archive.writestr("openrtl-0.2.0.dist-info/RECORD", "")
+            archive.writestr(f"openrtl-{_VERSION}.dist-info/METADATA", self._metadata())
+            archive.writestr(f"openrtl-{_VERSION}.dist-info/WHEEL", "Wheel-Version: 1.0\n")
+            archive.writestr(f"openrtl-{_VERSION}.dist-info/RECORD", "")
 
     def _sdist(self, root: Path, dist: Path) -> None:
-        prefix = "openrtl-0.2.0"
-        with tarfile.open(dist / "openrtl-0.2.0.tar.gz", "w:gz") as archive:
+        prefix = f"openrtl-{_VERSION}"
+        with tarfile.open(dist / f"openrtl-{_VERSION}.tar.gz", "w:gz") as archive:
             files = {
                 "PKG-INFO": self._metadata(),
                 "README.md": b"# OpenRTL\n",
                 "pyproject.toml": (root / "pyproject.toml").read_bytes(),
-                "src/openrtl/__init__.py": b'__version__ = "0.2.0"\n',
+                "src/openrtl/__init__.py": f'__version__ = "{_VERSION}"\n'.encode(),
                 **{name: (root / name).read_bytes() for name in _EXAMPLE_FILES},
             }
             for relative, data in files.items():

@@ -110,6 +110,11 @@ evidence attaches to the same artifact graph and requirement IDs.
   public imports, provider-free suite, synthetic provider lifecycle, and
   Verilator/cocotb lane must all agree on that version. The immutable OpenRTL
   0.2.0 public-acceptance lane remains pinned to AgentRig 0.2.2 and unchanged.
+- OpenRTL 0.3.0 release-candidate qualification builds deterministic wheel,
+  source, and examples artifacts from one exact commit, installs the dependency
+  only from public AgentRig `v0.3.0`, and reruns the installed model, diagnosis,
+  visibly distinct waveform repair, and Verilator lanes. The resulting local
+  qualification is evidence for review, not authorization to tag or publish.
 
 ## Convergence
 

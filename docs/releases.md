@@ -26,9 +26,28 @@ implicitly.
 
 This source-version change does not create an OpenRTL 0.3.0 release. The
 published 0.2.0 tag, artifacts, dependency pin, and public-only acceptance
-validator below remain immutable historical contracts. A future 0.3.0 package
-candidate, tag, or publication requires its own qualification and explicit
-owner authorization.
+validator below remain immutable historical contracts.
+
+## OpenRTL 0.3.0 candidate qualification
+
+The 0.3.0 candidate gate creates deterministic wheel, source distribution, and
+examples artifacts from one exact clean commit. It requires the wheel metadata
+to pin `agentrig==0.3.0`, clones the public AgentRig repository, and proves that
+annotated tag `v0.3.0` and the checkout both resolve to commit
+`31b2ecae0605f0d6b63b5f060c929ca567ae16f2`. The candidate is installed into a
+new environment without using the editable sibling checkout.
+
+After safe extraction, `tools/validate_release_candidate.py` runs
+`tools/verify_release_install.py` with explicit expected OpenRTL and AgentRig
+versions. The installed lane covers the FIFO model, fault diagnosis, repaired
+Verilator simulation, and the semantic waveform proof that FIFO level is zero
+before repair and one after repair at the same marker. Its qualification JSON
+binds artifact hashes, the release-manifest hash, the OpenRTL commit, and the
+public AgentRig identity.
+
+Candidate qualification remains local and non-publishing. An annotated OpenRTL
+tag, GitHub Release, asset upload, and public-only acceptance run are separate
+remote effects requiring explicit owner authorization.
 
 ## Candidate preparation
 
@@ -52,8 +71,14 @@ environment, extract the examples archive, and run:
 ```sh
 python tools/verify_release_install.py \
   --examples-root /path/to/openrtl-examples-0.2.0 \
+  --expected-version 0.2.0 \
+  --expected-agentrig-version 0.2.2 \
   --with-verilator
 ```
+
+Those explicit arguments describe the current verifier interface. The already
+published 0.2.0 examples archive retains its original immutable verifier bytes
+and remains exercised by `tools/validate_public_release.py`.
 
 The immutable candidate manifest records that tag creation was still pending
 when its artifact bytes were qualified. The subsequently authorized annotated

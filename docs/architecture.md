@@ -66,6 +66,13 @@ bind that checkout to the published release commit. OpenRTL keeps provider
 selection, credentials, RTL semantics, and review gates in its own layers; the
 dependency upgrade grants no new runtime, tool, or provider authority.
 
+Release-candidate qualification crosses a stricter package boundary: OpenRTL
+is built once, AgentRig is installed only from its exact public annotated tag,
+and the resulting wheel is exercised from a safely extracted examples archive
+in an isolated environment. The qualification artifact binds both repository
+identities and all distribution hashes. It is non-publishing and cannot imply
+tag, release, provider, or deployment authority.
+
 ## Simulation and deferred backends
 
 V1 implements a `SimulationBackend` using Verilator and cocotb. Waveforms are
