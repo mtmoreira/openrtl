@@ -23,7 +23,9 @@ companion archive with the complete FIFO model, RTL, DV, waveform, fault, and
 repair examples. See [docs/releases.md](docs/releases.md) for the immutable
 artifact and clean-install verification contract.
 
-OpenRTL 0.2.0 pins AgentRig 0.2.2. The public acceptance lane installs that
+Development `main` is the OpenRTL 0.3.0 line and pins the published AgentRig
+0.3.0 contract. The immutable OpenRTL 0.2.0 release still pins AgentRig 0.2.2;
+its public acceptance lane installs that
 dependency from its exact public source commit, installs the released OpenRTL
 wheel, and runs the downloaded examples in isolation:
 
@@ -49,12 +51,14 @@ publication are deferred behind explicit ports.
 
 ## Development
 
-Run the provider-free validation lane:
+Keep an exact AgentRig 0.3.0 checkout at the sibling path selected by
+`tool.uv.sources`, then run the provider-free validation lane:
 
 ```sh
-PYTHONPATH=src:../agentrig/src python -m unittest discover -s tests -t .
-PYTHONPATH=src:../agentrig/src:. python -m unittest examples.fifo.test_model
-python tools/validate.py
+uv sync --locked --extra simulation
+uv run python -m unittest discover -s tests -t .
+uv run python -m unittest examples.fifo.test_model
+uv run python tools/validate.py
 ```
 
 The default validation lane never invokes the external simulator and prints a
@@ -62,7 +66,6 @@ The default validation lane never invokes the external simulator and prints a
 Verilator/cocotb toolchain explicitly with:
 
 ```sh
-uv sync --locked --extra simulation
 uv run python tools/validate.py --with-verilator
 ```
 

@@ -105,6 +105,11 @@ evidence attaches to the same artifact graph and requirement IDs.
   safely extracts the companion archive, and repeats the model, diagnosis, and
   Verilator repair examples. The retained acceptance report contains only
   public identities, hashes, versions, and pass/fail state.
+- Post-release development advances to OpenRTL 0.3.0 on the exact published
+  AgentRig 0.3.0 contract. The locked sibling checkout, package metadata,
+  public imports, provider-free suite, synthetic provider lifecycle, and
+  Verilator/cocotb lane must all agree on that version. The immutable OpenRTL
+  0.2.0 public-acceptance lane remains pinned to AgentRig 0.2.2 and unchanged.
 
 ## Convergence
 

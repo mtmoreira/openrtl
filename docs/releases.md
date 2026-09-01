@@ -14,6 +14,22 @@ commit, and these artifacts:
 The wheel retains the exact base dependency `agentrig==0.2.2`; provider SDKs
 remain opt-in and are not needed by the provider-free verification lane.
 
+## Development after 0.2.0
+
+Development `main` is now the OpenRTL 0.3.0 line and declares
+`agentrig==0.3.0`. Local and CI validation bind the editable sibling checkout
+to published AgentRig commit
+`31b2ecae0605f0d6b63b5f060c929ca567ae16f2`. The migration preserves the
+existing command, MCP, structured-generation, and OpenAI Responses boundaries;
+it does not enable a provider or inherit AgentRig's new image runtime
+implicitly.
+
+This source-version change does not create an OpenRTL 0.3.0 release. The
+published 0.2.0 tag, artifacts, dependency pin, and public-only acceptance
+validator below remain immutable historical contracts. A future 0.3.0 package
+candidate, tag, or publication requires its own qualification and explicit
+owner authorization.
+
 ## Candidate preparation
 
 From the exact clean release commit, build into an empty directory, create the

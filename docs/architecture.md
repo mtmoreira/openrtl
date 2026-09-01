@@ -60,6 +60,12 @@ tools are exact guarded processes. MCP bindings declare server identity,
 transport, allowlists, trust, and retention. Missing support is a normalized
 blocked result, never a silent substitution.
 
+Development `main` composes against the exact AgentRig 0.3.0 public contract.
+The lockfile selects a sibling source checkout so local and CI validation can
+bind that checkout to the published release commit. OpenRTL keeps provider
+selection, credentials, RTL semantics, and review gates in its own layers; the
+dependency upgrade grants no new runtime, tool, or provider authority.
+
 ## Simulation and deferred backends
 
 V1 implements a `SimulationBackend` using Verilator and cocotb. Waveforms are

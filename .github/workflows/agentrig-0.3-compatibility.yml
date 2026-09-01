@@ -1,0 +1,46 @@
+name: AgentRig 0.3 compatibility
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/agentrig-0.3-compatibility.yml"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "src/**"
+      - "tests/**"
+      - "tools/**"
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: openrtl
+      - uses: actions/checkout@v4
+        with:
+          repository: mtmoreira/agentrig
+          ref: 31b2ecae0605f0d6b63b5f060c929ca567ae16f2
+          path: agentrig
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.3"
+      - name: Validate AgentRig compatibility
+        working-directory: openrtl
+        run: |
+          uv sync --locked
+          uv run python -m unittest \
+            tests.test_agentrig_compatibility \
+            tests.test_provider_invocation \
+            tests.test_provider_qualification
+          uv run python tools/validate.py
