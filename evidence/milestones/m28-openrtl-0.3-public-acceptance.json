@@ -1,0 +1,133 @@
+{
+  "agentrig_release": {
+    "commit": "31b2ecae0605f0d6b63b5f060c929ca567ae16f2",
+    "repository": "https://github.com/mtmoreira/agentrig.git",
+    "tag": "v0.3.0",
+    "version": "0.3.0"
+  },
+  "artifacts": [
+    {
+      "artifact_id": "m28.validation.log",
+      "availability": "local",
+      "locator": "build/openrtl-0.3-public-acceptance/m28-3130a1d/validation.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m28-public-release-acceptance",
+      "sha256": "178fe9c887d47412b452ce7d07716c3c7e08dee8a1bb60401d894c9013f3787a",
+      "size_bytes": 9369
+    },
+    {
+      "artifact_id": "m28.public-release-v0.3.0-acceptance.json",
+      "availability": "local",
+      "locator": "build/openrtl-0.3-public-acceptance/m28-3130a1d/public-release-v0.3.0-acceptance.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m28-public-release-acceptance",
+      "sha256": "8797d545204f681ee32e277b2bac9790ef3a6333241be15a472c5309f29a4ab9",
+      "size_bytes": 1319
+    },
+    {
+      "artifact_id": "m28.downloads.openrtl-0.3.0-py3-none-any.whl",
+      "availability": "local",
+      "locator": "build/openrtl-0.3-public-acceptance/m28-3130a1d/downloads/openrtl-0.3.0-py3-none-any.whl",
+      "media_type": "application/zip",
+      "producer": "openrtl-m28-public-release-acceptance",
+      "sha256": "9b226dd872e2f08f4e2ec95a81c0663038d0d7dc64117300f51e1b43de1159ee",
+      "size_bytes": 104305
+    },
+    {
+      "artifact_id": "m28.downloads.openrtl-0.3.0-release.json",
+      "availability": "local",
+      "locator": "build/openrtl-0.3-public-acceptance/m28-3130a1d/downloads/openrtl-0.3.0-release.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m28-public-release-acceptance",
+      "sha256": "f0302aa3cba40282fac3b53536392b76dc279ae50837a2ceeb82d981cf3cede6",
+      "size_bytes": 869
+    },
+    {
+      "artifact_id": "m28.downloads.openrtl-0.3.0.tar.gz",
+      "availability": "local",
+      "locator": "build/openrtl-0.3-public-acceptance/m28-3130a1d/downloads/openrtl-0.3.0.tar.gz",
+      "media_type": "application/gzip",
+      "producer": "openrtl-m28-public-release-acceptance",
+      "sha256": "2db88017f9a06207f13a68aadfe3bd63bd0763a4e602440f4a7cd1ef3f71b598",
+      "size_bytes": 94081
+    },
+    {
+      "artifact_id": "m28.downloads.openrtl-examples-0.3.0.tar.gz",
+      "availability": "local",
+      "locator": "build/openrtl-0.3-public-acceptance/m28-3130a1d/downloads/openrtl-examples-0.3.0.tar.gz",
+      "media_type": "application/gzip",
+      "producer": "openrtl-m28-public-release-acceptance",
+      "sha256": "9e79b1cf93027f3dffac34de2b0ade3592f302f1133158628e4632c738032653",
+      "size_bytes": 16841
+    },
+    {
+      "artifact_id": "m28.production-canary.canary.log",
+      "availability": "local",
+      "locator": "build/openrtl-0.3-public-acceptance/m28-3130a1d/production-canary/canary.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m28-public-release-acceptance",
+      "sha256": "0369561318f450bbf640216de2570e3e0d5d9425f78efcbad895368cd5bd00f8",
+      "size_bytes": 83928
+    },
+    {
+      "artifact_id": "m28.production-canary.results.xml",
+      "availability": "local",
+      "locator": "build/openrtl-0.3-public-acceptance/m28-3130a1d/production-canary/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m28-public-release-acceptance",
+      "sha256": "397ad1a1af1591be9bdf3c58c34e79dbe6ec7ead1224b9bc63457d16cfa8df4b",
+      "size_bytes": 431
+    },
+    {
+      "artifact_id": "m28.production-canary.waves.vcd",
+      "availability": "local",
+      "locator": "build/openrtl-0.3-public-acceptance/m28-3130a1d/production-canary/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m28-public-release-acceptance",
+      "sha256": "5fc0e1558f732f9b8917fcf19c2d4d78f96bb22b38a7d16628daf29d9e546695",
+      "size_bytes": 44255
+    },
+    {
+      "artifact_id": "m28.production-canary.evidence.json",
+      "availability": "local",
+      "locator": "build/openrtl-0.3-public-acceptance/m28-3130a1d/production-canary/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m28-public-release-acceptance",
+      "sha256": "a2eb5c5a9b7fdcbbbda73ebe13f81d7db064e956008d4e0e3c64d7baf197c2a3",
+      "size_bytes": 1003
+    }
+  ],
+  "authorization_boundary": {
+    "credential_value_persisted": false,
+    "package_registry_publication": false,
+    "provider_called": false,
+    "remote_reads": true,
+    "remote_writes": false
+  },
+  "base_commit": "a69d27d645d351ade3a8974acf21c21b31c8dc5e",
+  "evidence_lane": "openrtl-0.3-public-acceptance",
+  "implementation_commits": [
+    "3130a1d20a862cb1e41b225ae52fef63328e878f"
+  ],
+  "milestone_id": "m28-openrtl-0.3-public-acceptance",
+  "openrtl_release": {
+    "qualified_commit": "6eedc375db42b99ea5ce38f150ead92599b259fd",
+    "release_commit": "a69d27d645d351ade3a8974acf21c21b31c8dc5e",
+    "repository": "https://github.com/mtmoreira/openrtl.git",
+    "tag": "v0.3.0",
+    "version": "0.3.0"
+  },
+  "release_manifest_sha256": "f0302aa3cba40282fac3b53536392b76dc279ae50837a2ceeb82d981cf3cede6",
+  "retention_class": "local-public-release-acceptance-collateral",
+  "review_state": "public_release_accepted",
+  "schema": "openrtl.milestone-evidence.v1",
+  "validation_outcomes": {
+    "full_repository_validation": "passed",
+    "immutable_v020_lane": "preserved",
+    "production_verilator_canary": "passed",
+    "public_v030_artifacts": "exact",
+    "public_v030_install": "passed",
+    "public_v030_tags": "exact_annotated_commits",
+    "public_v030_waveform": "visibly_distinct"
+  }
+}
