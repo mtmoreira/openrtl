@@ -115,6 +115,12 @@ evidence attaches to the same artifact graph and requirement IDs.
   only from public AgentRig `v0.3.0`, and reruns the installed model, diagnosis,
   visibly distinct waveform repair, and Verilator lanes. The resulting local
   qualification is evidence for review, not authorization to tag or publish.
+- Published OpenRTL 0.3.0 acceptance is a separate public-input lane. It binds
+  annotated OpenRTL `v0.3.0` and AgentRig `v0.3.0` to their exact commits,
+  verifies the immutable release manifest and asset bytes, installs both
+  packages in isolation, and reruns the installed examples with Verilator and
+  the visible waveform distinction. The historical 0.2.0 lane remains
+  unchanged and runs alongside it in CI.
 
 ## Convergence
 

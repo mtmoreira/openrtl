@@ -6,7 +6,9 @@ on:
     paths:
       - ".github/workflows/public-release-acceptance.yml"
       - "tools/validate_public_release.py"
+      - "tools/validate_public_release_v030.py"
       - "tests/test_public_release_acceptance.py"
+      - "tests/test_public_release_v030.py"
       - "docs/releases.md"
   push:
     branches: [main]
@@ -31,4 +33,22 @@ jobs:
         run: |
           python tools/validate_public_release.py \
             --output-directory build/public-release-acceptance \
+            --with-verilator
+
+  openrtl-0-3-0:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install public simulation toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes verilator make
+      - name: Validate OpenRTL 0.3.0 public release and examples
+        run: |
+          python tools/validate_public_release_v030.py \
+            --output-directory build/public-release-v0.3.0-acceptance \
             --with-verilator

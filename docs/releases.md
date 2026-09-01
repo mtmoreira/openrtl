@@ -1,94 +1,58 @@
 # OpenRTL release contract
 
-OpenRTL 0.2.0 is the first published release of the complete V1 simulation and
-evidence-driven repair workflow. Its annotated tag and public artifacts are at
-[the GitHub release](https://github.com/mtmoreira/openrtl/releases/tag/v0.2.0).
-The immutable release identity is one semantic version, one exact qualified
-commit, and these artifacts:
+## Current release: OpenRTL 0.3.0
 
-- `openrtl-0.2.0-py3-none-any.whl` — the typed OpenRTL library and CLI;
-- `openrtl-0.2.0.tar.gz` — source distribution including examples;
-- `openrtl-examples-0.2.0.tar.gz` — normalized runnable examples; and
-- `openrtl-0.2.0-release.json` — hashes and sizes for the preceding artifacts.
+OpenRTL 0.3.0 is the current published release of the simulation-first,
+evidence-driven diagnosis and controlled repair workflow. Its annotated tag and
+public artifacts are at
+[the GitHub release](https://github.com/mtmoreira/openrtl/releases/tag/v0.3.0).
+The release tag resolves to commit
+`a69d27d645d351ade3a8974acf21c21b31c8dc5e`; its qualified package commit is
+`6eedc375db42b99ea5ce38f150ead92599b259fd`.
 
-The wheel retains the exact base dependency `agentrig==0.2.2`; provider SDKs
-remain opt-in and are not needed by the provider-free verification lane.
+The immutable release identity includes:
 
-## Development after 0.2.0
+- `openrtl-0.3.0-py3-none-any.whl` — typed library and CLI;
+- `openrtl-0.3.0.tar.gz` — source distribution;
+- `openrtl-examples-0.3.0.tar.gz` — normalized runnable examples; and
+- `openrtl-0.3.0-release.json` — qualified hashes and sizes.
 
-Development `main` is now the OpenRTL 0.3.0 line and declares
-`agentrig==0.3.0`. Local and CI validation bind the editable sibling checkout
-to published AgentRig commit
-`31b2ecae0605f0d6b63b5f060c929ca567ae16f2`. The migration preserves the
-existing command, MCP, structured-generation, and OpenAI Responses boundaries;
-it does not enable a provider or inherit AgentRig's new image runtime
-implicitly.
-
-This source-version change does not create an OpenRTL 0.3.0 release. The
-published 0.2.0 tag, artifacts, dependency pin, and public-only acceptance
-validator below remain immutable historical contracts.
-
-## OpenRTL 0.3.0 candidate qualification
-
-The 0.3.0 candidate gate creates deterministic wheel, source distribution, and
-examples artifacts from one exact clean commit. It requires the wheel metadata
-to pin `agentrig==0.3.0`, clones the public AgentRig repository, and proves that
-annotated tag `v0.3.0` and the checkout both resolve to commit
-`31b2ecae0605f0d6b63b5f060c929ca567ae16f2`. The candidate is installed into a
-new environment without using the editable sibling checkout.
-
-After safe extraction, `tools/validate_release_candidate.py` runs
-`tools/verify_release_install.py` with explicit expected OpenRTL and AgentRig
-versions. The installed lane covers the FIFO model, fault diagnosis, repaired
-Verilator simulation, and the semantic waveform proof that FIFO level is zero
-before repair and one after repair at the same marker. Its qualification JSON
-binds artifact hashes, the release-manifest hash, the OpenRTL commit, and the
-public AgentRig identity.
-
-Candidate qualification remains local and non-publishing. An annotated OpenRTL
-tag, GitHub Release, asset upload, and public-only acceptance run are separate
-remote effects requiring explicit owner authorization.
-
-## Candidate preparation
-
-From the exact clean release commit, build into an empty directory, create the
-examples archive, and validate all artifacts:
-
-```sh
-uv lock --check
-uv build --out-dir build/release/openrtl-0.2.0
-python tools/validate_release.py \
-  --dist-dir build/release/openrtl-0.2.0 \
-  --commit FULL_RELEASE_COMMIT \
-  --build-examples \
-  --write
-```
-
-Clean-install verification must build or otherwise supply the immutable
-AgentRig 0.2.2 wheel, install that dependency and the OpenRTL wheel into a new
-environment, extract the examples archive, and run:
-
-```sh
-python tools/verify_release_install.py \
-  --examples-root /path/to/openrtl-examples-0.2.0 \
-  --expected-version 0.2.0 \
-  --expected-agentrig-version 0.2.2 \
-  --with-verilator
-```
-
-Those explicit arguments describe the current verifier interface. The already
-published 0.2.0 examples archive retains its original immutable verifier bytes
-and remains exercised by `tools/validate_public_release.py`.
-
-The immutable candidate manifest records that tag creation was still pending
-when its artifact bytes were qualified. The subsequently authorized annotated
-tag `v0.2.0` and GitHub release both resolve to attestation commit
-`fe5f0db1604b1bd33b2b94107d5c3d1f603a1a1a`; the qualified package commit is
-`83fb441a29dd655397fc6cfd7615538c0aecde5a`.
+The wheel pins `agentrig==0.3.0`. Public dependency acceptance requires the
+annotated AgentRig tag `v0.3.0` to resolve to commit
+`31b2ecae0605f0d6b63b5f060c929ca567ae16f2`.
 
 ## Public consumer acceptance
 
-The repository includes a public-only acceptance lane:
+Validate OpenRTL 0.3.0 from public inputs only:
+
+```sh
+python tools/validate_public_release_v030.py \
+  --output-directory build/public-release-v0.3.0-acceptance \
+  --with-verilator
+```
+
+The validator downloads and verifies the exact manifest, wheel, source
+distribution, and examples archive. It verifies both public annotated tags and
+their commits, installs public AgentRig and the released OpenRTL wheel into a
+fresh environment, safely extracts the examples, and runs the installed model,
+fault diagnosis, repaired Verilator simulation, and semantic waveform proof.
+The waveform lane must show FIFO level zero before repair and one after repair
+at the same marker.
+
+This lane performs public GitHub reads and local package installation. It makes
+no provider call, resolves no credential, and performs no remote mutation.
+Package-registry publication, signing, deployment, and provider access remain
+outside the release acceptance contract.
+
+## Historical release: OpenRTL 0.2.0
+
+OpenRTL 0.2.0 remains an immutable historical release at
+[its GitHub release](https://github.com/mtmoreira/openrtl/releases/tag/v0.2.0).
+Its qualified package commit is
+`83fb441a29dd655397fc6cfd7615538c0aecde5a`, and the annotated release tag
+resolves to attestation commit `fe5f0db1604b1bd33b2b94107d5c3d1f603a1a1a`.
+Its wheel pins `agentrig==0.2.2` and its acceptance lane remains fixed to public
+AgentRig commit `b03087d1040b40e1d7d1efc98439d501964567c6`:
 
 ```sh
 python tools/validate_public_release.py \
@@ -96,14 +60,20 @@ python tools/validate_public_release.py \
   --with-verilator
 ```
 
-It downloads the public manifest, wheel, source distribution, and examples
-archive and verifies their exact qualified bytes. Because the OpenRTL wheel
-pins `agentrig==0.2.2` and that Python package is not supplied by the OpenRTL
-release, the lane checks out public AgentRig commit
-`b03087d1040b40e1d7d1efc98439d501964567c6`, verifies the commit and installed
-version, and installs it before OpenRTL. It never uses current AgentRig `main`.
+The v0.2 validator and tests are preserved separately rather than generalized
+or rewritten for v0.3. This keeps previously published bytes and acceptance
+semantics independently reproducible.
 
-The lane then safely extracts the public examples archive and runs the model,
-fault-diagnosis, and Verilator repair walkthroughs in the isolated environment.
-CI repeats this path from public inputs. Package-registry publication, signing,
-provider calls, and deployment remain outside this acceptance contract.
+## Candidate preparation
+
+Release candidates are built from one exact clean commit into an empty output
+directory. `tools/validate_release_candidate.py` verifies deterministic wheel,
+source, examples, and manifest artifacts, installs the exact public AgentRig
+tag into a fresh environment, installs the candidate wheel without an editable
+repository import, and runs `tools/verify_release_install.py` with explicit
+OpenRTL and AgentRig versions.
+
+Candidate qualification is local and non-publishing. Creating or pushing a
+tag, creating a GitHub release, uploading assets, publishing to a package
+registry, or deploying anything are separate remote effects requiring explicit
+owner authorization.

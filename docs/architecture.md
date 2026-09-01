@@ -73,6 +73,14 @@ in an isolated environment. The qualification artifact binds both repository
 identities and all distribution hashes. It is non-publishing and cannot imply
 tag, release, provider, or deployment authority.
 
+Published-release acceptance is version-specific and additive. The immutable
+0.2.0 validator retains its AgentRig 0.2.2 contract. A separate 0.3.0 validator
+verifies the public annotated OpenRTL and AgentRig tags, exact commits, manifest
+and distribution bytes, then installs the public wheel and runs the extracted
+examples in a fresh environment. The 0.3 lane includes the Verilator repair
+walkthrough and its visibly distinct before/after waveform proof. Neither lane
+uses the repository checkout as installed package state.
+
 ## Simulation and deferred backends
 
 V1 implements a `SimulationBackend` using Verilator and cocotb. Waveforms are

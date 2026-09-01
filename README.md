@@ -17,29 +17,25 @@ OpenRTL uses AgentRig for portable agent/runtime/tool contracts. OpenRTL owns
 the hardware-design schemas, artifact graph, evidence, EDA adapters, reuse
 catalog, and convergence rules.
 
-The current release is [OpenRTL 0.2.0](https://github.com/mtmoreira/openrtl/releases/tag/v0.2.0). Its checked release bundle
+The current release is [OpenRTL 0.3.0](https://github.com/mtmoreira/openrtl/releases/tag/v0.3.0). Its checked release bundle
 contains a library-only wheel, a source distribution, and a deterministic
 companion archive with the complete FIFO model, RTL, DV, waveform, fault, and
 repair examples. See [docs/releases.md](docs/releases.md) for the immutable
 artifact and clean-install verification contract.
 
-Development `main` is the OpenRTL 0.3.0 line and pins the published AgentRig
-0.3.0 contract. The immutable OpenRTL 0.2.0 release still pins AgentRig 0.2.2;
-its public acceptance lane installs that
-dependency from its exact public source commit, installs the released OpenRTL
-wheel, and runs the downloaded examples in isolation:
+OpenRTL 0.3.0 pins the published AgentRig 0.3.0 contract. Its public acceptance
+lane verifies both annotated tags and exact commits, downloads and hashes the
+published artifacts, then installs and runs the released examples in isolation:
 
 ```sh
-python tools/validate_public_release.py \
-  --output-directory build/public-release-acceptance \
+python tools/validate_public_release_v030.py \
+  --output-directory build/public-release-v0.3.0-acceptance \
   --with-verilator
 ```
 
-OpenRTL 0.3.0 candidate qualification is a separate, local-only gate. It builds
-deterministic wheel, source, and examples artifacts, installs AgentRig from the
-exact public `v0.3.0` source commit, and reruns the model, diagnosis, visibly
-distinct repair-waveform, and Verilator examples outside the repository. It
-does not create a tag or publish a release; see [docs/releases.md](docs/releases.md).
+The immutable OpenRTL 0.2.0 acceptance command remains available as a separate
+historical contract in `tools/validate_public_release.py`. See
+[docs/releases.md](docs/releases.md) for both release identities.
 
 This command performs public GitHub reads and local package installation only.
 It does not invoke a provider or modify either repository.
