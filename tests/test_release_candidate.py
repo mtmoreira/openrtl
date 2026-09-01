@@ -11,6 +11,7 @@ from tools.validate_release_candidate import (
     PUBLIC_AGENTRIG_COMMIT,
     PUBLIC_AGENTRIG_REPOSITORY,
     PUBLIC_AGENTRIG_TAG,
+    candidate_environment,
     candidate_python_executable,
     extract_examples,
     validate_candidate_metadata,
@@ -20,6 +21,17 @@ from tools.validate_release import ReleaseManifest
 
 
 class ReleaseCandidateTest(unittest.TestCase):
+    def test_candidate_environment_exposes_venv_tools_and_drops_python_overrides(self) -> None:
+        with patch.dict(
+            "os.environ",
+            {"PATH": "/host/bin", "PYTHONHOME": "/host/python", "PYTHONPATH": "/host/src"},
+            clear=True,
+        ):
+            environment = candidate_environment(Path("/candidate/bin/python"))
+        self.assertEqual(environment["PATH"], "/candidate/bin:/host/bin")
+        self.assertNotIn("PYTHONHOME", environment)
+        self.assertNotIn("PYTHONPATH", environment)
+
     def test_candidate_python_preserves_virtualenv_symlink_path(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

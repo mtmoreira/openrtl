@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path, PurePosixPath
 import subprocess
 import tarfile
@@ -94,6 +95,16 @@ def candidate_python_executable(candidate_python: Path) -> Path:
     return executable
 
 
+def candidate_environment(executable: Path) -> dict[str, str]:
+    """Expose only the candidate venv's console scripts ahead of host tools."""
+    environment = dict(os.environ)
+    environment.pop("PYTHONHOME", None)
+    environment.pop("PYTHONPATH", None)
+    inherited_path = environment.get("PATH", "")
+    environment["PATH"] = f"{executable.parent}{os.pathsep}{inherited_path}"
+    return environment
+
+
 def qualify_candidate(
     root: Path,
     dist: Path,
@@ -113,8 +124,9 @@ def qualify_candidate(
     examples = dist / f"openrtl-examples-{manifest.version}.tar.gz"
     extracted = extract_examples(examples, output_directory / "examples", manifest.version)
     verifier = extracted / "tools/verify_release_install.py"
+    executable = candidate_python_executable(candidate_python)
     command = [
-        str(candidate_python_executable(candidate_python)),
+        str(executable),
         str(verifier),
         "--examples-root",
         str(extracted),
@@ -125,7 +137,12 @@ def qualify_candidate(
     ]
     if with_verilator:
         command.append("--with-verilator")
-    completed = subprocess.run(command, cwd=extracted, check=False)
+    completed = subprocess.run(
+        command,
+        cwd=extracted,
+        check=False,
+        env=candidate_environment(executable),
+    )
     if completed.returncode != 0:
         raise ReleaseValidationError("isolated installed release verification failed")
     comparison_path = extracted / "build/release-fifo-repair/comparison.json"
