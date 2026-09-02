@@ -20,6 +20,7 @@ from tools.verilator_canary import (  # noqa: E402
     discover_verilator_toolchain,
     run_verilator_canary,
 )
+from tools.skid_buffer_case import run_skid_buffer_case  # noqa: E402
 
 
 IGNORED_DIRECTORY_NAMES = {
@@ -85,12 +86,15 @@ def _validate_architecture() -> None:
         "docs/adr/0018-agentrig-0.3-migration.md",
         "docs/adr/0019-openrtl-0.3-release-candidate.md",
         "docs/adr/0020-openrtl-0.3-public-acceptance.md",
+        "docs/adr/0021-ready-valid-skid-buffer.md",
         "docs/releases.md",
         "pyproject.toml",
         "src/openrtl/__init__.py",
         "src/openrtl/adapters/canary.py",
         "src/openrtl/adapters/fifo_debug.py",
         "src/openrtl/adapters/fifo_repair.py",
+        "src/openrtl/adapters/skid_buffer_debug.py",
+        "src/openrtl/adapters/skid_buffer_repair.py",
         "src/openrtl/adapters/source_edit_application.py",
         "src/openrtl/adapters/expert_source_edits.py",
         "src/openrtl/adapters/expert_invocation.py",
@@ -134,6 +138,15 @@ def _validate_architecture() -> None:
         "examples/fifo/faults/sync_fifo_level_fault_fixture.sv",
         "examples/fifo/faults/level_update_edit_spec.json",
         "examples/fifo/dv/test_fifo_level_repair.py",
+        "examples/skid_buffer/spec.md",
+        "examples/skid_buffer/model.py",
+        "examples/skid_buffer/test_model.py",
+        "examples/skid_buffer/rtl/skid_buffer.sv",
+        "examples/skid_buffer/faults/skid_buffer_refill_fault.sv",
+        "examples/skid_buffer/dv/Makefile",
+        "examples/skid_buffer/dv/test_skid_buffer.py",
+        "tests/test_skid_buffer_debug.py",
+        "tools/skid_buffer_case.py",
     }
     missing = sorted(path for path in required if not (ROOT / path).is_file())
     if missing:
@@ -167,6 +180,14 @@ def _run_tests() -> None:
     )
     if model.returncode != 0:
         raise RuntimeError("FIFO model tests failed")
+    skid_model = subprocess.run(
+        [sys.executable, "-m", "unittest", "examples.skid_buffer.test_model"],
+        cwd=ROOT,
+        env=environment,
+        check=False,
+    )
+    if skid_model.returncode != 0:
+        raise RuntimeError("skid-buffer model tests failed")
     print("CHECKPOINT tests passed")
 
 
@@ -229,6 +250,19 @@ def main(arguments: Sequence[str] | None = None) -> int:
         print("CHECKPOINT verilator_cocotb_canary passed")
         for description in describe_artifacts(artifacts):
             print(description)
+        skid_payload = run_skid_buffer_case(
+            ROOT,
+            ROOT / "build/verilator-skid-buffer-case",
+            toolchain,
+            timeout_seconds=timeout_seconds,
+        )
+        if skid_payload.get("status") != "passed":
+            raise RuntimeError("skid-buffer Verilator case did not pass")
+        print("CHECKPOINT verilator_cocotb_skid_buffer_case passed")
+        print(
+            "COLLATERAL skid_buffer_evidence="
+            f"{ROOT / skid_payload['evidence']}"
+        )
     else:
         print("CHECKPOINT verilator_cocotb_canary not_selected")
     print("OPENRTL_VALIDATION_STATUS=0")

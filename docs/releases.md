@@ -77,3 +77,12 @@ Candidate qualification is local and non-publishing. Creating or pushing a
 tag, creating a GitHub release, uploading assets, publishing to a package
 registry, or deploying anything are separate remote effects requiring explicit
 owner authorization.
+
+## Post-0.3 development examples
+
+The ready/valid skid-buffer example was added after OpenRTL 0.3.0 as a
+development and future-source-package example. It is intentionally absent from
+the immutable 0.3.0 manifest and companion archive. The public v0.3.0 validator
+continues to verify the bytes that were actually published; a future release
+candidate may include the skid-buffer example only through a newly qualified
+manifest and separate release authorization.

@@ -37,6 +37,12 @@ The immutable OpenRTL 0.2.0 acceptance command remains available as a separate
 historical contract in `tools/validate_public_release.py`. See
 [docs/releases.md](docs/releases.md) for both release identities.
 
+Post-0.3 development also includes a one-entry ready/valid skid buffer as a
+second protocol proof. Its reference model, correct RTL, randomized cocotb
+test, deterministic refill fault, diagnosis, non-applying proposal, and visibly
+distinct before/after waveforms are development artifacts; they do not alter
+the published 0.3.0 release bundle.
+
 This command performs public GitHub reads and local package installation only.
 It does not invoke a provider or modify either repository.
 
@@ -60,6 +66,7 @@ Keep an exact AgentRig 0.3.0 checkout at the sibling path selected by
 uv sync --locked --extra simulation
 uv run python -m unittest discover -s tests -t .
 uv run python -m unittest examples.fifo.test_model
+uv run python -m unittest examples.skid_buffer.test_model
 uv run python tools/validate.py
 ```
 
@@ -91,8 +98,34 @@ uv run python tools/validate.py --with-verilator \
   --verilator-executable /absolute/path/to/verilator
 ```
 
-No provider call, GUI launch, package publication, or remote Git operation is
-performed by either validation lane.
+With `--with-verilator`, validation runs both the production FIFO canary and
+the skid-buffer refill case. The latter requires one failing fault trace, one
+passing production trace, and a visible `s_ready`/occupancy difference at the
+same marker. No provider call, GUI launch, package publication, or remote Git
+operation is performed by either validation lane.
+
+Diagnose a retained skid-buffer trace without changing RTL:
+
+```sh
+uv run openrtl waveform diagnose-skid-buffer \
+  build/skid-buffer-case/before/waves.vcd \
+  --root . \
+  --start-fs 0 \
+  --end-fs 40000000 \
+  --output build/skid-buffer-debug/diagnosis.json
+```
+
+Generate the same diagnosis together with a non-applying repair proposal and
+Surfer focus:
+
+```sh
+uv run openrtl waveform propose-skid-buffer-repair \
+  build/skid-buffer-case/before/waves.vcd \
+  --root . \
+  --start-fs 0 \
+  --end-fs 40000000 \
+  --output-directory build/skid-buffer-repair-proposal
+```
 
 Use the bounded waveform workbench to list signals, inspect transitions, and
 prepare deterministic Surfer focus state. See

@@ -121,6 +121,15 @@ evidence attaches to the same artifact graph and requirement IDs.
   packages in isolation, and reruns the installed examples with Verilator and
   the visible waveform distinction. The historical 0.2.0 lane remains
   unchanged and runs alongside it in CI.
+- Post-0.3 development includes a one-entry ready/valid skid buffer as the
+  second complete RTL example. Its reference model, synthesizable RTL,
+  randomized cocotb test, and deterministic same-edge refill fault pass through
+  the shared debug-session and evidence schemas while protocol interpretation
+  remains in block-specific adapters. The fault trace must deassert `s_ready`
+  and lose occupancy at the refill edge; the production trace must accept the
+  replacement and remain occupied. Both traces, the non-applying proposal, and
+  the Surfer focus are retained without modifying the correct production RTL or
+  any immutable 0.3.0 release artifact.
 
 ## Convergence
 

@@ -171,6 +171,23 @@ named target with the exact candidate bytes, verifies the final digest, and
 emits a promotion receipt. The intentionally broken regression source remains
 separate from the promoted tracked target.
 
+## Block-specific protocol diagnosis
+
+The debug-session, evidence-anchor, observation, finding, proposal, and focus
+contracts are shared across blocks. Protocol semantics are not. FIFO adapters
+own occupancy, pointer, ordering, and full/empty checks; skid-buffer adapters
+own transparent transfer, backpressure retention, ready/valid handshakes, and
+same-edge dequeue/refill checks. Both produce the same reviewable artifact
+types, so downstream review and evidence handling stay generic without
+flattening distinct RTL protocols into one analyzer.
+
+The ready/valid skid buffer is the second end-to-end example. Its broken
+fixture differs from production only in refill readiness. Deterministic
+simulation retains a failing trace where `s_ready` is low during a simultaneous
+output opportunity and a passing trace where the replacement is accepted and
+occupancy remains asserted. Repair output is non-applying and the production
+source digest is checked before and after the case.
+
 ## Reuse and community boundary
 
 A passing design produces a local package candidate containing interfaces,

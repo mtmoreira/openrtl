@@ -39,6 +39,7 @@ source-include = [
   "tools/__init__.py",
   "tools/fifo_fault_case.py",
   "tools/fifo_repair_application_case.py",
+  "tools/skid_buffer_case.py",
   "tools/verilator_canary.py",
   "tools/verify_release_install.py",
 ]

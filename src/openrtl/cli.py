@@ -33,6 +33,7 @@ from openrtl.adapters import (
     EnvironmentOpenAIAuthenticationSource,
     accept_expert_source_edit_output,
     analyze_fifo_waveform,
+    analyze_skid_buffer_waveform,
     apply_qualified_provider_source_edits,
     apply_reviewed_source_edits,
     build_surfer_tool,
@@ -50,6 +51,8 @@ from openrtl.adapters import (
     prepare_expert_provider_invocation_plan,
     qualify_provider_source_edits,
     propose_fifo_repairs,
+    propose_skid_buffer_repairs,
+    skid_buffer_repair_focus,
     surfer_command_file,
 )
 from openrtl.application import (
@@ -149,6 +152,22 @@ def parser() -> argparse.ArgumentParser:
         "--output-directory",
         type=Path,
         default=Path("build/fifo-repair-proposal"),
+    )
+    diagnose_skid = waveform_commands.add_parser(
+        "diagnose-skid-buffer",
+        help="explain skid-buffer clock-edge behavior and flag contract violations",
+    )
+    _add_skid_buffer_debug_arguments(diagnose_skid)
+    diagnose_skid.add_argument("--output", type=Path)
+    propose_skid = waveform_commands.add_parser(
+        "propose-skid-buffer-repair",
+        help="derive a non-applying repair proposal from skid-buffer findings",
+    )
+    _add_skid_buffer_debug_arguments(propose_skid)
+    propose_skid.add_argument(
+        "--output-directory",
+        type=Path,
+        default=Path("build/skid-buffer-repair-proposal"),
     )
     repair = subcommands.add_parser(
         "repair",
@@ -1053,8 +1072,60 @@ def _add_fifo_debug_arguments(command: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_skid_buffer_debug_arguments(command: argparse.ArgumentParser) -> None:
+    command.add_argument("trace", type=Path)
+    command.add_argument("--root", type=Path, default=Path.cwd())
+    command.add_argument("--start-fs", type=int, default=0)
+    command.add_argument("--end-fs", type=int)
+    command.add_argument("--hierarchy", default="skid_buffer")
+    command.add_argument(
+        "--rtl",
+        type=Path,
+        default=Path("examples/skid_buffer/rtl/skid_buffer.sv"),
+    )
+
+
 def _waveform_command(arguments: argparse.Namespace) -> int:
     root = arguments.root.resolve(strict=True)
+    if arguments.waveform_command in (
+        "diagnose-skid-buffer",
+        "propose-skid-buffer-repair",
+    ):
+        report = analyze_skid_buffer_waveform(
+            root,
+            arguments.trace,
+            start_fs=arguments.start_fs,
+            end_fs=arguments.end_fs,
+            hierarchy=arguments.hierarchy,
+            rtl_path=arguments.rtl,
+        )
+        if arguments.waveform_command == "diagnose-skid-buffer":
+            payload = report.payload()
+            if arguments.output is not None:
+                output = _contained_output(root, arguments.output)
+                output.parent.mkdir(parents=True, exist_ok=True)
+                _write_json(output, payload)
+            print(json.dumps(payload, indent=2, sort_keys=True))
+            return 0 if report.passed else 1
+
+        output_directory = _contained_output(root, arguments.output_directory)
+        output_directory.mkdir(parents=True, exist_ok=True)
+        debug_path = output_directory / "debug-session.json"
+        proposal_path = output_directory / "repair-proposal.json"
+        focus_path = output_directory / "focus.sucl"
+        proposal = propose_skid_buffer_repairs(
+            report,
+            report_uri=debug_path.relative_to(root).as_posix(),
+        )
+        _write_json(debug_path, report.payload())
+        _write_json(proposal_path, proposal.payload())
+        focus_path.write_text(
+            surfer_command_file(skid_buffer_repair_focus(report)),
+            encoding="utf-8",
+        )
+        print(json.dumps(proposal.payload(), indent=2, sort_keys=True))
+        return 0
+
     if arguments.waveform_command in ("diagnose-fifo", "propose-fifo-repair"):
         report = analyze_fifo_waveform(
             root,

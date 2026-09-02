@@ -6,6 +6,58 @@ launches a GUI unless the user explicitly selects `--launch`. With Surfer 0.7,
 the command file adds the selected signals; its comments and inspection JSON
 retain the exact integer-fs window and markers for manual viewport placement.
 
+## Diagnose the ready/valid skid buffer
+
+Run the complete deterministic case with the explicitly selected simulator
+lane:
+
+```sh
+uv run python tools/skid_buffer_case.py \
+  --output-directory build/skid-buffer-case
+```
+
+The case first runs the intentionally broken refill-ready fixture and requires
+that cocotb detect the loss. It then runs the unchanged production RTL with the
+same directed and randomized stimulus and requires a pass. Diagnose the failing
+trace directly with:
+
+```sh
+uv run openrtl waveform diagnose-skid-buffer \
+  build/skid-buffer-case/before/waves.vcd \
+  --root . \
+  --start-fs 0 \
+  --end-fs 40000000 \
+  --output build/skid-buffer-case/debug-session.json
+```
+
+Or generate the diagnosis, proposal, and Surfer focus together:
+
+```sh
+uv run openrtl waveform propose-skid-buffer-repair \
+  build/skid-buffer-case/before/waves.vcd \
+  --root . \
+  --start-fs 0 \
+  --end-fs 40000000 \
+  --output-directory build/skid-buffer-proposal
+```
+
+At the recorded refill marker, inspect these signals in order:
+
+1. `skid_buffer.m_valid` and `skid_buffer.m_ready` establish that the retained
+   output is being consumed.
+2. `skid_buffer.s_valid` establishes that a replacement item is available on
+   the same edge.
+3. The broken fixture drives `skid_buffer.s_ready` low, so the replacement is
+   not accepted and `skid_buffer.full` falls to zero.
+4. Production drives `skid_buffer.s_ready` high, accepts both sides, and keeps
+   `skid_buffer.full` high with the replacement in `data_q`.
+
+Open `before/waves.vcd` with `focus-before.sucl`, then
+`repaired/waves.vcd` with `focus-after.sucl`. The comparison requires the two
+traces to cover the same marker and visibly disagree on readiness and retained
+occupancy. The proposal remains non-applying, no provider is called, Surfer is
+not launched automatically, and the production source digest must be unchanged.
+
 ## Inspect the FIFO trace
 
 List every signal captured by the retained Verilator canary:

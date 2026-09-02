@@ -3,6 +3,14 @@
 from openrtl.adapters.catalog import LocalDesignCatalog
 from openrtl.adapters.fifo_debug import MAX_DEBUG_EDGES, analyze_fifo_waveform
 from openrtl.adapters.fifo_repair import fifo_repair_focus, propose_fifo_repairs
+from openrtl.adapters.skid_buffer_debug import (
+    MAX_SKID_DEBUG_EDGES,
+    analyze_skid_buffer_waveform,
+)
+from openrtl.adapters.skid_buffer_repair import (
+    propose_skid_buffer_repairs,
+    skid_buffer_repair_focus,
+)
 from openrtl.adapters.source_edit_application import (
     apply_reviewed_source_edits,
     draft_source_edit_plan,
@@ -63,6 +71,7 @@ from openrtl.adapters.waveforms import SignalTransition, VcdIndex, WaveformFocus
 __all__ = [
     "LocalDesignCatalog",
     "MAX_DEBUG_EDGES",
+    "MAX_SKID_DEBUG_EDGES",
     "LogEvent",
     "LogLevel",
     "OpenRTLCommandTools",
@@ -83,6 +92,7 @@ __all__ = [
     "load_source_edit_plan",
     "inspect_vcd",
     "analyze_fifo_waveform",
+    "analyze_skid_buffer_waveform",
     "apply_reviewed_source_edits",
     "accept_expert_source_edit_output",
     "accept_expert_source_edit_payload",
@@ -107,5 +117,7 @@ __all__ = [
     "parse_candidate_promotion_plan",
     "promote_qualified_provider_candidate",
     "propose_fifo_repairs",
+    "propose_skid_buffer_repairs",
+    "skid_buffer_repair_focus",
     "surfer_command_file",
 ]
