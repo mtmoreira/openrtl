@@ -1,0 +1,45 @@
+{
+  "artifacts": {
+    "log": "log",
+    "results": "results",
+    "source": "rtl",
+    "waveform": "waveform"
+  },
+  "design_id": "sync.fifo",
+  "evidence_id": "ev.fifo.verilator.profile",
+  "files": [
+    {"artifact_id": "fifo.spec", "kind": "specification", "path": "examples/fifo/spec.md"},
+    {"artifact_id": "fifo.model", "kind": "reference_model", "path": "examples/fifo/model.py"},
+    {"artifact_id": "fifo.rtl", "kind": "rtl", "path": "examples/fifo/rtl/sync_fifo.sv"},
+    {"artifact_id": "fifo.dv", "kind": "dv", "path": "examples/fifo/dv/test_sync_fifo.py"}
+  ],
+  "focus_signals": ["sync_fifo.wr_valid", "sync_fifo.rd_valid", "sync_fifo.level"],
+  "license_id": "Apache-2.0",
+  "package_id": "community.sync.fifo",
+  "package_version": "1.0.0",
+  "parameters": [
+    {"default": 8, "maximum": 1024, "minimum": 1, "name": "width"},
+    {"default": 4, "maximum": 65536, "minimum": 2, "name": "depth"}
+  ],
+  "ports": [
+    {"direction": "input", "name": "clk", "width": 1},
+    {"direction": "input", "name": "rst_n", "width": 1},
+    {"direction": "input", "name": "wr_valid", "width": 1},
+    {"direction": "output", "name": "wr_ready", "width": 1},
+    {"direction": "input", "name": "wr_data", "width": 8},
+    {"direction": "output", "name": "rd_valid", "width": 1},
+    {"direction": "input", "name": "rd_ready", "width": 1},
+    {"direction": "output", "name": "rd_data", "width": 8}
+  ],
+  "profile_id": "verified.fifo.verilator",
+  "requirements": ["fifo.reset", "fifo.write", "fifo.read", "fifo.order", "fifo.backpressure", "fifo.simultaneous", "fifo.wrap", "fifo.status"],
+  "run": {
+    "id": "fifo.verilator.canary",
+    "manifest_schema": "openrtl.verilator-canary-evidence.v1",
+    "seed": 1,
+    "testcase": "test_sync_fifo.randomized_fifo_scoreboard",
+    "tool_profile_id": "verilator.cocotb",
+    "top": "sync_fifo"
+  },
+  "schema": "openrtl.verified-simulation-profile.v1"
+}

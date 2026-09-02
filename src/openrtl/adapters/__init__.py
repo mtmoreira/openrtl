@@ -46,6 +46,11 @@ from openrtl.adapters.candidate_promotion import (
     promote_qualified_provider_candidate,
 )
 from openrtl.adapters.canary import load_fifo_canary_evidence
+from openrtl.adapters.verified_simulation import (
+    build_verified_package_candidate,
+    load_verified_simulation_evidence,
+    load_verified_simulation_profile,
+)
 from openrtl.adapters.agentrig import (
     OpenRTLCommandTools,
     build_command_tools,
@@ -89,6 +94,9 @@ __all__ = [
     "build_eda_mcp_binding",
     "build_surfer_tool",
     "load_fifo_canary_evidence",
+    "load_verified_simulation_profile",
+    "load_verified_simulation_evidence",
+    "build_verified_package_candidate",
     "load_source_edit_plan",
     "inspect_vcd",
     "analyze_fifo_waveform",

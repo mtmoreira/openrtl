@@ -91,6 +91,28 @@ uv run openrtl verified-canary --root . --mode build
 uv run openrtl verified-canary --root . --mode learn
 ```
 
+The compatibility command above remains available for the published FIFO
+walkthrough. New designs use checked-in, block-neutral simulation profiles.
+Each profile declares its package interface, source set, requirements, passing
+test identity, retained artifact keys, and waveform focus; Python only verifies
+the declared contract. Build FIFO and skid-buffer candidates into one local
+catalog after their evidence manifests exist:
+
+```sh
+uv run openrtl verified-package --root . \
+  --profile examples/fifo/verified-profile.json \
+  --manifest build/verilator-fifo-canary/evidence.json \
+  --catalog-root build/design-catalog
+uv run openrtl verified-package --root . \
+  --profile examples/skid_buffer/verified-profile.json \
+  --manifest build/skid-buffer-case/evidence.json \
+  --catalog-root build/design-catalog
+```
+
+Profile, source, requirement, result, or waveform mixing fails closed. Catalog
+storage is local and refuses to overwrite an existing package version; it does
+not publish anything remotely.
+
 Exact executable overrides are available when PATH selection is insufficient:
 
 ```sh

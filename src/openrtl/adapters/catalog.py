@@ -6,7 +6,7 @@ import json
 import re
 from pathlib import Path
 
-from openrtl.domain._validation import identifier
+from openrtl.domain._validation import digest, identifier, relative_path
 from openrtl.domain.packages import DesignPackage, TrustLevel
 
 
@@ -32,7 +32,11 @@ class LocalDesignCatalog:
             )
         )
 
-    def store_manifest(self, package: DesignPackage) -> Path:
+    def store_manifest(
+        self,
+        package: DesignPackage,
+        provenance: tuple[tuple[str, str, str], ...] = (),
+    ) -> Path:
         if not package.publication_ready:
             raise ValueError("only verified package candidates may enter the catalog")
         directory = self.root / package.package_id
@@ -40,6 +44,16 @@ class LocalDesignCatalog:
         destination = directory / f"{package.version}.json"
         if destination.exists():
             raise FileExistsError("package version already exists")
+        normalized_provenance = tuple(
+            {
+                "content_digest": digest(content_digest, "provenance digest"),
+                "kind": identifier(kind, "provenance kind"),
+                "uri": relative_path(uri, "provenance URI"),
+            }
+            for kind, uri, content_digest in provenance
+        )
+        if len({value["kind"] for value in normalized_provenance}) != len(normalized_provenance):
+            raise ValueError("catalog provenance kinds must be unique")
         payload = {
             "content_digest": package.content_digest,
             "design_id": package.design_id,
@@ -50,6 +64,7 @@ class LocalDesignCatalog:
             ],
             "license_id": package.license_id,
             "package_id": package.package_id,
+            "provenance": normalized_provenance,
             "trust": package.trust.value,
             "version": package.version,
         }

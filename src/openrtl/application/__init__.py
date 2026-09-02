@@ -91,6 +91,11 @@ from openrtl.application.scripted import (
     ScriptedFifoResult,
     run_scripted_fifo,
 )
+from openrtl.application.package_candidates import (
+    SimulationProfileFile,
+    VerifiedPackageCandidate,
+    VerifiedSimulationProfile,
+)
 
 __all__ = [
     "EXPERT_DEFINITIONS",
@@ -134,6 +139,9 @@ __all__ = [
     "SourceEditPlan",
     "SourceEditPlanningReport",
     "ScriptedFifoResult",
+    "SimulationProfileFile",
+    "VerifiedPackageCandidate",
+    "VerifiedSimulationProfile",
     "StageOutcome",
     "WorkflowStage",
     "WorkflowState",

@@ -1,0 +1,45 @@
+{
+  "artifacts": {
+    "log": "repaired_log",
+    "results": "repaired_results",
+    "source": "production_rtl",
+    "waveform": "repaired_waveform"
+  },
+  "design_id": "ready-valid.skid-buffer",
+  "evidence_id": "ev.skid.verilator.profile",
+  "files": [
+    {"artifact_id": "skid.spec", "kind": "specification", "path": "examples/skid_buffer/spec.md"},
+    {"artifact_id": "skid.model", "kind": "reference_model", "path": "examples/skid_buffer/model.py"},
+    {"artifact_id": "skid.rtl", "kind": "rtl", "path": "examples/skid_buffer/rtl/skid_buffer.sv"},
+    {"artifact_id": "skid.dv", "kind": "dv", "path": "examples/skid_buffer/dv/test_skid_buffer.py"}
+  ],
+  "focus_signals": ["skid_buffer.s_valid", "skid_buffer.s_ready", "skid_buffer.m_valid", "skid_buffer.m_ready", "skid_buffer.occupied"],
+  "license_id": "Apache-2.0",
+  "package_id": "community.ready-valid.skid-buffer",
+  "package_version": "1.0.0",
+  "parameters": [
+    {"default": 8, "maximum": 1024, "minimum": 1, "name": "width"}
+  ],
+  "ports": [
+    {"direction": "input", "name": "clk", "width": 1},
+    {"direction": "input", "name": "rst_n", "width": 1},
+    {"direction": "input", "name": "s_valid", "width": 1},
+    {"direction": "output", "name": "s_ready", "width": 1},
+    {"direction": "input", "name": "s_data", "width": 8},
+    {"direction": "output", "name": "m_valid", "width": 1},
+    {"direction": "input", "name": "m_ready", "width": 1},
+    {"direction": "output", "name": "m_data", "width": 8},
+    {"direction": "output", "name": "occupied", "width": 1}
+  ],
+  "profile_id": "verified.skid-buffer.verilator",
+  "requirements": ["skid.reset", "skid.accept", "skid.backpressure", "skid.order", "skid.refill"],
+  "run": {
+    "id": "skid-buffer.verilator.profile",
+    "manifest_schema": "openrtl.skid-buffer-evidence.v1",
+    "seed": 23,
+    "testcase": "test_skid_buffer.ready_valid_skid_buffer_contract",
+    "tool_profile_id": "verilator.cocotb",
+    "top": "skid_buffer"
+  },
+  "schema": "openrtl.verified-simulation-profile.v1"
+}

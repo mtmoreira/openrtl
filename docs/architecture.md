@@ -194,3 +194,13 @@ A passing design produces a local package candidate containing interfaces,
 parameters, clock/reset semantics, RTL/model/DV/assertions, dependencies,
 provenance, license, and validation evidence. Compatibility is deterministic
 and local. Remote publication is a separate adapter and approval boundary.
+
+Verified simulation profiles are the reusable boundary between block-specific
+simulation outputs and package candidacy. A checked-in profile binds design and
+package identity, source files, interface, parameters, requirement set, test
+identity, evidence schema/artifact keys, and waveform signals. The ingestion
+adapter performs containment, regular-file, size, digest, passing-results, and
+waveform-transition checks before normalizing either FIFO or skid-buffer
+collateral into `VerifiedRunEvidence`. Package construction consumes only that
+normalized evidence and the exact profile. The historical `verified-canary`
+FIFO command remains a compatibility facade.

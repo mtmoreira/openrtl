@@ -37,6 +37,7 @@ from openrtl.adapters import (
     apply_qualified_provider_source_edits,
     apply_reviewed_source_edits,
     build_surfer_tool,
+    build_verified_package_candidate,
     draft_source_edit_plan,
     fifo_repair_focus,
     inspect_vcd,
@@ -44,6 +45,8 @@ from openrtl.adapters import (
     invoke_approved_openai_expert_source_edits,
     load_expert_provider_invocation_plan,
     load_fifo_canary_evidence,
+    load_verified_simulation_evidence,
+    load_verified_simulation_profile,
     load_source_edit_plan,
     plan_qualified_provider_candidate_promotion,
     promote_qualified_provider_candidate,
@@ -111,6 +114,14 @@ def parser() -> argparse.ArgumentParser:
         default=Path("build/verilator-fifo-canary/evidence.json"),
     )
     verified.add_argument("--mode", choices=("build", "learn"), default="build")
+    verified_package = subcommands.add_parser(
+        "verified-package",
+        help="build a package candidate from an explicit simulation profile",
+    )
+    verified_package.add_argument("--root", type=Path, default=Path.cwd())
+    verified_package.add_argument("--profile", type=Path, required=True)
+    verified_package.add_argument("--manifest", type=Path, required=True)
+    verified_package.add_argument("--catalog-root", type=Path)
     waveform = subcommands.add_parser(
         "waveform",
         help="inspect VCD traces and prepare an explicit Surfer focus",
@@ -455,6 +466,47 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "run_status": verified_run.run.status.value,
                     "trace_uri": verified_run.run.trace_uri,
                     "trust": result.package.trust.value,
+                },
+                sort_keys=True,
+                indent=2,
+            )
+        )
+        return 0
+    if arguments.command == "verified-package":
+        project_root = arguments.root.resolve()
+        profile = load_verified_simulation_profile(project_root, arguments.profile)
+        verified_run = load_verified_simulation_evidence(
+            project_root,
+            profile,
+            arguments.manifest,
+        )
+        selected_catalog = (
+            LocalDesignCatalog(arguments.catalog_root.resolve())
+            if arguments.catalog_root is not None
+            else None
+        )
+        candidate = build_verified_package_candidate(
+            project_root,
+            profile,
+            verified_run,
+            selected_catalog,
+        )
+        print(
+            json.dumps(
+                {
+                    "catalog_manifest": candidate.catalog_manifest,
+                    "covered_requirements": [
+                        value.requirement_id for value in candidate.coverage if value.covered
+                    ],
+                    "design_id": candidate.package.design_id,
+                    "evidence_id": candidate.verified_run.evidence.evidence_id,
+                    "package_digest": candidate.package.content_digest,
+                    "package_id": candidate.package.package_id,
+                    "profile_digest": candidate.profile.profile_digest,
+                    "profile_id": candidate.profile.profile_id,
+                    "publication_ready": candidate.package.publication_ready,
+                    "run_id": candidate.verified_run.run.run_id,
+                    "trust": candidate.package.trust.value,
                 },
                 sort_keys=True,
                 indent=2,

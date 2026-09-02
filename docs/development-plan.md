@@ -130,6 +130,12 @@ evidence attaches to the same artifact graph and requirement IDs.
   replacement and remain occupied. Both traces, the non-applying proposal, and
   the Surfer focus are retained without modifying the correct production RTL or
   any immutable 0.3.0 release artifact.
+- FIFO and skid-buffer passing simulations can be ingested through checked-in
+  block-neutral verified-simulation profiles and normalized into the same
+  `VerifiedRunEvidence` and `DesignPackage` contracts. Exact schema, source,
+  requirement, result, and waveform linkage is mandatory; cross-design mixing
+  fails closed. Both candidates can enter one local catalog without remote
+  publication, while the published FIFO compatibility command remains intact.
 
 ## Convergence
 
