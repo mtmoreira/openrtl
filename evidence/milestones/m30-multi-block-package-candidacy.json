@@ -1,0 +1,148 @@
+{
+  "agentrig_release": {
+    "commit": "31b2ecae0605f0d6b63b5f060c929ca567ae16f2",
+    "tag": "v0.3.0",
+    "version": "0.3.0"
+  },
+  "artifacts": [
+    {
+      "artifact_id": "m30.catalog.community.ready-valid.skid-buffer.1.0.0.json",
+      "availability": "local",
+      "locator": "build/multi-block-package-candidacy/m30-4902e05/catalog/community.ready-valid.skid-buffer/1.0.0.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m30-multi-block-package-candidacy",
+      "sha256": "5d775f81aaafa41767502d9c98b2c5e46d6cc282243283eaa6938d95a84b20f5",
+      "size_bytes": 1520
+    },
+    {
+      "artifact_id": "m30.catalog.community.sync.fifo.1.0.0.json",
+      "availability": "local",
+      "locator": "build/multi-block-package-candidacy/m30-4902e05/catalog/community.sync.fifo/1.0.0.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m30-multi-block-package-candidacy",
+      "sha256": "6330a6946500341ee36c7c2a8a96daf98573de745faa14d7d50b9901914f5e15",
+      "size_bytes": 1453
+    },
+    {
+      "artifact_id": "m30.fifo-canary.canary.log",
+      "availability": "local",
+      "locator": "build/multi-block-package-candidacy/m30-4902e05/fifo-canary/canary.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m30-multi-block-package-candidacy",
+      "sha256": "48249f9a4e34b4010fcf2ffbf882ec9632a41cff89ab98d5a4f8f25c75e67127",
+      "size_bytes": 83880
+    },
+    {
+      "artifact_id": "m30.fifo-canary.evidence.json",
+      "availability": "local",
+      "locator": "build/multi-block-package-candidacy/m30-4902e05/fifo-canary/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m30-multi-block-package-candidacy",
+      "sha256": "83028f4fadb05e746f15172487ca1246d256f3875e1b1891eddfb6766e78676c",
+      "size_bytes": 985
+    },
+    {
+      "artifact_id": "m30.fifo-canary.results.xml",
+      "availability": "local",
+      "locator": "build/multi-block-package-candidacy/m30-4902e05/fifo-canary/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m30-multi-block-package-candidacy",
+      "sha256": "ba0083b452fc901b8d1bb998ae0500e7f0f1c9749828b3a161890c7a6edea5bb",
+      "size_bytes": 431
+    },
+    {
+      "artifact_id": "m30.fifo-canary.waves.vcd",
+      "availability": "local",
+      "locator": "build/multi-block-package-candidacy/m30-4902e05/fifo-canary/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m30-multi-block-package-candidacy",
+      "sha256": "5fc0e1558f732f9b8917fcf19c2d4d78f96bb22b38a7d16628daf29d9e546695",
+      "size_bytes": 44255
+    },
+    {
+      "artifact_id": "m30.skid-buffer.evidence.json",
+      "availability": "local",
+      "locator": "build/multi-block-package-candidacy/m30-4902e05/skid-buffer/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m30-multi-block-package-candidacy",
+      "sha256": "57f3e6047a05a3ae2181fd312640d8ca6b93c3256697a261cde2f98f69cee996",
+      "size_bytes": 2684
+    },
+    {
+      "artifact_id": "m30.skid-buffer.repaired.results.xml",
+      "availability": "local",
+      "locator": "build/multi-block-package-candidacy/m30-4902e05/skid-buffer/repaired/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m30-multi-block-package-candidacy",
+      "sha256": "382093e3bdb7b5a11076fcab84bf6a0487704250d6b88757e4021ec6e18256af",
+      "size_bytes": 458
+    },
+    {
+      "artifact_id": "m30.skid-buffer.repaired.run.log",
+      "availability": "local",
+      "locator": "build/multi-block-package-candidacy/m30-4902e05/skid-buffer/repaired/run.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m30-multi-block-package-candidacy",
+      "sha256": "f1d610a893ade1ea2736941c12a4c93af23eb4c0d13c8cfc7911e75ca9350384",
+      "size_bytes": 12583
+    },
+    {
+      "artifact_id": "m30.skid-buffer.repaired.waves.vcd",
+      "availability": "local",
+      "locator": "build/multi-block-package-candidacy/m30-4902e05/skid-buffer/repaired/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m30-multi-block-package-candidacy",
+      "sha256": "9585fae86e96586c675a710d782695448cb9483a9b5e42826c4cb4d43517ad42",
+      "size_bytes": 13186
+    },
+    {
+      "artifact_id": "m30.validation.report",
+      "availability": "local",
+      "locator": "build/multi-block-package-candidacy/m30-4902e05/validation.report",
+      "media_type": "text/plain",
+      "producer": "openrtl-m30-multi-block-package-candidacy",
+      "sha256": "782d8949d86acb3b0a41b55d5bd0a31499c29463dafd977c24973bf95868a435",
+      "size_bytes": 5442
+    }
+  ],
+  "authorization_boundary": {
+    "credential_resolution": false,
+    "gui_launched": false,
+    "provider_called": false,
+    "remote_reads": false,
+    "remote_writes": false
+  },
+  "base_commit": "ed05ff7b2115081aa0f48180ce01381b6fefd423",
+  "evidence_lane": "multi-block-package-candidacy",
+  "implementation_commits": [
+    "4902e05db339a8c4e3a28f1b738fac214e491a23"
+  ],
+  "milestone_id": "m30-multi-block-package-candidacy",
+  "packages": {
+    "fifo": {
+      "catalog_manifest_digest": "sha256:6330a6946500341ee36c7c2a8a96daf98573de745faa14d7d50b9901914f5e15",
+      "package_digest": "sha256:9557da940135c58f311f041b4db30e4a01f084cd9585cf77dd653eb1069d3d30",
+      "package_id": "community.sync.fifo",
+      "profile_digest": "sha256:b74f9429520e065d88bbbd793c7a682bb6188cc00ad43a4527181bd3d1acaab6",
+      "simulation_evidence_digest": "sha256:83028f4fadb05e746f15172487ca1246d256f3875e1b1891eddfb6766e78676c"
+    },
+    "skid_buffer": {
+      "catalog_manifest_digest": "sha256:5d775f81aaafa41767502d9c98b2c5e46d6cc282243283eaa6938d95a84b20f5",
+      "package_digest": "sha256:1b9062a0cb92e8ff6b19cbdc364033558c95e09934cc1bfbed4cfdccd3db1d77",
+      "package_id": "community.ready-valid.skid-buffer",
+      "profile_digest": "sha256:74d29726b3dde9b84b69c322bc2054e665f1a8b294946b631da96606578f3bcd",
+      "simulation_evidence_digest": "sha256:57f3e6047a05a3ae2181fd312640d8ca6b93c3256697a261cde2f98f69cee996"
+    }
+  },
+  "retention_class": "local-simulation-package-candidate-collateral",
+  "review_state": "validated",
+  "schema": "openrtl.milestone-evidence.v1",
+  "validation_outcomes": {
+    "focused_strict_typing": "passed",
+    "full_repository_tests": "passed_133",
+    "local_catalog_candidates": 2,
+    "mixed_profile_states": "rejected",
+    "production_fifo_canary": "passed",
+    "production_skid_buffer": "passed"
+  }
+}
