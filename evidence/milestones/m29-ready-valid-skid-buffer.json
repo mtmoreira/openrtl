@@ -1,0 +1,198 @@
+{
+  "agentrig_release": {
+    "commit": "31b2ecae0605f0d6b63b5f060c929ca567ae16f2",
+    "tag": "v0.3.0",
+    "version": "0.3.0"
+  },
+  "artifacts": [
+    {
+      "artifact_id": "m29.validation.report",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/validation.report",
+      "media_type": "text/plain",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "e6c308bcd7810485f285b20c0655d104012d788f10a4edd82b4cafb6a0f392cd",
+      "size_bytes": 3421
+    },
+    {
+      "artifact_id": "m29.fifo-canary.canary.log",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/fifo-canary/canary.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "22b1a76b020ee6546b31a7d1f71b85cdcfe705fd3b8b8ac1945d774e5cc8c212",
+      "size_bytes": 83720
+    },
+    {
+      "artifact_id": "m29.fifo-canary.evidence.json",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/fifo-canary/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "0b5bb57c99d843925776a3997451f8307f73d1fc6baad0321a84b65488dc9b83",
+      "size_bytes": 970
+    },
+    {
+      "artifact_id": "m29.fifo-canary.results.xml",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/fifo-canary/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "7144e3676ebe135cc29b66442a2f574017b64bfc0936973077ecb1d62176a041",
+      "size_bytes": 425
+    },
+    {
+      "artifact_id": "m29.fifo-canary.waves.vcd",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/fifo-canary/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "5fc0e1558f732f9b8917fcf19c2d4d78f96bb22b38a7d16628daf29d9e546695",
+      "size_bytes": 44255
+    },
+    {
+      "artifact_id": "m29.skid-buffer-case.before.results.xml",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/skid-buffer-case/before/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "48d7254fae512b93c3cd9bc9b1ba5854137808bd8f1852f672ebe28c32f41957",
+      "size_bytes": 655
+    },
+    {
+      "artifact_id": "m29.skid-buffer-case.before.run.log",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/skid-buffer-case/before/run.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "517eb1b0850fe315fe58242c3da84b7ba86ea9bcdd8831b4b7df551312a8fbbf",
+      "size_bytes": 13537
+    },
+    {
+      "artifact_id": "m29.skid-buffer-case.before.waves.vcd",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/skid-buffer-case/before/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "6798f915f99cc69fa4996e6168926773941e8f14c3786405f698b9b8b1d28d74",
+      "size_bytes": 1471
+    },
+    {
+      "artifact_id": "m29.skid-buffer-case.comparison.json",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/skid-buffer-case/comparison.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "928bdc459958a11011987cc133bf98681471621e81e1e1e14ef40bfab6aff43d",
+      "size_bytes": 291
+    },
+    {
+      "artifact_id": "m29.skid-buffer-case.debug-session.json",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/skid-buffer-case/debug-session.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "5d56f1d47ea21a6c06ee6229ef681101c3d36739b51c9c26fe301216b63ec9a5",
+      "size_bytes": 6364
+    },
+    {
+      "artifact_id": "m29.skid-buffer-case.evidence.json",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/skid-buffer-case/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "0e875bdc9745481258759be48784542896c37eed7f63f2ae2d242240927b19bb",
+      "size_bytes": 2684
+    },
+    {
+      "artifact_id": "m29.skid-buffer-case.focus-after.sucl",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/skid-buffer-case/focus-after.sucl",
+      "media_type": "application/octet-stream",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "059f2f26675f0b4952986b610747f87d90a9937d8a16b4c7c49a9cb9d92ff90f",
+      "size_bytes": 591
+    },
+    {
+      "artifact_id": "m29.skid-buffer-case.focus-before.sucl",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/skid-buffer-case/focus-before.sucl",
+      "media_type": "application/octet-stream",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "059f2f26675f0b4952986b610747f87d90a9937d8a16b4c7c49a9cb9d92ff90f",
+      "size_bytes": 591
+    },
+    {
+      "artifact_id": "m29.skid-buffer-case.repair-proposal.json",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/skid-buffer-case/repair-proposal.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "c51f16f5fb323f38c6ba7a17ed3c2bb7054183e4fc980a88be0aedb9a646c67b",
+      "size_bytes": 2917
+    },
+    {
+      "artifact_id": "m29.skid-buffer-case.repaired.results.xml",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/skid-buffer-case/repaired/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "8a4e534e1e9fc92186e2f881cf600261f5444e40d1fb1a5a0a2c719e930884d8",
+      "size_bytes": 451
+    },
+    {
+      "artifact_id": "m29.skid-buffer-case.repaired.run.log",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/skid-buffer-case/repaired/run.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "ea81b1e759f0c73df08070ddcdaa8531be3049789b2329a84fc167c1ccee04b4",
+      "size_bytes": 12469
+    },
+    {
+      "artifact_id": "m29.skid-buffer-case.repaired.waves.vcd",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/skid-buffer-case/repaired/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "9585fae86e96586c675a710d782695448cb9483a9b5e42826c4cb4d43517ad42",
+      "size_bytes": 13186
+    },
+    {
+      "artifact_id": "m29.skid-buffer-case.summary.json",
+      "availability": "local",
+      "locator": "build/ready-valid-skid-buffer/m29-e6a951f/skid-buffer-case/summary.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m29-ready-valid-skid-buffer",
+      "sha256": "05cc76b4065c280414de8c0aac8311b62e35bfc8c8aa7644ac84e186772a7606",
+      "size_bytes": 1016
+    }
+  ],
+  "authorization_boundary": {
+    "credential_resolution": false,
+    "gui_launched": false,
+    "provider_called": false,
+    "remote_reads": false,
+    "remote_writes": false
+  },
+  "base_commit": "d58ec657e3624e1589c5430b00f9cf419bedd826",
+  "evidence_lane": "ready-valid-skid-buffer",
+  "implementation_commits": [
+    "e6a951f6392b3d048284071108f4dd09e120de6d"
+  ],
+  "milestone_id": "m29-ready-valid-skid-buffer",
+  "retention_class": "local-simulation-and-waveform-collateral",
+  "review_state": "validated",
+  "schema": "openrtl.milestone-evidence.v1",
+  "validation_outcomes": {
+    "focused_strict_typing": "passed",
+    "focused_tests": "passed",
+    "full_repository_tests": "passed_130",
+    "production_fifo_canary": "passed",
+    "production_skid_buffer_rtl": "unchanged",
+    "skid_buffer_before_findings": 1,
+    "skid_buffer_marker_fs": 30000000,
+    "skid_buffer_production_findings": 0,
+    "skid_buffer_waveform": "visibly_distinct_s_ready_0_to_1"
+  }
+}
