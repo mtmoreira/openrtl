@@ -1,0 +1,358 @@
+{
+  "agentrig_release": {
+    "commit": "31b2ecae0605f0d6b63b5f060c929ca567ae16f2",
+    "tag": "v0.3.0",
+    "version": "0.3.0"
+  },
+  "artifacts": [
+    {
+      "artifact_id": "m31.validation.report",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/validation.report",
+      "media_type": "text/plain",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "38a1bba7889a3ab8b8f077cbbba842f201a5a2b7657b72a24d34f4a67112d1ac",
+      "size_bytes": 5766
+    },
+    {
+      "artifact_id": "m31.portable-consumption..openrtl-m31-owner",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/.openrtl-m31-owner",
+      "media_type": "text/plain",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "fdf8aa70dcf1ca89d886e825c52734ea289ebc1a0e14bcae1b2a4d8feda07e14",
+      "size_bytes": 12
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.ready-valid.skid-buffer.1.0.0.manifest.json",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.ready-valid.skid-buffer/1.0.0/manifest.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "7244753facab424afd6a2b599d0b10ba32af47f915d3b7361727efe658884603",
+      "size_bytes": 4537
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-evidence.json",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "ce9334b9bdbb754bc626d530630b228aa50a7a929f0892c9382486da40f605f9",
+      "size_bytes": 2684
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-log.log",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-log.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "d2fadd7623b3f687e7b33ffa5e5435011fb24f7b4f968159ffee5df5bbcadea9",
+      "size_bytes": 12564
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-profile.json",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "74d29726b3dde9b84b69c322bc2054e665f1a8b294946b631da96606578f3bcd",
+      "size_bytes": 2020
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-results.xml",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "c9181375065c99c9f7dc23ad89b1bd0a3a428118b15dda6de3dac71d3a61d934",
+      "size_bytes": 456
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-waveform.vcd",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-waveform.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "9585fae86e96586c675a710d782695448cb9483a9b5e42826c4cb4d43517ad42",
+      "size_bytes": 13186
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.dv.test_skid_buffer.py",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/dv/test_skid_buffer.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "0e5a7a27d06047d11bfeb20296334713369485a048a4f5e9fe17ee4a2b85413c",
+      "size_bytes": 2728
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.model.py",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "0fe32f3d7f7e8338dab2f200f4c814a1f0f214762edf2e011f230014a955167f",
+      "size_bytes": 1914
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.rtl.skid_buffer.sv",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/rtl/skid_buffer.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "b3951aef4674d8d739427c99ca664195dbf4ff5764d9cbb394dcd727103abada",
+      "size_bytes": 1276
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.spec.md",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "f74b1f713c6f475b00de373fc87c010c5c0a04fe18dc29b82e8b66d88d7d2e9b",
+      "size_bytes": 637
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.sync.fifo.1.0.0.manifest.json",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.sync.fifo/1.0.0/manifest.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "0161644d4a277a9308805fb6ea9db6766c659c91793ad2bdf54c5fb431df5a12",
+      "size_bytes": 4383
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-evidence.json",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "d3de27c915aa5819bf194f23f9df3e9cbb96061493c8fa7a2640dc017cc0029f",
+      "size_bytes": 985
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-log.log",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-log.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "a18d6f57bf5a46ad7052574d6a0c46fbcc9d17dc4dbe7c56cbd0171390b65b37",
+      "size_bytes": 83860
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-profile.json",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "b74f9429520e065d88bbbd793c7a682bb6188cc00ad43a4527181bd3d1acaab6",
+      "size_bytes": 1908
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-results.xml",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "ee4f0831a0c1b81a08127c793029dc2d4e5ac95e8c1a7d9f8181322f98fad7a9",
+      "size_bytes": 430
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-waveform.vcd",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-waveform.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "5fc0e1558f732f9b8917fcf19c2d4d78f96bb22b38a7d16628daf29d9e546695",
+      "size_bytes": 44255
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.dv.test_sync_fifo.py",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/dv/test_sync_fifo.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "433c70acbc0e01098687c772aa2033f647a5e18019d08ec470a52415a42d9d33",
+      "size_bytes": 2317
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.model.py",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "2c9e045d6e4cea6c4e155833b899a26db92284a74399bdd2747e1a50b41ae05d",
+      "size_bytes": 1696
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.rtl.sync_fifo.sv",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/rtl/sync_fifo.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "993ae9b401f7fd7677ad8b86f530d95f22e1b5e87fa210044afb479198ab1acb",
+      "size_bytes": 2608
+    },
+    {
+      "artifact_id": "m31.portable-consumption.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.spec.md",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "a7235fbbed55f80dd9ecd60858d86f681ba083176ec8b8dd06377670533252f3",
+      "size_bytes": 1698
+    },
+    {
+      "artifact_id": "m31.portable-consumption.consumers.fifo.examples.fifo.dv.test_sync_fifo.py",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/consumers/fifo/examples/fifo/dv/test_sync_fifo.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "433c70acbc0e01098687c772aa2033f647a5e18019d08ec470a52415a42d9d33",
+      "size_bytes": 2317
+    },
+    {
+      "artifact_id": "m31.portable-consumption.consumers.fifo.examples.fifo.model.py",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/consumers/fifo/examples/fifo/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "2c9e045d6e4cea6c4e155833b899a26db92284a74399bdd2747e1a50b41ae05d",
+      "size_bytes": 1696
+    },
+    {
+      "artifact_id": "m31.portable-consumption.consumers.fifo.examples.fifo.rtl.sync_fifo.sv",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/consumers/fifo/examples/fifo/rtl/sync_fifo.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "993ae9b401f7fd7677ad8b86f530d95f22e1b5e87fa210044afb479198ab1acb",
+      "size_bytes": 2608
+    },
+    {
+      "artifact_id": "m31.portable-consumption.consumers.fifo.examples.fifo.spec.md",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/consumers/fifo/examples/fifo/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "a7235fbbed55f80dd9ecd60858d86f681ba083176ec8b8dd06377670533252f3",
+      "size_bytes": 1698
+    },
+    {
+      "artifact_id": "m31.portable-consumption.consumers.fifo.openrtl-package-materialization.json",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/consumers/fifo/openrtl-package-materialization.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "aff5f38239881503df8a9dca80f7db32f6c1b2a4a312d4d370d18098442135f9",
+      "size_bytes": 1200
+    },
+    {
+      "artifact_id": "m31.portable-consumption.consumers.skid-buffer.examples.skid_buffer.dv.test_skid_buffer.py",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/consumers/skid-buffer/examples/skid_buffer/dv/test_skid_buffer.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "0e5a7a27d06047d11bfeb20296334713369485a048a4f5e9fe17ee4a2b85413c",
+      "size_bytes": 2728
+    },
+    {
+      "artifact_id": "m31.portable-consumption.consumers.skid-buffer.examples.skid_buffer.model.py",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/consumers/skid-buffer/examples/skid_buffer/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "0fe32f3d7f7e8338dab2f200f4c814a1f0f214762edf2e011f230014a955167f",
+      "size_bytes": 1914
+    },
+    {
+      "artifact_id": "m31.portable-consumption.consumers.skid-buffer.examples.skid_buffer.rtl.skid_buffer.sv",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/consumers/skid-buffer/examples/skid_buffer/rtl/skid_buffer.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "b3951aef4674d8d739427c99ca664195dbf4ff5764d9cbb394dcd727103abada",
+      "size_bytes": 1276
+    },
+    {
+      "artifact_id": "m31.portable-consumption.consumers.skid-buffer.examples.skid_buffer.spec.md",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/consumers/skid-buffer/examples/skid_buffer/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "f74b1f713c6f475b00de373fc87c010c5c0a04fe18dc29b82e8b66d88d7d2e9b",
+      "size_bytes": 637
+    },
+    {
+      "artifact_id": "m31.portable-consumption.consumers.skid-buffer.openrtl-package-materialization.json",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/consumers/skid-buffer/openrtl-package-materialization.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "6fb5b418980ecbcda0ca4cb540bb7fc6d24a63fa387349931c862718dddb17d8",
+      "size_bytes": 1210
+    },
+    {
+      "artifact_id": "m31.portable-consumption.fifo-portable-receipt.json",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/fifo-portable-receipt.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "83e7933f7463c0f5fb9ec5a295208b9e8c08a351b975f02d6617c52c89840d6a",
+      "size_bytes": 316
+    },
+    {
+      "artifact_id": "m31.portable-consumption.skid-portable-receipt.json",
+      "availability": "local",
+      "locator": "build/portable-package-consumption/m31-1847bf8/portable-consumption/skid-portable-receipt.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m31-portable-package-consumption",
+      "sha256": "6d27567ff920edd6866f11db3b221601db2fc9f2b7d7cfba7571d9f26431bc2c",
+      "size_bytes": 344
+    }
+  ],
+  "authorization_boundary": {
+    "credential_resolution": false,
+    "gui_launched": false,
+    "package_content_executed": false,
+    "provider_called": false,
+    "remote_reads": false,
+    "remote_writes": false
+  },
+  "base_commit": "67e8b286f131c506815b07f2b80f4d0c49e7a2c1",
+  "evidence_lane": "portable-package-consumption",
+  "implementation_commits": [
+    "1847bf8e3a121c7fad8263e4d0087c305bc88501"
+  ],
+  "milestone_id": "m31-portable-package-consumption",
+  "packages": {
+    "fifo": {
+      "bundle_manifest_digest": "sha256:0161644d4a277a9308805fb6ea9db6766c659c91793ad2bdf54c5fb431df5a12",
+      "materialization_receipt_digest": "sha256:aff5f38239881503df8a9dca80f7db32f6c1b2a4a312d4d370d18098442135f9",
+      "package_digest": "sha256:9557da940135c58f311f041b4db30e4a01f084cd9585cf77dd653eb1069d3d30",
+      "package_id": "community.sync.fifo",
+      "version": "1.0.0"
+    },
+    "skid": {
+      "bundle_manifest_digest": "sha256:7244753facab424afd6a2b599d0b10ba32af47f915d3b7361727efe658884603",
+      "materialization_receipt_digest": "sha256:6fb5b418980ecbcda0ca4cb540bb7fc6d24a63fa387349931c862718dddb17d8",
+      "package_digest": "sha256:1b9062a0cb92e8ff6b19cbdc364033558c95e09934cc1bfbed4cfdccd3db1d77",
+      "package_id": "community.ready-valid.skid-buffer",
+      "version": "1.0.0"
+    }
+  },
+  "retention_class": "local-self-contained-portable-package-collateral",
+  "review_state": "validated",
+  "schema": "openrtl.milestone-evidence.v1",
+  "validation_outcomes": {
+    "focused_strict_typing": "passed",
+    "full_repository_tests": "passed_136",
+    "incompatible_materialization": "rejected",
+    "missing_modified_and_symlinked_payloads": "rejected",
+    "portable_packages": 2,
+    "production_fifo_canary": "passed",
+    "production_skid_buffer": "passed",
+    "source_tree_removal_round_trip": "passed"
+  }
+}
