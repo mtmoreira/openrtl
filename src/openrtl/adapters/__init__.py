@@ -2,6 +2,7 @@
 
 from openrtl.adapters.catalog import LocalDesignCatalog
 from openrtl.adapters.portable_catalog import PortableDesignCatalog
+from openrtl.adapters.package_closure import DependencyClosedCatalog
 from openrtl.adapters.fifo_debug import MAX_DEBUG_EDGES, analyze_fifo_waveform
 from openrtl.adapters.fifo_repair import fifo_repair_focus, propose_fifo_repairs
 from openrtl.adapters.skid_buffer_debug import (
@@ -77,6 +78,7 @@ from openrtl.adapters.waveforms import SignalTransition, VcdIndex, WaveformFocus
 __all__ = [
     "LocalDesignCatalog",
     "PortableDesignCatalog",
+    "DependencyClosedCatalog",
     "MAX_DEBUG_EDGES",
     "MAX_SKID_DEBUG_EDGES",
     "LogEvent",

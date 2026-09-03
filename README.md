@@ -142,6 +142,35 @@ Materialization never executes package files or install hooks. Existing
 destinations, incompatible interfaces, stale digests, missing payloads,
 symlinks, and modified bytes are rejected before the destination appears.
 
+For a package with dependencies, pin every bundle manifest and resolve an exact
+dependency closure before materialization:
+
+```sh
+uv run openrtl lock-package-closure \
+  --catalog-root build/portable-catalog \
+  --root-package-id community.example.system \
+  --root-version 1.0.0 \
+  --bundle-pin community.example.system@1.0.0=sha256:ROOT_MANIFEST_DIGEST \
+  --bundle-pin community.sync.fifo@1.0.0=sha256:FIFO_MANIFEST_DIGEST \
+  --output build/package-closure.lock.json
+```
+
+The returned lock digest is required to consume the closure:
+
+```sh
+uv run openrtl materialize-package-closure \
+  --catalog-root build/portable-catalog \
+  --lock build/package-closure.lock.json \
+  --expected-lock-digest sha256:REVIEWED_LOCK_DIGEST \
+  --destination build/consumer/system \
+  --require-port ready:output:1 \
+  --parameter width=8
+```
+
+Resolution rejects missing or unused pins, version or digest drift, duplicate
+identities, and dependency cycles. Materialization reverifies every bundle and
+writes the complete dependency-first workspace atomically.
+
 Exact executable overrides are available when PATH selection is insufficient:
 
 ```sh

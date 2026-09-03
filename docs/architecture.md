@@ -214,3 +214,11 @@ reconstructs the typed package only after every bundled byte is reverified.
 Materialization runs deterministic compatibility analysis and atomically copies
 only source collateral into a previously absent destination; bundled evidence
 is retained for audit and is never executed.
+
+Dependency-closed consumption layers an exact lock graph over portable bundles.
+Every selected package is identified by package ID, semantic version, package
+content digest, and portable manifest digest. Resolution requires an exact pin
+set, validates every declared edge, rejects cycles and selection conflicts, and
+records a deterministic dependency-first order. Workspace materialization
+replays those checks, isolates each package beneath its ID, applies compatibility
+requirements to the root, and atomically publishes the complete local tree.

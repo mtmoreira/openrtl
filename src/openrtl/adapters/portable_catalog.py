@@ -75,12 +75,19 @@ class PortableDesignCatalog:
         source_root: Path,
         candidate: VerifiedPackageCandidate,
     ) -> PortablePackageReceipt:
+        return self.store_package(source_root, candidate.package, candidate.supporting_files)
+
+    def store_package(
+        self,
+        source_root: Path,
+        package: DesignPackage,
+        supporting_files: tuple[PackageFile, ...],
+    ) -> PortablePackageReceipt:
         resolved_source = source_root.resolve(strict=True)
-        package = candidate.package
-        if not package.publication_ready or not candidate.supporting_files:
+        if not package.publication_ready or not supporting_files:
             raise ValueError("portable catalog requires a fully verified package candidate")
-        supporting_kinds = {value.kind for value in candidate.supporting_files}
-        if supporting_kinds != _SUPPORT_KINDS or len(candidate.supporting_files) != len(_SUPPORT_KINDS):
+        supporting_kinds = {value.kind for value in supporting_files}
+        if supporting_kinds != _SUPPORT_KINDS or len(supporting_files) != len(_SUPPORT_KINDS):
             raise ValueError("portable package supporting evidence is incomplete")
         package_root = self.root / package.package_id
         if package_root.exists() and (package_root.is_symlink() or not package_root.is_dir()):
@@ -100,7 +107,7 @@ class PortableDesignCatalog:
             )
             support_records = tuple(
                 self._copy_record(resolved_source, temporary, value, "evidence")
-                for value in candidate.supporting_files
+                for value in supporting_files
             )
             payload = {
                 "content_digest": package.content_digest,

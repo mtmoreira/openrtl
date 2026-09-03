@@ -143,6 +143,11 @@ evidence attaches to the same artifact graph and requirement IDs.
   compatibility, and atomically materialize source collateral without
   executing package content. Missing, modified, symlinked, incompatible, or
   wrong-manifest states fail closed.
+- Portable packages with dependencies resolve through an exact manifest-digest
+  pin set into a canonical dependency-first lock. Missing, unused, duplicate,
+  cyclic, version-drifted, or digest-drifted selections fail closed. Locked
+  consumption reverifies every bundle and atomically materializes an isolated,
+  source-only package workspace without executing package content.
 
 ## Convergence
 

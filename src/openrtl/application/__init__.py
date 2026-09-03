@@ -99,6 +99,13 @@ from openrtl.application.package_candidates import (
     VerifiedPackageCandidate,
     VerifiedSimulationProfile,
 )
+from openrtl.application.package_closures import (
+    LockedPackage,
+    PackageBundlePin,
+    PackageClosureLock,
+    PackageClosureMaterializationReport,
+    dependency_install_order,
+)
 
 __all__ = [
     "EXPERT_DEFINITIONS",
@@ -144,6 +151,11 @@ __all__ = [
     "ScriptedFifoResult",
     "SimulationProfileFile",
     "PackageMaterializationReport",
+    "LockedPackage",
+    "PackageBundlePin",
+    "PackageClosureLock",
+    "PackageClosureMaterializationReport",
+    "dependency_install_order",
     "PortablePackage",
     "PortablePackageReceipt",
     "VerifiedPackageCandidate",

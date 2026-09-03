@@ -29,6 +29,7 @@ from agentrig.core import (
 from agentrig.integrations import CommandInput
 from agentrig.testing import ScriptedStructuredGeneration, ScriptedStructuredGenerator
 from openrtl.adapters import (
+    DependencyClosedCatalog,
     LocalDesignCatalog,
     PortableDesignCatalog,
     EnvironmentOpenAIAuthenticationSource,
@@ -66,6 +67,7 @@ from openrtl.application import (
     FIFO_RUN_REF,
     FIFO_SOURCE_REFS,
     OpenRTLWorkflow,
+    PackageBundlePin,
     CandidatePromotionApproval,
     QualifiedProviderRepairApproval,
     RepairApproval,
@@ -142,6 +144,25 @@ def parser() -> argparse.ArgumentParser:
     materialize_package.add_argument("--destination", type=Path, required=True)
     materialize_package.add_argument("--require-port", action="append", required=True)
     materialize_package.add_argument("--parameter", action="append", default=[])
+    lock_closure = subcommands.add_parser(
+        "lock-package-closure",
+        help="resolve an exact digest-pinned portable package dependency closure",
+    )
+    lock_closure.add_argument("--catalog-root", type=Path, required=True)
+    lock_closure.add_argument("--root-package-id", required=True)
+    lock_closure.add_argument("--root-version", required=True)
+    lock_closure.add_argument("--bundle-pin", action="append", required=True)
+    lock_closure.add_argument("--output", type=Path, required=True)
+    materialize_closure = subcommands.add_parser(
+        "materialize-package-closure",
+        help="verify a closure lock and atomically materialize every package",
+    )
+    materialize_closure.add_argument("--catalog-root", type=Path, required=True)
+    materialize_closure.add_argument("--lock", type=Path, required=True)
+    materialize_closure.add_argument("--expected-lock-digest", required=True)
+    materialize_closure.add_argument("--destination", type=Path, required=True)
+    materialize_closure.add_argument("--require-port", action="append", required=True)
+    materialize_closure.add_argument("--parameter", action="append", default=[])
     waveform = subcommands.add_parser(
         "waveform",
         help="inspect VCD traces and prepare an explicit Surfer focus",
@@ -577,6 +598,53 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "package_id": report.package_id,
                     "receipt": report.receipt_uri,
                     "version": report.version,
+                },
+                sort_keys=True,
+                indent=2,
+            )
+        )
+        return 0
+    if arguments.command == "lock-package-closure":
+        closure_catalog = DependencyClosedCatalog(arguments.catalog_root.resolve())
+        lock = closure_catalog.resolve(
+            arguments.root_package_id,
+            arguments.root_version,
+            tuple(_parse_bundle_pin(value) for value in arguments.bundle_pin),
+        )
+        lock_digest = closure_catalog.write_lock(lock, arguments.output.resolve())
+        print(
+            json.dumps(
+                {
+                    "install_order": lock.install_order,
+                    "lock": arguments.output.resolve().as_posix(),
+                    "lock_digest": lock_digest,
+                    "packages": [value.package_id for value in lock.packages],
+                    "root_package_id": lock.root_package_id,
+                    "root_version": lock.root_version,
+                },
+                sort_keys=True,
+                indent=2,
+            )
+        )
+        return 0
+    if arguments.command == "materialize-package-closure":
+        closure_report = DependencyClosedCatalog(arguments.catalog_root.resolve()).materialize(
+            arguments.lock.resolve(),
+            arguments.expected_lock_digest,
+            arguments.destination.resolve(),
+            tuple(_parse_required_port(value) for value in arguments.require_port),
+            tuple(_parse_parameter_value(value) for value in arguments.parameter),
+        )
+        print(
+            json.dumps(
+                {
+                    "destination": closure_report.destination,
+                    "install_order": closure_report.install_order,
+                    "lock_digest": closure_report.lock_digest,
+                    "package_receipts": closure_report.materialization_receipts,
+                    "receipt": closure_report.receipt_uri,
+                    "root_package_id": closure_report.root_package_id,
+                    "root_version": closure_report.root_version,
                 },
                 sort_keys=True,
                 indent=2,
@@ -1468,6 +1536,14 @@ def _parse_required_port(value: str) -> InterfaceRequirement:
     except ValueError as error:
         raise ValueError("required port direction or width is invalid") from error
     return InterfaceRequirement(fields[0], direction, width)
+
+
+def _parse_bundle_pin(value: str) -> PackageBundlePin:
+    identity, separator, manifest_digest = value.partition("=")
+    package_id, version_separator, version = identity.rpartition("@")
+    if not separator or not version_separator or not package_id or not version or not manifest_digest:
+        raise ValueError("bundle pin must use PACKAGE_ID@VERSION=MANIFEST_DIGEST")
+    return PackageBundlePin(package_id, version, manifest_digest)
 
 
 def _parse_parameter_value(value: str) -> tuple[str, int | bool | str]:
