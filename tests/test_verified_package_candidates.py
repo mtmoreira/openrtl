@@ -4,6 +4,7 @@ import hashlib
 import io
 import json
 from pathlib import Path
+import shutil
 import tempfile
 from typing import cast
 import unittest
@@ -11,12 +12,14 @@ from unittest.mock import patch
 
 from openrtl.adapters import (
     LocalDesignCatalog,
+    PortableDesignCatalog,
     build_verified_package_candidate,
     load_verified_simulation_evidence,
     load_verified_simulation_profile,
 )
 from openrtl.cli import main
 from openrtl.application import VerifiedPackageCandidate
+from openrtl.domain import InterfaceRequirement, PortDirection
 
 
 class VerifiedPackageCandidateTest(unittest.TestCase):
@@ -158,6 +161,122 @@ class VerifiedPackageCandidateTest(unittest.TestCase):
         self.assertEqual(report["profile_id"], "verified.skid-buffer.verilator")
         self.assertTrue(report["publication_ready"])
         self.assertTrue(Path(report["catalog_manifest"]).is_file())
+
+    def test_portable_catalog_survives_source_removal_and_materializes(self) -> None:
+        catalog_root = (self.root / "portable-catalog").resolve()
+        catalog = PortableDesignCatalog(catalog_root)
+        fifo = self._candidate("fifo", self.fifo_manifest)
+        skid = self._candidate("skid_buffer", self.skid_manifest)
+        fifo_receipt = catalog.store_candidate(self.root, fifo)
+        skid_receipt = catalog.store_candidate(self.root, skid)
+
+        shutil.rmtree(self.root / "examples")
+        shutil.rmtree(self.root / "build")
+
+        loaded_fifo = catalog.read_package(
+            fifo_receipt.package_id,
+            fifo_receipt.version,
+            fifo_receipt.manifest_digest,
+        )
+        loaded_skid = catalog.read_package(
+            skid_receipt.package_id,
+            skid_receipt.version,
+            skid_receipt.manifest_digest,
+        )
+        self.assertEqual(loaded_fifo.package.content_digest, fifo.package.content_digest)
+        self.assertEqual(loaded_skid.package.content_digest, skid.package.content_digest)
+
+        destination = (self.root / "consumer/fifo").resolve()
+        report = catalog.materialize(
+            fifo_receipt.package_id,
+            fifo_receipt.version,
+            fifo_receipt.manifest_digest,
+            destination,
+            (
+                InterfaceRequirement("clk", PortDirection.INPUT, 1),
+                InterfaceRequirement("wr_ready", PortDirection.OUTPUT, 1),
+            ),
+            (("width", 8),),
+        )
+        self.assertEqual(report.package_digest, fifo.package.content_digest)
+        self.assertTrue((destination / "examples/fifo/rtl/sync_fifo.sv").is_file())
+        self.assertTrue(Path(report.receipt_uri).is_file())
+
+    def test_portable_catalog_rejects_digest_tamper_symlink_and_incompatibility(self) -> None:
+        candidate = self._candidate("fifo", self.fifo_manifest)
+
+        digest_catalog = PortableDesignCatalog((self.root / "digest-catalog").resolve())
+        digest_receipt = digest_catalog.store_candidate(self.root, candidate)
+        with self.assertRaisesRegex(ValueError, "manifest digest mismatch"):
+            digest_catalog.read_package(candidate.package.package_id, "1.0.0", "sha256:" + "0" * 64)
+
+        tamper_catalog = PortableDesignCatalog((self.root / "tamper-catalog").resolve())
+        tamper_receipt = tamper_catalog.store_candidate(self.root, candidate)
+        tampered = self.root / "tamper-catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/rtl/sync_fifo.sv"
+        tampered.write_text("module changed; endmodule\n", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "payload digest or size mismatch"):
+            tamper_catalog.read_package(candidate.package.package_id, "1.0.0", tamper_receipt.manifest_digest)
+
+        missing_catalog = PortableDesignCatalog((self.root / "missing-catalog").resolve())
+        missing_receipt = missing_catalog.store_candidate(self.root, candidate)
+        missing = self.root / "missing-catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-results.xml"
+        missing.unlink()
+        with self.assertRaisesRegex(ValueError, "is missing"):
+            missing_catalog.read_package(candidate.package.package_id, "1.0.0", missing_receipt.manifest_digest)
+
+        symlink_catalog = PortableDesignCatalog((self.root / "symlink-catalog").resolve())
+        symlink_receipt = symlink_catalog.store_candidate(self.root, candidate)
+        linked = self.root / "symlink-catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/spec.md"
+        linked.unlink()
+        linked.symlink_to(self.root / "examples/fifo/spec.md")
+        with self.assertRaisesRegex(ValueError, "contains a symlink"):
+            symlink_catalog.read_package(candidate.package.package_id, "1.0.0", symlink_receipt.manifest_digest)
+
+        linked_root = self.root / "linked-root-catalog"
+        linked_root.mkdir()
+        (linked_root / "community.sync.fifo").symlink_to(self.root / "examples/fifo")
+        with self.assertRaisesRegex(ValueError, "non-symlink directory"):
+            PortableDesignCatalog(linked_root).store_candidate(self.root, candidate)
+
+        incompatible_catalog = PortableDesignCatalog((self.root / "incompatible-catalog").resolve())
+        incompatible_receipt = incompatible_catalog.store_candidate(self.root, candidate)
+        destination = (self.root / "consumer/incompatible").resolve()
+        with self.assertRaisesRegex(ValueError, "incompatible"):
+            incompatible_catalog.materialize(
+                candidate.package.package_id,
+                "1.0.0",
+                incompatible_receipt.manifest_digest,
+                destination,
+                (InterfaceRequirement("clk", PortDirection.OUTPUT, 1),),
+            )
+        self.assertFalse(destination.exists())
+
+    def test_portable_package_cli_round_trip(self) -> None:
+        catalog = (self.root / "cli-portable-catalog").resolve()
+        output = io.StringIO()
+        with patch("sys.stdout", output):
+            status = main((
+                "portable-package", "--root", str(self.root),
+                "--profile", "examples/skid_buffer/verified-profile.json",
+                "--manifest", self.skid_manifest.relative_to(self.root).as_posix(),
+                "--catalog-root", str(catalog),
+            ))
+        self.assertEqual(status, 0)
+        stored = json.loads(output.getvalue())
+        destination = (self.root / "consumer/skid").resolve()
+        output = io.StringIO()
+        with patch("sys.stdout", output):
+            status = main((
+                "materialize-package", "--catalog-root", str(catalog),
+                "--package-id", stored["package_id"], "--version", stored["version"],
+                "--expected-manifest-digest", stored["manifest_digest"],
+                "--destination", str(destination),
+                "--require-port", "s_ready:output:1", "--parameter", "width=8",
+            ))
+        self.assertEqual(status, 0)
+        materialized = json.loads(output.getvalue())
+        self.assertEqual(materialized["package_digest"], stored["package_digest"])
+        self.assertTrue((destination / "examples/skid_buffer/rtl/skid_buffer.sv").is_file())
 
 
 if __name__ == "__main__":

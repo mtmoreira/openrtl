@@ -136,6 +136,13 @@ evidence attaches to the same artifact graph and requirement IDs.
   requirement, result, and waveform linkage is mandatory; cross-design mixing
   fails closed. Both candidates can enter one local catalog without remote
   publication, while the published FIFO compatibility command remains intact.
+- Simulation-verified candidates can be snapshotted into self-contained local
+  bundles whose complete manifest is externally digest-bound. A consumer can
+  reload the typed package after the original build tree is gone, rehash every
+  source and evidence payload, run deterministic interface/parameter
+  compatibility, and atomically materialize source collateral without
+  executing package content. Missing, modified, symlinked, incompatible, or
+  wrong-manifest states fail closed.
 
 ## Convergence
 

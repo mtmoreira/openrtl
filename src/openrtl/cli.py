@@ -30,6 +30,7 @@ from agentrig.integrations import CommandInput
 from agentrig.testing import ScriptedStructuredGeneration, ScriptedStructuredGenerator
 from openrtl.adapters import (
     LocalDesignCatalog,
+    PortableDesignCatalog,
     EnvironmentOpenAIAuthenticationSource,
     accept_expert_source_edit_output,
     analyze_fifo_waveform,
@@ -70,7 +71,7 @@ from openrtl.application import (
     RepairApproval,
     run_scripted_fifo,
 )
-from openrtl.domain import InteractionMode
+from openrtl.domain import InterfaceRequirement, InteractionMode, PortDirection
 
 
 _CANARY_FILES = (
@@ -122,6 +123,25 @@ def parser() -> argparse.ArgumentParser:
     verified_package.add_argument("--profile", type=Path, required=True)
     verified_package.add_argument("--manifest", type=Path, required=True)
     verified_package.add_argument("--catalog-root", type=Path)
+    portable_package = subcommands.add_parser(
+        "portable-package",
+        help="store a self-contained verified package bundle",
+    )
+    portable_package.add_argument("--root", type=Path, default=Path.cwd())
+    portable_package.add_argument("--profile", type=Path, required=True)
+    portable_package.add_argument("--manifest", type=Path, required=True)
+    portable_package.add_argument("--catalog-root", type=Path, required=True)
+    materialize_package = subcommands.add_parser(
+        "materialize-package",
+        help="verify, compatibility-check, and materialize a portable package",
+    )
+    materialize_package.add_argument("--catalog-root", type=Path, required=True)
+    materialize_package.add_argument("--package-id", required=True)
+    materialize_package.add_argument("--version", required=True)
+    materialize_package.add_argument("--expected-manifest-digest", required=True)
+    materialize_package.add_argument("--destination", type=Path, required=True)
+    materialize_package.add_argument("--require-port", action="append", required=True)
+    materialize_package.add_argument("--parameter", action="append", default=[])
     waveform = subcommands.add_parser(
         "waveform",
         help="inspect VCD traces and prepare an explicit Surfer focus",
@@ -507,6 +527,56 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "publication_ready": candidate.package.publication_ready,
                     "run_id": candidate.verified_run.run.run_id,
                     "trust": candidate.package.trust.value,
+                },
+                sort_keys=True,
+                indent=2,
+            )
+        )
+        return 0
+    if arguments.command == "portable-package":
+        project_root = arguments.root.resolve()
+        profile = load_verified_simulation_profile(project_root, arguments.profile)
+        verified_run = load_verified_simulation_evidence(project_root, profile, arguments.manifest)
+        candidate = build_verified_package_candidate(project_root, profile, verified_run)
+        receipt = PortableDesignCatalog(arguments.catalog_root.resolve()).store_candidate(
+            project_root,
+            candidate,
+        )
+        print(
+            json.dumps(
+                {
+                    "manifest_digest": receipt.manifest_digest,
+                    "manifest_uri": receipt.manifest_uri,
+                    "package_digest": receipt.package_digest,
+                    "package_id": receipt.package_id,
+                    "version": receipt.version,
+                },
+                sort_keys=True,
+                indent=2,
+            )
+        )
+        return 0
+    if arguments.command == "materialize-package":
+        required_ports = tuple(_parse_required_port(value) for value in arguments.require_port)
+        parameter_values = tuple(_parse_parameter_value(value) for value in arguments.parameter)
+        report = PortableDesignCatalog(arguments.catalog_root.resolve()).materialize(
+            arguments.package_id,
+            arguments.version,
+            arguments.expected_manifest_digest,
+            arguments.destination.resolve(),
+            required_ports,
+            parameter_values,
+        )
+        print(
+            json.dumps(
+                {
+                    "bundle_manifest_digest": report.bundle_manifest_digest,
+                    "destination": report.destination,
+                    "materialized_files": report.materialized_files,
+                    "package_digest": report.package_digest,
+                    "package_id": report.package_id,
+                    "receipt": report.receipt_uri,
+                    "version": report.version,
                 },
                 sort_keys=True,
                 indent=2,
@@ -1386,6 +1456,34 @@ def _write_exact_repair_outputs(
         path.parent.mkdir(parents=True, exist_ok=True)
         if not path.exists():
             path.write_bytes(content)
+
+
+def _parse_required_port(value: str) -> InterfaceRequirement:
+    fields = value.split(":")
+    if len(fields) != 3:
+        raise ValueError("required port must use NAME:DIRECTION:WIDTH")
+    try:
+        direction = PortDirection(fields[1])
+        width = int(fields[2])
+    except ValueError as error:
+        raise ValueError("required port direction or width is invalid") from error
+    return InterfaceRequirement(fields[0], direction, width)
+
+
+def _parse_parameter_value(value: str) -> tuple[str, int | bool | str]:
+    name, separator, encoded = value.partition("=")
+    if not separator or not name or not encoded:
+        raise ValueError("parameter must use NAME=VALUE")
+    if encoded == "true":
+        parsed: int | bool | str = True
+    elif encoded == "false":
+        parsed = False
+    else:
+        try:
+            parsed = int(encoded)
+        except ValueError:
+            parsed = encoded
+    return name, parsed
 
 
 def validate_fifo_canary(root: Path) -> tuple[str, ...]:

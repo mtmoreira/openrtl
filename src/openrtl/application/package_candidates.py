@@ -10,6 +10,7 @@ from openrtl.domain import (
     ArtifactRef,
     DesignPackage,
     InterfacePort,
+    PackageFile,
     Parameter,
     VerifiedRunEvidence,
 )
@@ -61,3 +62,32 @@ class VerifiedPackageCandidate:
     package: DesignPackage
     coverage: tuple[RequirementCoverage, ...]
     catalog_manifest: str | None = None
+    supporting_files: tuple[PackageFile, ...] = ()
+
+
+@dataclass(frozen=True)
+class PortablePackageReceipt:
+    package_id: str
+    version: str
+    manifest_uri: str
+    manifest_digest: str
+    package_digest: str
+
+
+@dataclass(frozen=True)
+class PortablePackage:
+    package: DesignPackage
+    manifest_uri: str
+    manifest_digest: str
+    supporting_files: tuple[PackageFile, ...]
+
+
+@dataclass(frozen=True)
+class PackageMaterializationReport:
+    package_id: str
+    version: str
+    package_digest: str
+    bundle_manifest_digest: str
+    destination: str
+    materialized_files: tuple[str, ...]
+    receipt_uri: str

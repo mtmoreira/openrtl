@@ -204,3 +204,13 @@ waveform-transition checks before normalizing either FIFO or skid-buffer
 collateral into `VerifiedRunEvidence`. Package construction consumes only that
 normalized evidence and the exact profile. The historical `verified-canary`
 FIFO command remains a compatibility facade.
+
+A portable catalog bundle is the consumption boundary. It snapshots package
+sources and the profile, evidence manifest, log, results, and waveform selected
+by a verified candidate. Its complete manifest serializes ports, parameters,
+dependencies, evidence identifiers, original source paths, bundle paths,
+hashes, and sizes. Loading requires an externally reviewed manifest digest and
+reconstructs the typed package only after every bundled byte is reverified.
+Materialization runs deterministic compatibility analysis and atomically copies
+only source collateral into a previously absent destination; bundled evidence
+is retained for audit and is never executed.

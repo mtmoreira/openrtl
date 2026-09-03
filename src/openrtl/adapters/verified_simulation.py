@@ -221,12 +221,37 @@ def build_verified_package_candidate(
                 ("simulation-evidence", verified_run.artifact_uri, verified_run.content_digest),
             ),
         ).as_posix()
+    supporting_files = _supporting_files(resolved_root, profile, verified_run)
     return VerifiedPackageCandidate(
-        profile,
-        verified_run,
-        package,
-        build_requirement_coverage(profile.requirements, (verified_run.evidence,)),
-        catalog_manifest,
+        profile=profile,
+        verified_run=verified_run,
+        package=package,
+        coverage=build_requirement_coverage(profile.requirements, (verified_run.evidence,)),
+        catalog_manifest=catalog_manifest,
+        supporting_files=supporting_files,
+    )
+
+
+def _supporting_files(
+    root: Path,
+    profile: VerifiedSimulationProfile,
+    verified_run: VerifiedRunEvidence,
+) -> tuple[PackageFile, ...]:
+    manifest = _bounded_file(root, Path(verified_run.artifact_uri), _MAX_JSON_BYTES, "manifest")
+    payload = _json_object(manifest.content, "manifest")
+    artifacts = _object(payload.get("artifacts"), "manifest artifacts")
+    results = _verified_record(root, artifacts.get(profile.results_artifact_key), "results")
+    log = _bounded_file(root, Path(verified_run.run.log_uri), _MAX_ARTIFACT_BYTES, "log")
+    trace_uri = verified_run.run.trace_uri
+    if trace_uri is None:
+        raise ValueError("verified simulation run has no waveform")
+    waveform = _bounded_file(root, Path(trace_uri), _MAX_ARTIFACT_BYTES, "waveform")
+    return (
+        PackageFile(profile.profile_uri, "simulation-profile", profile.profile_digest),
+        PackageFile(manifest.path, "simulation-evidence", f"sha256:{manifest.sha256}"),
+        PackageFile(log.path, "simulation-log", f"sha256:{log.sha256}"),
+        PackageFile(results.path, "simulation-results", f"sha256:{results.sha256}"),
+        PackageFile(waveform.path, "simulation-waveform", f"sha256:{waveform.sha256}"),
     )
 
 

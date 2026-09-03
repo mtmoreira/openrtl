@@ -92,6 +92,9 @@ from openrtl.application.scripted import (
     run_scripted_fifo,
 )
 from openrtl.application.package_candidates import (
+    PackageMaterializationReport,
+    PortablePackage,
+    PortablePackageReceipt,
     SimulationProfileFile,
     VerifiedPackageCandidate,
     VerifiedSimulationProfile,
@@ -140,6 +143,9 @@ __all__ = [
     "SourceEditPlanningReport",
     "ScriptedFifoResult",
     "SimulationProfileFile",
+    "PackageMaterializationReport",
+    "PortablePackage",
+    "PortablePackageReceipt",
     "VerifiedPackageCandidate",
     "VerifiedSimulationProfile",
     "StageOutcome",

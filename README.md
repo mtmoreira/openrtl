@@ -113,6 +113,35 @@ Profile, source, requirement, result, or waveform mixing fails closed. Catalog
 storage is local and refuses to overwrite an existing package version; it does
 not publish anything remotely.
 
+For a catalog entry that remains consumable after the producing build tree is
+removed, store a self-contained bundle and retain the returned manifest digest:
+
+```sh
+uv run openrtl portable-package --root . \
+  --profile examples/skid_buffer/verified-profile.json \
+  --manifest build/skid-buffer-case/evidence.json \
+  --catalog-root build/portable-catalog
+```
+
+Consumption requires that digest, rehashes every bundled source and evidence
+file, reconstructs the typed package, checks the requested interface and
+parameters, then copies only package source files into a new destination:
+
+```sh
+uv run openrtl materialize-package \
+  --catalog-root build/portable-catalog \
+  --package-id community.ready-valid.skid-buffer \
+  --version 1.0.0 \
+  --expected-manifest-digest sha256:REVIEWED_MANIFEST_DIGEST \
+  --destination build/consumer/skid-buffer \
+  --require-port s_ready:output:1 \
+  --parameter width=8
+```
+
+Materialization never executes package files or install hooks. Existing
+destinations, incompatible interfaces, stale digests, missing payloads,
+symlinks, and modified bytes are rejected before the destination appears.
+
 Exact executable overrides are available when PATH selection is insufficient:
 
 ```sh
