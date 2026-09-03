@@ -1,0 +1,611 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "m33.composed-case.catalog.community.composed.fifo-skid-stream.1.0.0.manifest.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.composed.fifo-skid-stream/1.0.0/manifest.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "9b103774a459fca4ab5c9cee4fd4fd600dd6e0384900f9e23b406cc6f663d817",
+      "size_bytes": 4159
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-evidence.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "7b4cd5cbb37a91756ba424faf60fd0c21afe9da70d79c11ab112a2aa4957af6a",
+      "size_bytes": 3590
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-log.log",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-log.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "502a6759a327d855c4a3dda24924b5a435c7e4c19f3c65cd529b671286b63353",
+      "size_bytes": 12630
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-profile.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "2eec3f5ff74f65ab95f9db6519b1319cdd7865ff288b7c60d87f17a514158647",
+      "size_bytes": 584
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "0dac8c737fcda2b5e2dfd5012ed401f4184ebfbe25b6ccc823f46b926a7d2d4f",
+      "size_bytes": 481
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-waveform.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-waveform.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "740d4f80356466dcced514f91354a829cb330eb54ac8d98113509582460d4cab",
+      "size_bytes": 75254
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.composed.fifo-skid-stream.1.0.0.payload.package.examples.composed_stream.rtl.fifo_skid_stream.sv",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.composed.fifo-skid-stream/1.0.0/payload/package/examples/composed_stream/rtl/fifo_skid_stream.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "7d9d94429b4d81eb6ba08c1356e63de582fb41158b90ee57c5055fb295ed2607",
+      "size_bytes": 941
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.ready-valid.skid-buffer.1.0.0.manifest.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.ready-valid.skid-buffer/1.0.0/manifest.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "29608cbea4ea68864ced5a2a04c9055c586f097431507867616ee369f104f5f4",
+      "size_bytes": 4537
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-evidence.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "291a9da540ca31500b047998670eacec43ddb488c171d4c59da381b08edd9eed",
+      "size_bytes": 2684
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-log.log",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-log.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "1bdf5b2189334ec5a45110ce192f61de366ae124441117180b509eee1850a01a",
+      "size_bytes": 12150
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-profile.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "74d29726b3dde9b84b69c322bc2054e665f1a8b294946b631da96606578f3bcd",
+      "size_bytes": 2020
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "970ba2d6758f70adb1954cf5219965553ed2f6b79a2c59395457a11ee6ff29a9",
+      "size_bytes": 456
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-waveform.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-waveform.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "9585fae86e96586c675a710d782695448cb9483a9b5e42826c4cb4d43517ad42",
+      "size_bytes": 13186
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.dv.test_skid_buffer.py",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/dv/test_skid_buffer.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "0e5a7a27d06047d11bfeb20296334713369485a048a4f5e9fe17ee4a2b85413c",
+      "size_bytes": 2728
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.model.py",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "0fe32f3d7f7e8338dab2f200f4c814a1f0f214762edf2e011f230014a955167f",
+      "size_bytes": 1914
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.rtl.skid_buffer.sv",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/rtl/skid_buffer.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "b3951aef4674d8d739427c99ca664195dbf4ff5764d9cbb394dcd727103abada",
+      "size_bytes": 1276
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.spec.md",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "f74b1f713c6f475b00de373fc87c010c5c0a04fe18dc29b82e8b66d88d7d2e9b",
+      "size_bytes": 637
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.sync.fifo.1.0.0.manifest.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.sync.fifo/1.0.0/manifest.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "cc1592139151a80a13d12cbe8f69abbba62c74cc7e19ed785958980068ead549",
+      "size_bytes": 4412
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-evidence.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "5d09deb007e45dd481413624742b064cb500714ab3f0e4c5fb2463a02479250a",
+      "size_bytes": 1006
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-log.log",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-log.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "49a0ee7a2ff3c6bb6055c7aea8b456153489e2e72d14ad450c04c4248c8dca95",
+      "size_bytes": 83457
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-profile.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "b74f9429520e065d88bbbd793c7a682bb6188cc00ad43a4527181bd3d1acaab6",
+      "size_bytes": 1908
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "95307394f2e139451d8c8bbd7d9e30e956cc1b5d975ff79b0ad46e253f81a122",
+      "size_bytes": 429
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-waveform.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-waveform.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "5fc0e1558f732f9b8917fcf19c2d4d78f96bb22b38a7d16628daf29d9e546695",
+      "size_bytes": 44255
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.dv.test_sync_fifo.py",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/dv/test_sync_fifo.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "433c70acbc0e01098687c772aa2033f647a5e18019d08ec470a52415a42d9d33",
+      "size_bytes": 2317
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.model.py",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "2c9e045d6e4cea6c4e155833b899a26db92284a74399bdd2747e1a50b41ae05d",
+      "size_bytes": 1696
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.rtl.sync_fifo.sv",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/rtl/sync_fifo.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "993ae9b401f7fd7677ad8b86f530d95f22e1b5e87fa210044afb479198ab1acb",
+      "size_bytes": 2608
+    },
+    {
+      "artifact_id": "m33.composed-case.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.spec.md",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "a7235fbbed55f80dd9ecd60858d86f681ba083176ec8b8dd06377670533252f3",
+      "size_bytes": 1698
+    },
+    {
+      "artifact_id": "m33.composed-case.closure.lock.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/closure.lock.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "9ec6a1ca9bcf8f13bb3f703998b7e1efd647bcf686a67255858698ac4f4d4cee",
+      "size_bytes": 1671
+    },
+    {
+      "artifact_id": "m33.composed-case.composed-profile.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/composed-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "2eec3f5ff74f65ab95f9db6519b1319cdd7865ff288b7c60d87f17a514158647",
+      "size_bytes": 584
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer-run.coverage.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer-run/coverage.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "95f9b747a9eb658cab3fd9ebfee92cf4340ae3805f5957f30a9f830e054c2d53",
+      "size_bytes": 314
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer-run.report.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer-run/report.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "a4b8a284feec5e8cf172965ea199b32c746f5a9c74309b9664379500d41e07b8",
+      "size_bytes": 3944
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer-run.results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer-run/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "facdb812edf484c0a8c45580aae348a9dd66a6250aea97430518aae15a92a136",
+      "size_bytes": 482
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer-run.run.log",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer-run/run.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "b108e18c3ce205945f4d21b655e0346d8ba27ac2a9070be8c851d1eccb5b0efa",
+      "size_bytes": 12807
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer-run.waves.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer-run/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "740d4f80356466dcced514f91354a829cb330eb54ac8d98113509582460d4cab",
+      "size_bytes": 75254
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer.openrtl-package-closure.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer/openrtl-package-closure.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "9257f5a0defedc138ab563ca4c98eb43ff0568634e7e3becdde2dd8ac44861fa",
+      "size_bytes": 663
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer.packages.community.composed.fifo-skid-stream.examples.composed_stream.rtl.fifo_skid_stream.sv",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer/packages/community.composed.fifo-skid-stream/examples/composed_stream/rtl/fifo_skid_stream.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "7d9d94429b4d81eb6ba08c1356e63de582fb41158b90ee57c5055fb295ed2607",
+      "size_bytes": 941
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer.packages.community.composed.fifo-skid-stream.openrtl-package-materialization.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer/packages/community.composed.fifo-skid-stream/openrtl-package-materialization.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "a81d8814704071c10a5a760d1027365d415596cb59c6a5b7324b727648a6aa13",
+      "size_bytes": 696
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer.packages.community.ready-valid.skid-buffer.examples.skid_buffer.dv.test_skid_buffer.py",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer/packages/community.ready-valid.skid-buffer/examples/skid_buffer/dv/test_skid_buffer.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "0e5a7a27d06047d11bfeb20296334713369485a048a4f5e9fe17ee4a2b85413c",
+      "size_bytes": 2728
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer.packages.community.ready-valid.skid-buffer.examples.skid_buffer.model.py",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer/packages/community.ready-valid.skid-buffer/examples/skid_buffer/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "0fe32f3d7f7e8338dab2f200f4c814a1f0f214762edf2e011f230014a955167f",
+      "size_bytes": 1914
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer.packages.community.ready-valid.skid-buffer.examples.skid_buffer.rtl.skid_buffer.sv",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer/packages/community.ready-valid.skid-buffer/examples/skid_buffer/rtl/skid_buffer.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "b3951aef4674d8d739427c99ca664195dbf4ff5764d9cbb394dcd727103abada",
+      "size_bytes": 1276
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer.packages.community.ready-valid.skid-buffer.examples.skid_buffer.spec.md",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer/packages/community.ready-valid.skid-buffer/examples/skid_buffer/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "f74b1f713c6f475b00de373fc87c010c5c0a04fe18dc29b82e8b66d88d7d2e9b",
+      "size_bytes": 637
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer.packages.community.ready-valid.skid-buffer.openrtl-package-materialization.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer/packages/community.ready-valid.skid-buffer/openrtl-package-materialization.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "9d3bcc42461e9e287274cb0dd9710ec351ddbcf69965804ec40cd83901be439e",
+      "size_bytes": 1172
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer.packages.community.sync.fifo.examples.fifo.dv.test_sync_fifo.py",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer/packages/community.sync.fifo/examples/fifo/dv/test_sync_fifo.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "433c70acbc0e01098687c772aa2033f647a5e18019d08ec470a52415a42d9d33",
+      "size_bytes": 2317
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer.packages.community.sync.fifo.examples.fifo.model.py",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer/packages/community.sync.fifo/examples/fifo/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "2c9e045d6e4cea6c4e155833b899a26db92284a74399bdd2747e1a50b41ae05d",
+      "size_bytes": 1696
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer.packages.community.sync.fifo.examples.fifo.rtl.sync_fifo.sv",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer/packages/community.sync.fifo/examples/fifo/rtl/sync_fifo.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "993ae9b401f7fd7677ad8b86f530d95f22e1b5e87fa210044afb479198ab1acb",
+      "size_bytes": 2608
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer.packages.community.sync.fifo.examples.fifo.spec.md",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer/packages/community.sync.fifo/examples/fifo/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "a7235fbbed55f80dd9ecd60858d86f681ba083176ec8b8dd06377670533252f3",
+      "size_bytes": 1698
+    },
+    {
+      "artifact_id": "m33.composed-case.consumer.packages.community.sync.fifo.openrtl-package-materialization.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/consumer/packages/community.sync.fifo/openrtl-package-materialization.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "90e748a8b89011af2f6bad9b4c533bb9f38e7381535820939db433e83ca2c9b5",
+      "size_bytes": 1126
+    },
+    {
+      "artifact_id": "m33.composed-case.evidence.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "4a790d24c1d1a4ac0d0a29acb1300ac96605eb81b04445d0ef65e0710b14128e",
+      "size_bytes": 2545
+    },
+    {
+      "artifact_id": "m33.composed-case.producer-run.coverage.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/producer-run/coverage.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "95f9b747a9eb658cab3fd9ebfee92cf4340ae3805f5957f30a9f830e054c2d53",
+      "size_bytes": 314
+    },
+    {
+      "artifact_id": "m33.composed-case.producer-run.report.json",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/producer-run/report.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "7b4cd5cbb37a91756ba424faf60fd0c21afe9da70d79c11ab112a2aa4957af6a",
+      "size_bytes": 3590
+    },
+    {
+      "artifact_id": "m33.composed-case.producer-run.results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/producer-run/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "0dac8c737fcda2b5e2dfd5012ed401f4184ebfbe25b6ccc823f46b926a7d2d4f",
+      "size_bytes": 481
+    },
+    {
+      "artifact_id": "m33.composed-case.producer-run.run.log",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/producer-run/run.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "502a6759a327d855c4a3dda24924b5a435c7e4c19f3c65cd529b671286b63353",
+      "size_bytes": 12630
+    },
+    {
+      "artifact_id": "m33.composed-case.producer-run.waves.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/producer-run/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "740d4f80356466dcced514f91354a829cb330eb54ac8d98113509582460d4cab",
+      "size_bytes": 75254
+    },
+    {
+      "artifact_id": "m33.composed-case.trusted-harness.Makefile",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/trusted-harness/Makefile",
+      "media_type": "text/plain",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "14df05de06f2130684126203f83861b6612281960e15632b69d15fdcf3eb429d",
+      "size_bytes": 278
+    },
+    {
+      "artifact_id": "m33.composed-case.trusted-harness.test_composed_stream.py",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/composed-case/trusted-harness/test_composed_stream.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "2afc6c23311ee069d0531c2e51db397f7327d82eff8126214ae4d3fbdfce6ca3",
+      "size_bytes": 3688
+    },
+    {
+      "artifact_id": "m33.sources.docs.adr.0025-composed-package-simulation.md",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/sources/docs/adr/0025-composed-package-simulation.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "382e845425292d29bc5233d9be9b403e249257711fa655a89f279c06e2715000",
+      "size_bytes": 2158
+    },
+    {
+      "artifact_id": "m33.sources.examples.composed_stream.README.md",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/sources/examples/composed_stream/README.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "04a096f60ee3de595fd481045a3932add24de38e26e6f3d66229eb87db08a946",
+      "size_bytes": 1509
+    },
+    {
+      "artifact_id": "m33.sources.tests.test_composed_package_case.py",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/sources/tests/test_composed_package_case.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "5f005c08798837393eb342b5f7d368e29bdcc330e47f1b723ce37ce0cdb0138b",
+      "size_bytes": 5021
+    },
+    {
+      "artifact_id": "m33.sources.tools.composed_package_case.py",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/sources/tools/composed_package_case.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "7a35e13d2b413eb848194ad7d421847ce1e7459341e6a9bc3b80964950e87778",
+      "size_bytes": 17590
+    },
+    {
+      "artifact_id": "m33.validation.report",
+      "availability": "local",
+      "locator": "build/composed-package-simulation/m33-4138ece/validation.report",
+      "media_type": "text/plain",
+      "producer": "openrtl-m33-composed-package-simulation",
+      "sha256": "189c7d9d7ae871ae490c902d36556390a6ae18eff02280aed318b19ad46fa945",
+      "size_bytes": 6381
+    }
+  ],
+  "authorization_boundary": {
+    "credential_resolution": false,
+    "gui_launched": false,
+    "package_hooks_executed": false,
+    "provider_called": false,
+    "remote_reads": false,
+    "remote_writes": false,
+    "trusted_local_simulation_executed": true
+  },
+  "base_commit": "0a7cca12371a769d5f76a355cfc307fe6ac79e5d",
+  "coverage": {
+    "counts": {
+      "accepted": 284,
+      "backpressure": 131,
+      "delivered": 279,
+      "max_occupancy": 5,
+      "reset_with_data": 1,
+      "resets": 2,
+      "simultaneous": 239,
+      "stalled_output": 196
+    },
+    "drained": true,
+    "schema": "openrtl.composed-stream-coverage.v1",
+    "seed": 33,
+    "status": "passed"
+  },
+  "evidence_lane": "real-composed-package-consumption",
+  "evidence_scope": {
+    "isolation": "Exact consumer source filelist and trusted-harness-only PYTHONPATH; not an OS sandbox.",
+    "not_claimed": [
+      "parameter sweep",
+      "formal proof",
+      "public release qualification"
+    ],
+    "original_paths": "Run reports preserve original execution paths. Use milestone artifact locators for retained files.",
+    "parameters": {
+      "fifo_depth": 4,
+      "seed": 33,
+      "total_capacity": 5,
+      "width": 8
+    },
+    "reset": "The test deliberately flushes outstanding beats on reset; accepted and delivered totals span that reset.",
+    "simulation": "Real Verilator/cocotb producer and materialized dependency-closed consumer."
+  },
+  "implementation_commits": [
+    "4138ece87eea5bd69cae517c38988f9c311effae"
+  ],
+  "install_order": [
+    "community.ready-valid.skid-buffer",
+    "community.sync.fifo",
+    "community.composed.fifo-skid-stream"
+  ],
+  "lock_digest": "sha256:9ec6a1ca9bcf8f13bb3f703998b7e1efd647bcf686a67255858698ac4f4d4cee",
+  "milestone_id": "m33-composed-package-simulation",
+  "retention_class": "local-self-contained-bundles-and-simulation-collateral",
+  "review_state": "validated",
+  "schema": "openrtl.milestone-evidence.v1",
+  "validation_outcomes": {
+    "composed_producer": "passed",
+    "focused_strict_typing": "passed_2_files",
+    "focused_tests": "passed_16",
+    "full_repository_tests": "passed_146",
+    "leaf_fifo_and_skid_simulations": "passed",
+    "materialized_consumer": "passed",
+    "producer_consumer_waveforms": "byte_identical",
+    "producer_rtl_copies": "removed"
+  }
+}
