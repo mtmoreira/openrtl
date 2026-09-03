@@ -1,5 +1,11 @@
 # OpenRTL architecture
 
+The trusted `tools/composed_package_case.py` example validates a concrete
+FIFO/skid-buffer dependency closure through two real simulator runs. The second
+run consumes only verified materialized RTL. Generic package locking and
+materialization remain source-only; they never execute package hooks or tests.
+See ADR 0025 for the fixed-parameter evidence scope and isolation limits.
+
 ## Shared context is an artifact graph
 
 OpenRTL does not give a team of agents an opaque shared chat transcript. The

@@ -461,7 +461,32 @@ uv run python tools/fifo_fault_case.py \
   --output-directory build/fifo-level-fault
 ```
 
-## Architecture
+## Real dependency-composed simulation
+
+The repository-only [FIFO/skid-buffer example](examples/composed_stream/README.md)
+packages two independently verified leaves plus a simulated wrapper, locks their
+exact dependencies, and recompiles the materialized closure with a trusted
+end-to-end scoreboard. It retains producer and consumer coverage/results/VCDs;
+the original leaf RTL and published release archives are unchanged.
+
+After `python tools/validate.py --with-verilator` has produced passing leaf
+evidence, run this explicitly with an **absent** output directory:
+
+```sh
+python tools/composed_package_case.py \
+  --output-directory build/composed-package-case \
+  --fifo-evidence build/verilator-fifo-canary/evidence.json \
+  --skid-evidence build/verilator-skid-buffer-case/evidence.json \
+  --verilator-executable /absolute/path/to/verilator \
+  --make-executable /absolute/path/to/make \
+  --cocotb-config-executable /absolute/path/to/cocotb-config
+```
+
+Parameters are fixed at WIDTH=8 and DEPTH=4. Package hooks and package-supplied
+testbenches are not executed; the checked-in harness is the explicit trusted
+execution input. Consumer source-path isolation is not an OS sandbox.
+
+## Architecture references
 
 See [docs/architecture.md](docs/architecture.md) for the artifact-first context
 model and [docs/development-plan.md](docs/development-plan.md) for milestone

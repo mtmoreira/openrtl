@@ -151,6 +151,13 @@ evidence attaches to the same artifact graph and requirement IDs.
 
 ## Convergence
 
+M33 adds a fixed FIFO-to-skid-buffer composition as a real dependency-closure
+consumer. Passing leaf evidence and a fresh composed producer run precede
+packaging. A source-path-isolated consumer recompiles materialized RTL and must
+reproduce the producer scoreboard coverage after temporary producer copies are
+removed. Preserve both runs' source hashes, coverage, results, and waveforms;
+keep this distinct from M32's synthetic dependency-graph tests.
+
 Stop and escalate after three materially equivalent repair failures, two repair
 cycles without measurable evidence improvement, or a configured time/cost
 ceiling. The escalation records the failure signature, tried hypotheses,
