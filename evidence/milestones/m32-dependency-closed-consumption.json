@@ -1,0 +1,228 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "m32.fifo.canary.log",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/fifo/canary.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "be8bffac37d9c159a9fefdb1d596f04fd14f7026772b8e6ec0be28fd72984368",
+      "size_bytes": 83880
+    },
+    {
+      "artifact_id": "m32.fifo.evidence.json",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/fifo/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "b2f78ca9ce34635d53ca7632f91095af2ceffb6edad0c3c751da8581593f8ab7",
+      "size_bytes": 985
+    },
+    {
+      "artifact_id": "m32.fifo.results.xml",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/fifo/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "ac91d23dc23c88e42682571b8bcc0dba25b74febdac5eda2cf155cdb5fc79a2d",
+      "size_bytes": 431
+    },
+    {
+      "artifact_id": "m32.fifo.waves.vcd",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/fifo/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "5fc0e1558f732f9b8917fcf19c2d4d78f96bb22b38a7d16628daf29d9e546695",
+      "size_bytes": 44255
+    },
+    {
+      "artifact_id": "m32.skid.before.results.xml",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/skid/before/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "c9342b9af9f21a7d183510127071b7a152b1d5b236a0927bf783a70d0194d9bc",
+      "size_bytes": 661
+    },
+    {
+      "artifact_id": "m32.skid.before.run.log",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/skid/before/run.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "3ccb9eb8148b6501ace6f9a86bfb1f5eef013b717b4c5b216c38135216dbb8ca",
+      "size_bytes": 13663
+    },
+    {
+      "artifact_id": "m32.skid.before.waves.vcd",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/skid/before/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "6798f915f99cc69fa4996e6168926773941e8f14c3786405f698b9b8b1d28d74",
+      "size_bytes": 1471
+    },
+    {
+      "artifact_id": "m32.skid.comparison.json",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/skid/comparison.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "928bdc459958a11011987cc133bf98681471621e81e1e1e14ef40bfab6aff43d",
+      "size_bytes": 291
+    },
+    {
+      "artifact_id": "m32.skid.debug-session.json",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/skid/debug-session.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "5d56f1d47ea21a6c06ee6229ef681101c3d36739b51c9c26fe301216b63ec9a5",
+      "size_bytes": 6364
+    },
+    {
+      "artifact_id": "m32.skid.evidence.json",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/skid/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "9fc01af01a5074cd37a1f6a4c47690f7d8dbcf2d86bfb4c7483a9f29f6ce163c",
+      "size_bytes": 2684
+    },
+    {
+      "artifact_id": "m32.skid.focus-after.sucl",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/skid/focus-after.sucl",
+      "media_type": "text/plain",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "059f2f26675f0b4952986b610747f87d90a9937d8a16b4c7c49a9cb9d92ff90f",
+      "size_bytes": 591
+    },
+    {
+      "artifact_id": "m32.skid.focus-before.sucl",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/skid/focus-before.sucl",
+      "media_type": "text/plain",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "059f2f26675f0b4952986b610747f87d90a9937d8a16b4c7c49a9cb9d92ff90f",
+      "size_bytes": 591
+    },
+    {
+      "artifact_id": "m32.skid.repair-proposal.json",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/skid/repair-proposal.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "c51f16f5fb323f38c6ba7a17ed3c2bb7054183e4fc980a88be0aedb9a646c67b",
+      "size_bytes": 2917
+    },
+    {
+      "artifact_id": "m32.skid.repaired.results.xml",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/skid/repaired/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "67a745712fb49761347f02a79e8f8e3951c02cdfdaacc0b5cae429bb9ad5b900",
+      "size_bytes": 457
+    },
+    {
+      "artifact_id": "m32.skid.repaired.run.log",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/skid/repaired/run.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "f31768c9b724cf5d0d6e63a3a591926f914ead5c9b72cb939e319bfd9d70693b",
+      "size_bytes": 12583
+    },
+    {
+      "artifact_id": "m32.skid.repaired.waves.vcd",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/skid/repaired/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "9585fae86e96586c675a710d782695448cb9483a9b5e42826c4cb4d43517ad42",
+      "size_bytes": 13186
+    },
+    {
+      "artifact_id": "m32.sources.docs.adr.0024-dependency-closed-package-consumption.md",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/sources/docs/adr/0024-dependency-closed-package-consumption.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "88991794ec3cb1d9e12debc0f9f60e516891a9c38a29afeb1bae6428bff2895c",
+      "size_bytes": 1686
+    },
+    {
+      "artifact_id": "m32.sources.examples.fifo.rtl.sync_fifo.sv",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/sources/examples/fifo/rtl/sync_fifo.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "993ae9b401f7fd7677ad8b86f530d95f22e1b5e87fa210044afb479198ab1acb",
+      "size_bytes": 2608
+    },
+    {
+      "artifact_id": "m32.sources.examples.skid_buffer.rtl.skid_buffer.sv",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/sources/examples/skid_buffer/rtl/skid_buffer.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "b3951aef4674d8d739427c99ca664195dbf4ff5764d9cbb394dcd727103abada",
+      "size_bytes": 1276
+    },
+    {
+      "artifact_id": "m32.sources.tests.test_package_closures.py",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/sources/tests/test_package_closures.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "72fc5aa64bacfafd16c214f7b605aac554242035cd26ca243ce0597235ddea70",
+      "size_bytes": 9694
+    },
+    {
+      "artifact_id": "m32.validation.report",
+      "availability": "local",
+      "locator": "build/dependency-closed-consumption/m32-e6ec0af/validation.report",
+      "media_type": "text/plain",
+      "producer": "openrtl-m32-dependency-closed-consumption",
+      "sha256": "1fde3371590bb468f7931dbf8d8bdd267f2abc226431c76fddfc6f2351138112",
+      "size_bytes": 3668
+    }
+  ],
+  "authorization_boundary": {
+    "credential_resolution": false,
+    "gui_launched": false,
+    "package_content_executed": false,
+    "provider_called": false,
+    "remote_reads": false,
+    "remote_writes": false
+  },
+  "base_commit": "a851476e8d992be77b0ef139cf62d3c5b7a2eeb6",
+  "evidence_lane": "dependency-closed-package-consumption",
+  "evidence_scope": {
+    "dependency_graph": "Synthetic root/leaf fixtures test locking, CLI materialization, producer removal, and fail-closed cases.",
+    "not_claimed": [
+      "real composed dependency RTL validation",
+      "published package closure",
+      "retained lock/workspace from temporary unit-test fixtures"
+    ],
+    "simulation": "Separate existing FIFO and skid-buffer examples; not a composed dependency-closed RTL simulation.",
+    "source_simulation_paths": "Original manifests keep worktree-relative paths; use this manifest artifact locators for retained files."
+  },
+  "implementation_commits": [
+    "e6ec0af75887ebace9c7bb046356a79362010981"
+  ],
+  "milestone_id": "m32-dependency-closed-consumption",
+  "retention_class": "local-validation-and-simulation-collateral",
+  "review_state": "validated",
+  "schema": "openrtl.milestone-evidence.v1",
+  "validation_outcomes": {
+    "dependency_closure": "synthetic_unit_tests_passed",
+    "focused_strict_typing": "passed_6_files",
+    "focused_tests": "passed_14",
+    "full_repository_tests": "passed_140",
+    "production_fifo_canary": "passed",
+    "skid_buffer_fault_and_repaired_case": "passed"
+  }
+}
