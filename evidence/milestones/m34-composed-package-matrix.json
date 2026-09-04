@@ -1,0 +1,1712 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "m34.matrix..openrtl-composed-matrix-owner",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/.openrtl-composed-matrix-owner",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "a6a411dd90bc196c3049e209ba8adc5f684f75a464f3bad21b8f6b421c38a004",
+      "size_bytes": 35
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91..openrtl-composed-case-owner",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/.openrtl-composed-case-owner",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "e47d743466420a939e42f631e7230dab6563a0abecf97436c915162059277ddd",
+      "size_bytes": 33
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.composed.fifo-skid-stream.1.0.0.manifest.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.composed.fifo-skid-stream/1.0.0/manifest.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "3e1a0d9f34ac62bbcd83ebd158823b95232c544f3074be9dad84c0e87c58fb5b",
+      "size_bytes": 4410
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-evidence.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "36689aeb00d725c2a8048bf5a377e9e493d8b902ff95f4e1c1dc8a3e0dc88635",
+      "size_bytes": 3819
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-log.log",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-log.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "35bf8b228a003750f0b77a89052e94dddc2bb357e4be5c12bf5c39901e09afed",
+      "size_bytes": 13388
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-profile.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "358524028af81b5f4c36d04133414526b435a8c7d19514e32e86a76a41acee3c",
+      "size_bytes": 602
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "c209a08f5c2f58aae3b02f49f279d4d109d951aef2888f165ad2fd0319dd0cb0",
+      "size_bytes": 487
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-waveform.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-waveform.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "529aa9a54e1b672d714edd3ac22159cb263a2850b0f15d25db96beaa7a2b10a2",
+      "size_bytes": 101735
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.composed.fifo-skid-stream.1.0.0.payload.package.examples.composed_stream.rtl.fifo_skid_stream.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.composed.fifo-skid-stream/1.0.0/payload/package/examples/composed_stream/rtl/fifo_skid_stream.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "ec595139863cba157ab06ebe0b605cd2a1ddc70dc55bdc94e3b78f5cc89e7974",
+      "size_bytes": 1269
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.ready-valid.skid-buffer.1.0.0.manifest.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.ready-valid.skid-buffer/1.0.0/manifest.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "46c681f4757d03b10b7e8cffd1115d42c2a477b6dfc5b96eb97de388aee1d329",
+      "size_bytes": 4537
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-evidence.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "3f9a2b9c5b841fe74b7012eefe2d855a3a561cf983075d6e421979c1b47b14a4",
+      "size_bytes": 2684
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-log.log",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-log.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0c48d573fe25e5e0860f31f1b2e1c037e0c15a49ace31c1cbc49f3c8b6ff34a8",
+      "size_bytes": 12110
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-profile.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "74d29726b3dde9b84b69c322bc2054e665f1a8b294946b631da96606578f3bcd",
+      "size_bytes": 2020
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "a6a3734eb60ce860511f3825b5e9788ea7464418efccb2c9084ba1e17612f182",
+      "size_bytes": 451
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-waveform.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-waveform.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "9585fae86e96586c675a710d782695448cb9483a9b5e42826c4cb4d43517ad42",
+      "size_bytes": 13186
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.dv.test_skid_buffer.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/dv/test_skid_buffer.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0e5a7a27d06047d11bfeb20296334713369485a048a4f5e9fe17ee4a2b85413c",
+      "size_bytes": 2728
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.model.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0fe32f3d7f7e8338dab2f200f4c814a1f0f214762edf2e011f230014a955167f",
+      "size_bytes": 1914
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.rtl.skid_buffer.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/rtl/skid_buffer.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "b3951aef4674d8d739427c99ca664195dbf4ff5764d9cbb394dcd727103abada",
+      "size_bytes": 1276
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.spec.md",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "f74b1f713c6f475b00de373fc87c010c5c0a04fe18dc29b82e8b66d88d7d2e9b",
+      "size_bytes": 637
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.sync.fifo.1.0.0.manifest.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.sync.fifo/1.0.0/manifest.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "dea159a2a767ff9934b3b7f979b6918888b3cb8626a7ed37dd47d5331b99a844",
+      "size_bytes": 4383
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-evidence.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "b2a9ec3f777360d23febe683b39b4981e7a80a2ce190380363e5bf3d21ce8bd9",
+      "size_bytes": 985
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-log.log",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-log.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "54877a6ba73f3b88ff2205ccce5c9371a098706587d8b27b786e4f15e6c2d441",
+      "size_bytes": 83361
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-profile.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "b74f9429520e065d88bbbd793c7a682bb6188cc00ad43a4527181bd3d1acaab6",
+      "size_bytes": 1908
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "3af235605cd61a05c3db4aa9be361d0f24ff2ce8cd5e0964ad68b9e540ad9c19",
+      "size_bytes": 425
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-waveform.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-waveform.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "3472b20dd63cc6fe6cacc6b5109f33dd1c922928b78a4686f502010daf79d271",
+      "size_bytes": 44303
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.dv.test_sync_fifo.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/dv/test_sync_fifo.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "433c70acbc0e01098687c772aa2033f647a5e18019d08ec470a52415a42d9d33",
+      "size_bytes": 2317
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.model.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "2c9e045d6e4cea6c4e155833b899a26db92284a74399bdd2747e1a50b41ae05d",
+      "size_bytes": 1696
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.rtl.sync_fifo.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/rtl/sync_fifo.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "6af8ba3907f8ecd80e917c3e619cffac76ffc4666f054abae1bdd948893ebece",
+      "size_bytes": 2863
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.spec.md",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "a7235fbbed55f80dd9ecd60858d86f681ba083176ec8b8dd06377670533252f3",
+      "size_bytes": 1698
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.closure.lock.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/closure.lock.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "5f7df055f7ed23cd39b3dbd05930f64bcae6b899f2df6ea9ce621fa4d7a79ce4",
+      "size_bytes": 1671
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.composed-profile.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/composed-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "358524028af81b5f4c36d04133414526b435a8c7d19514e32e86a76a41acee3c",
+      "size_bytes": 602
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer-run.coverage.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer-run/coverage.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "a46540e25ed6ae8811e479d3a045af4c971b57a6b1c9252a6d095c93514c391b",
+      "size_bytes": 360
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer-run.report.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer-run/report.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "115f9abddb127fcc304bc820e3be913966fb828bd8b938b68e0b74289583f88c",
+      "size_bytes": 4173
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer-run.results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer-run/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "7d1aff702d54f92006fcb480a636e6286387fbf4f5ec85acf2fe8dff0c6832d3",
+      "size_bytes": 487
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer-run.run.log",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer-run/run.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "c52f5c46c1662e1c57407bca98c5ba6d066d05ea22d6bde5257bbf7bbab5f689",
+      "size_bytes": 13565
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer-run.waves.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer-run/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "529aa9a54e1b672d714edd3ac22159cb263a2850b0f15d25db96beaa7a2b10a2",
+      "size_bytes": 101735
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer.openrtl-package-closure.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer/openrtl-package-closure.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "333844e6a4688a58e4f72e88892a7baa551c43384c304bebf61e683105d6d7cb",
+      "size_bytes": 663
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer.packages.community.composed.fifo-skid-stream.examples.composed_stream.rtl.fifo_skid_stream.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer/packages/community.composed.fifo-skid-stream/examples/composed_stream/rtl/fifo_skid_stream.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "ec595139863cba157ab06ebe0b605cd2a1ddc70dc55bdc94e3b78f5cc89e7974",
+      "size_bytes": 1269
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer.packages.community.composed.fifo-skid-stream.openrtl-package-materialization.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer/packages/community.composed.fifo-skid-stream/openrtl-package-materialization.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "b08f167d8071f18d53b0a1bb42434c5229c1abbfd4925a37dc5f8aa3b5b55bab",
+      "size_bytes": 771
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer.packages.community.ready-valid.skid-buffer.examples.skid_buffer.dv.test_skid_buffer.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer/packages/community.ready-valid.skid-buffer/examples/skid_buffer/dv/test_skid_buffer.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0e5a7a27d06047d11bfeb20296334713369485a048a4f5e9fe17ee4a2b85413c",
+      "size_bytes": 2728
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer.packages.community.ready-valid.skid-buffer.examples.skid_buffer.model.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer/packages/community.ready-valid.skid-buffer/examples/skid_buffer/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0fe32f3d7f7e8338dab2f200f4c814a1f0f214762edf2e011f230014a955167f",
+      "size_bytes": 1914
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer.packages.community.ready-valid.skid-buffer.examples.skid_buffer.rtl.skid_buffer.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer/packages/community.ready-valid.skid-buffer/examples/skid_buffer/rtl/skid_buffer.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "b3951aef4674d8d739427c99ca664195dbf4ff5764d9cbb394dcd727103abada",
+      "size_bytes": 1276
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer.packages.community.ready-valid.skid-buffer.examples.skid_buffer.spec.md",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer/packages/community.ready-valid.skid-buffer/examples/skid_buffer/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "f74b1f713c6f475b00de373fc87c010c5c0a04fe18dc29b82e8b66d88d7d2e9b",
+      "size_bytes": 637
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer.packages.community.ready-valid.skid-buffer.openrtl-package-materialization.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer/packages/community.ready-valid.skid-buffer/openrtl-package-materialization.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "b60d02fc454aa3cc0996d5be8cb97ea402f490e27fbef47fc7e73c4820c8a014",
+      "size_bytes": 1172
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer.packages.community.sync.fifo.examples.fifo.dv.test_sync_fifo.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer/packages/community.sync.fifo/examples/fifo/dv/test_sync_fifo.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "433c70acbc0e01098687c772aa2033f647a5e18019d08ec470a52415a42d9d33",
+      "size_bytes": 2317
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer.packages.community.sync.fifo.examples.fifo.model.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer/packages/community.sync.fifo/examples/fifo/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "2c9e045d6e4cea6c4e155833b899a26db92284a74399bdd2747e1a50b41ae05d",
+      "size_bytes": 1696
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer.packages.community.sync.fifo.examples.fifo.rtl.sync_fifo.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer/packages/community.sync.fifo/examples/fifo/rtl/sync_fifo.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "6af8ba3907f8ecd80e917c3e619cffac76ffc4666f054abae1bdd948893ebece",
+      "size_bytes": 2863
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer.packages.community.sync.fifo.examples.fifo.spec.md",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer/packages/community.sync.fifo/examples/fifo/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "a7235fbbed55f80dd9ecd60858d86f681ba083176ec8b8dd06377670533252f3",
+      "size_bytes": 1698
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.consumer.packages.community.sync.fifo.openrtl-package-materialization.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/consumer/packages/community.sync.fifo/openrtl-package-materialization.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "53c05c439effd504c3ebe0eaccca58b0b6f866a0dd9e8b9c4cc7ea40d092973f",
+      "size_bytes": 1126
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.evidence.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "12e624eea31e19839b2981ad4122c06ce827a08988d9d8f083afd9b80f4afa8e",
+      "size_bytes": 2692
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.producer-run.coverage.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/producer-run/coverage.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "a46540e25ed6ae8811e479d3a045af4c971b57a6b1c9252a6d095c93514c391b",
+      "size_bytes": 360
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.producer-run.report.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/producer-run/report.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "36689aeb00d725c2a8048bf5a377e9e493d8b902ff95f4e1c1dc8a3e0dc88635",
+      "size_bytes": 3819
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.producer-run.results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/producer-run/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "c209a08f5c2f58aae3b02f49f279d4d109d951aef2888f165ad2fd0319dd0cb0",
+      "size_bytes": 487
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.producer-run.run.log",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/producer-run/run.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "35bf8b228a003750f0b77a89052e94dddc2bb357e4be5c12bf5c39901e09afed",
+      "size_bytes": 13388
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.producer-run.waves.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/producer-run/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "529aa9a54e1b672d714edd3ac22159cb263a2850b0f15d25db96beaa7a2b10a2",
+      "size_bytes": 101735
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.trusted-harness.Makefile",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/trusted-harness/Makefile",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "14df05de06f2130684126203f83861b6612281960e15632b69d15fdcf3eb429d",
+      "size_bytes": 278
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w16-d3-s91.trusted-harness.test_composed_stream.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w16-d3-s91/trusted-harness/test_composed_stream.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "f45a9099bc7b2d0158c9bfd2a99913f7c1d4a53a07df8779043dbfff7d3a5821",
+      "size_bytes": 4030
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7..openrtl-composed-case-owner",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/.openrtl-composed-case-owner",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "e47d743466420a939e42f631e7230dab6563a0abecf97436c915162059277ddd",
+      "size_bytes": 33
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.composed.fifo-skid-stream.1.0.0.manifest.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.composed.fifo-skid-stream/1.0.0/manifest.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "183eeb44c24c86411b281334a677e19a1c26533c145a155f76e0b7a563e58e1d",
+      "size_bytes": 4396
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-evidence.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "33ea4ab4b1da1be7ab0a0463515073595cbb46168914ed61707e5078428475db",
+      "size_bytes": 3792
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-log.log",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-log.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0531d9f9cba9f8f9d510d30cd3498d13d727d24205862dd1a44b5005640722c4",
+      "size_bytes": 13392
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-profile.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "a0d13101bc9c7f5339cf43d8a39580855b39e9d20fa85a060c59aeeb3bbcceb4",
+      "size_bytes": 600
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "ae52aa2e7dbf926fc048bbb5ffe9d2a6642bbca9a5ced07a2a06b9876c282dac",
+      "size_bytes": 484
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-waveform.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-waveform.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "fe1f32474da26089ab9664ba6d133bcd1caf31a8c3c97836876161218c143bd1",
+      "size_bytes": 62376
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.composed.fifo-skid-stream.1.0.0.payload.package.examples.composed_stream.rtl.fifo_skid_stream.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.composed.fifo-skid-stream/1.0.0/payload/package/examples/composed_stream/rtl/fifo_skid_stream.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "ec595139863cba157ab06ebe0b605cd2a1ddc70dc55bdc94e3b78f5cc89e7974",
+      "size_bytes": 1269
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.ready-valid.skid-buffer.1.0.0.manifest.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.ready-valid.skid-buffer/1.0.0/manifest.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "46c681f4757d03b10b7e8cffd1115d42c2a477b6dfc5b96eb97de388aee1d329",
+      "size_bytes": 4537
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-evidence.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "3f9a2b9c5b841fe74b7012eefe2d855a3a561cf983075d6e421979c1b47b14a4",
+      "size_bytes": 2684
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-log.log",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-log.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0c48d573fe25e5e0860f31f1b2e1c037e0c15a49ace31c1cbc49f3c8b6ff34a8",
+      "size_bytes": 12110
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-profile.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "74d29726b3dde9b84b69c322bc2054e665f1a8b294946b631da96606578f3bcd",
+      "size_bytes": 2020
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "a6a3734eb60ce860511f3825b5e9788ea7464418efccb2c9084ba1e17612f182",
+      "size_bytes": 451
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-waveform.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-waveform.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "9585fae86e96586c675a710d782695448cb9483a9b5e42826c4cb4d43517ad42",
+      "size_bytes": 13186
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.dv.test_skid_buffer.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/dv/test_skid_buffer.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0e5a7a27d06047d11bfeb20296334713369485a048a4f5e9fe17ee4a2b85413c",
+      "size_bytes": 2728
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.model.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0fe32f3d7f7e8338dab2f200f4c814a1f0f214762edf2e011f230014a955167f",
+      "size_bytes": 1914
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.rtl.skid_buffer.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/rtl/skid_buffer.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "b3951aef4674d8d739427c99ca664195dbf4ff5764d9cbb394dcd727103abada",
+      "size_bytes": 1276
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.spec.md",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "f74b1f713c6f475b00de373fc87c010c5c0a04fe18dc29b82e8b66d88d7d2e9b",
+      "size_bytes": 637
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.sync.fifo.1.0.0.manifest.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.sync.fifo/1.0.0/manifest.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "dea159a2a767ff9934b3b7f979b6918888b3cb8626a7ed37dd47d5331b99a844",
+      "size_bytes": 4383
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-evidence.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "b2a9ec3f777360d23febe683b39b4981e7a80a2ce190380363e5bf3d21ce8bd9",
+      "size_bytes": 985
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-log.log",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-log.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "54877a6ba73f3b88ff2205ccce5c9371a098706587d8b27b786e4f15e6c2d441",
+      "size_bytes": 83361
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-profile.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "b74f9429520e065d88bbbd793c7a682bb6188cc00ad43a4527181bd3d1acaab6",
+      "size_bytes": 1908
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "3af235605cd61a05c3db4aa9be361d0f24ff2ce8cd5e0964ad68b9e540ad9c19",
+      "size_bytes": 425
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-waveform.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-waveform.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "3472b20dd63cc6fe6cacc6b5109f33dd1c922928b78a4686f502010daf79d271",
+      "size_bytes": 44303
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.dv.test_sync_fifo.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/dv/test_sync_fifo.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "433c70acbc0e01098687c772aa2033f647a5e18019d08ec470a52415a42d9d33",
+      "size_bytes": 2317
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.model.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "2c9e045d6e4cea6c4e155833b899a26db92284a74399bdd2747e1a50b41ae05d",
+      "size_bytes": 1696
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.rtl.sync_fifo.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/rtl/sync_fifo.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "6af8ba3907f8ecd80e917c3e619cffac76ffc4666f054abae1bdd948893ebece",
+      "size_bytes": 2863
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.spec.md",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "a7235fbbed55f80dd9ecd60858d86f681ba083176ec8b8dd06377670533252f3",
+      "size_bytes": 1698
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.closure.lock.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/closure.lock.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "887ddb03772e68c93922ed53a36640741d82678be85b71b46494eef2f43175c4",
+      "size_bytes": 1671
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.composed-profile.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/composed-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "a0d13101bc9c7f5339cf43d8a39580855b39e9d20fa85a060c59aeeb3bbcceb4",
+      "size_bytes": 600
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer-run.coverage.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer-run/coverage.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "d604340dc3ad4cac29cf42bacda621ea2cfc87e7205ff9894bbb6892fdda327a",
+      "size_bytes": 358
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer-run.report.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer-run/report.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "18c95eadd08fa0ce057e5f4f7008cdb7d5df64398a3e4ea533f14ed7e252af64",
+      "size_bytes": 4146
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer-run.results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer-run/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "e7277345dad12ca934eb77296abaa4fc15c594bf96599c5ce4113cfc83c2915c",
+      "size_bytes": 484
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer-run.run.log",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer-run/run.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0f51a24e5473f8d2a424f2061d78d6ff91c5f4dc45573e9ad285c18b0714bb5e",
+      "size_bytes": 13569
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer-run.waves.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer-run/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "fe1f32474da26089ab9664ba6d133bcd1caf31a8c3c97836876161218c143bd1",
+      "size_bytes": 62376
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer.openrtl-package-closure.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer/openrtl-package-closure.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "02c723367a9f6e1851217322fd5feed47f55be0b55f126b55cd4dd0e3166bd71",
+      "size_bytes": 663
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer.packages.community.composed.fifo-skid-stream.examples.composed_stream.rtl.fifo_skid_stream.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer/packages/community.composed.fifo-skid-stream/examples/composed_stream/rtl/fifo_skid_stream.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "ec595139863cba157ab06ebe0b605cd2a1ddc70dc55bdc94e3b78f5cc89e7974",
+      "size_bytes": 1269
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer.packages.community.composed.fifo-skid-stream.openrtl-package-materialization.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer/packages/community.composed.fifo-skid-stream/openrtl-package-materialization.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "7f4b8e25b08ea137d4f8b67f658f3bb9e8c0e570c01dce93a1e1e7597a33b9c8",
+      "size_bytes": 770
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer.packages.community.ready-valid.skid-buffer.examples.skid_buffer.dv.test_skid_buffer.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer/packages/community.ready-valid.skid-buffer/examples/skid_buffer/dv/test_skid_buffer.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0e5a7a27d06047d11bfeb20296334713369485a048a4f5e9fe17ee4a2b85413c",
+      "size_bytes": 2728
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer.packages.community.ready-valid.skid-buffer.examples.skid_buffer.model.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer/packages/community.ready-valid.skid-buffer/examples/skid_buffer/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0fe32f3d7f7e8338dab2f200f4c814a1f0f214762edf2e011f230014a955167f",
+      "size_bytes": 1914
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer.packages.community.ready-valid.skid-buffer.examples.skid_buffer.rtl.skid_buffer.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer/packages/community.ready-valid.skid-buffer/examples/skid_buffer/rtl/skid_buffer.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "b3951aef4674d8d739427c99ca664195dbf4ff5764d9cbb394dcd727103abada",
+      "size_bytes": 1276
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer.packages.community.ready-valid.skid-buffer.examples.skid_buffer.spec.md",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer/packages/community.ready-valid.skid-buffer/examples/skid_buffer/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "f74b1f713c6f475b00de373fc87c010c5c0a04fe18dc29b82e8b66d88d7d2e9b",
+      "size_bytes": 637
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer.packages.community.ready-valid.skid-buffer.openrtl-package-materialization.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer/packages/community.ready-valid.skid-buffer/openrtl-package-materialization.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "b60d02fc454aa3cc0996d5be8cb97ea402f490e27fbef47fc7e73c4820c8a014",
+      "size_bytes": 1172
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer.packages.community.sync.fifo.examples.fifo.dv.test_sync_fifo.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer/packages/community.sync.fifo/examples/fifo/dv/test_sync_fifo.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "433c70acbc0e01098687c772aa2033f647a5e18019d08ec470a52415a42d9d33",
+      "size_bytes": 2317
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer.packages.community.sync.fifo.examples.fifo.model.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer/packages/community.sync.fifo/examples/fifo/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "2c9e045d6e4cea6c4e155833b899a26db92284a74399bdd2747e1a50b41ae05d",
+      "size_bytes": 1696
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer.packages.community.sync.fifo.examples.fifo.rtl.sync_fifo.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer/packages/community.sync.fifo/examples/fifo/rtl/sync_fifo.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "6af8ba3907f8ecd80e917c3e619cffac76ffc4666f054abae1bdd948893ebece",
+      "size_bytes": 2863
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer.packages.community.sync.fifo.examples.fifo.spec.md",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer/packages/community.sync.fifo/examples/fifo/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "a7235fbbed55f80dd9ecd60858d86f681ba083176ec8b8dd06377670533252f3",
+      "size_bytes": 1698
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.consumer.packages.community.sync.fifo.openrtl-package-materialization.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/consumer/packages/community.sync.fifo/openrtl-package-materialization.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "53c05c439effd504c3ebe0eaccca58b0b6f866a0dd9e8b9c4cc7ea40d092973f",
+      "size_bytes": 1126
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.evidence.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "eacda026683601614f0da7f128f051a27f8432da12e9b1bb1392601bbe20fdda",
+      "size_bytes": 2686
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.producer-run.coverage.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/producer-run/coverage.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "d604340dc3ad4cac29cf42bacda621ea2cfc87e7205ff9894bbb6892fdda327a",
+      "size_bytes": 358
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.producer-run.report.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/producer-run/report.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "33ea4ab4b1da1be7ab0a0463515073595cbb46168914ed61707e5078428475db",
+      "size_bytes": 3792
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.producer-run.results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/producer-run/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "ae52aa2e7dbf926fc048bbb5ffe9d2a6642bbca9a5ced07a2a06b9876c282dac",
+      "size_bytes": 484
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.producer-run.run.log",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/producer-run/run.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0531d9f9cba9f8f9d510d30cd3498d13d727d24205862dd1a44b5005640722c4",
+      "size_bytes": 13392
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.producer-run.waves.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/producer-run/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "fe1f32474da26089ab9664ba6d133bcd1caf31a8c3c97836876161218c143bd1",
+      "size_bytes": 62376
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.trusted-harness.Makefile",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/trusted-harness/Makefile",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "14df05de06f2130684126203f83861b6612281960e15632b69d15fdcf3eb429d",
+      "size_bytes": 278
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w4-d2-s7.trusted-harness.test_composed_stream.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w4-d2-s7/trusted-harness/test_composed_stream.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "f45a9099bc7b2d0158c9bfd2a99913f7c1d4a53a07df8779043dbfff7d3a5821",
+      "size_bytes": 4030
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33..openrtl-composed-case-owner",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/.openrtl-composed-case-owner",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "e47d743466420a939e42f631e7230dab6563a0abecf97436c915162059277ddd",
+      "size_bytes": 33
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.composed.fifo-skid-stream.1.0.0.manifest.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.composed.fifo-skid-stream/1.0.0/manifest.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "af3e3f7c60fe15e8d15b181ded29773ba34bc241ad2879932c4c968657d9fffb",
+      "size_bytes": 4401
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-evidence.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "09f36c4cc7a801fce1a2d552ffe97add3dea989c515aacdcb4b98e464a1ecc78",
+      "size_bytes": 3805
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-log.log",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-log.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "4ec567afe5946c89e7269f5e4a4d11423840fb93e9367b04ec053e91c4ef1a84",
+      "size_bytes": 13375
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-profile.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "54237a32d9f0f9e01b544b5fd14b288b6f85b0dcbee6ca7e49996690866baf89",
+      "size_bytes": 601
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "874e44e24fe9f2b579e4ddba46de4159113fc2f326ce7e5e7cc3abdc626a7b23",
+      "size_bytes": 485
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.composed.fifo-skid-stream.1.0.0.payload.evidence.simulation-waveform.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.composed.fifo-skid-stream/1.0.0/payload/evidence/simulation-waveform.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "e805b2c7641428950e3f6fe73386ea4ac7752578913f1e49114073ec48f453f4",
+      "size_bytes": 75410
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.composed.fifo-skid-stream.1.0.0.payload.package.examples.composed_stream.rtl.fifo_skid_stream.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.composed.fifo-skid-stream/1.0.0/payload/package/examples/composed_stream/rtl/fifo_skid_stream.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "ec595139863cba157ab06ebe0b605cd2a1ddc70dc55bdc94e3b78f5cc89e7974",
+      "size_bytes": 1269
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.ready-valid.skid-buffer.1.0.0.manifest.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.ready-valid.skid-buffer/1.0.0/manifest.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "46c681f4757d03b10b7e8cffd1115d42c2a477b6dfc5b96eb97de388aee1d329",
+      "size_bytes": 4537
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-evidence.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "3f9a2b9c5b841fe74b7012eefe2d855a3a561cf983075d6e421979c1b47b14a4",
+      "size_bytes": 2684
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-log.log",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-log.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0c48d573fe25e5e0860f31f1b2e1c037e0c15a49ace31c1cbc49f3c8b6ff34a8",
+      "size_bytes": 12110
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-profile.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "74d29726b3dde9b84b69c322bc2054e665f1a8b294946b631da96606578f3bcd",
+      "size_bytes": 2020
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "a6a3734eb60ce860511f3825b5e9788ea7464418efccb2c9084ba1e17612f182",
+      "size_bytes": 451
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.ready-valid.skid-buffer.1.0.0.payload.evidence.simulation-waveform.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.ready-valid.skid-buffer/1.0.0/payload/evidence/simulation-waveform.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "9585fae86e96586c675a710d782695448cb9483a9b5e42826c4cb4d43517ad42",
+      "size_bytes": 13186
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.dv.test_skid_buffer.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/dv/test_skid_buffer.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0e5a7a27d06047d11bfeb20296334713369485a048a4f5e9fe17ee4a2b85413c",
+      "size_bytes": 2728
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.model.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0fe32f3d7f7e8338dab2f200f4c814a1f0f214762edf2e011f230014a955167f",
+      "size_bytes": 1914
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.rtl.skid_buffer.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/rtl/skid_buffer.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "b3951aef4674d8d739427c99ca664195dbf4ff5764d9cbb394dcd727103abada",
+      "size_bytes": 1276
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.ready-valid.skid-buffer.1.0.0.payload.package.examples.skid_buffer.spec.md",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.ready-valid.skid-buffer/1.0.0/payload/package/examples/skid_buffer/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "f74b1f713c6f475b00de373fc87c010c5c0a04fe18dc29b82e8b66d88d7d2e9b",
+      "size_bytes": 637
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.sync.fifo.1.0.0.manifest.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.sync.fifo/1.0.0/manifest.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "dea159a2a767ff9934b3b7f979b6918888b3cb8626a7ed37dd47d5331b99a844",
+      "size_bytes": 4383
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-evidence.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "b2a9ec3f777360d23febe683b39b4981e7a80a2ce190380363e5bf3d21ce8bd9",
+      "size_bytes": 985
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-log.log",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-log.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "54877a6ba73f3b88ff2205ccce5c9371a098706587d8b27b786e4f15e6c2d441",
+      "size_bytes": 83361
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-profile.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "b74f9429520e065d88bbbd793c7a682bb6188cc00ad43a4527181bd3d1acaab6",
+      "size_bytes": 1908
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "3af235605cd61a05c3db4aa9be361d0f24ff2ce8cd5e0964ad68b9e540ad9c19",
+      "size_bytes": 425
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.sync.fifo.1.0.0.payload.evidence.simulation-waveform.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.sync.fifo/1.0.0/payload/evidence/simulation-waveform.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "3472b20dd63cc6fe6cacc6b5109f33dd1c922928b78a4686f502010daf79d271",
+      "size_bytes": 44303
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.dv.test_sync_fifo.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/dv/test_sync_fifo.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "433c70acbc0e01098687c772aa2033f647a5e18019d08ec470a52415a42d9d33",
+      "size_bytes": 2317
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.model.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "2c9e045d6e4cea6c4e155833b899a26db92284a74399bdd2747e1a50b41ae05d",
+      "size_bytes": 1696
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.rtl.sync_fifo.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/rtl/sync_fifo.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "6af8ba3907f8ecd80e917c3e619cffac76ffc4666f054abae1bdd948893ebece",
+      "size_bytes": 2863
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.catalog.community.sync.fifo.1.0.0.payload.package.examples.fifo.spec.md",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/catalog/community.sync.fifo/1.0.0/payload/package/examples/fifo/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "a7235fbbed55f80dd9ecd60858d86f681ba083176ec8b8dd06377670533252f3",
+      "size_bytes": 1698
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.closure.lock.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/closure.lock.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "7eddb0bfcac60242a5c56e54b02a8162d597d8ec5d727c39cc6d0ec86840406f",
+      "size_bytes": 1671
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.composed-profile.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/composed-profile.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "54237a32d9f0f9e01b544b5fd14b288b6f85b0dcbee6ca7e49996690866baf89",
+      "size_bytes": 601
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer-run.coverage.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer-run/coverage.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "086ec6d2a1536a346b1ea72a8ac426924e8f596e952d148e26cfb226e402ff6c",
+      "size_bytes": 359
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer-run.report.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer-run/report.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "9b0cc7f8a21611cbe620eee82eec49482c630bba2b7b662157e8fc3d01ac571d",
+      "size_bytes": 4159
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer-run.results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer-run/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "8b784a081599931e042023542a2427045ba3c5b664af907441a27173f0fb2464",
+      "size_bytes": 486
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer-run.run.log",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer-run/run.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "aac76652a6de477c5acd595026b0163afbbf89027f80a49fc05d426fada305ee",
+      "size_bytes": 13552
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer-run.waves.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer-run/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "e805b2c7641428950e3f6fe73386ea4ac7752578913f1e49114073ec48f453f4",
+      "size_bytes": 75410
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer.openrtl-package-closure.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer/openrtl-package-closure.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "833296056b69b764cba4aacc24f86efbfcdd800e1032b69608416311aa2059d7",
+      "size_bytes": 663
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer.packages.community.composed.fifo-skid-stream.examples.composed_stream.rtl.fifo_skid_stream.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer/packages/community.composed.fifo-skid-stream/examples/composed_stream/rtl/fifo_skid_stream.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "ec595139863cba157ab06ebe0b605cd2a1ddc70dc55bdc94e3b78f5cc89e7974",
+      "size_bytes": 1269
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer.packages.community.composed.fifo-skid-stream.openrtl-package-materialization.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer/packages/community.composed.fifo-skid-stream/openrtl-package-materialization.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "aa48b13ee6029b62b5722e9ad95e068b27e6e573e328d4dfa900c7ebc390b253",
+      "size_bytes": 770
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer.packages.community.ready-valid.skid-buffer.examples.skid_buffer.dv.test_skid_buffer.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer/packages/community.ready-valid.skid-buffer/examples/skid_buffer/dv/test_skid_buffer.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0e5a7a27d06047d11bfeb20296334713369485a048a4f5e9fe17ee4a2b85413c",
+      "size_bytes": 2728
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer.packages.community.ready-valid.skid-buffer.examples.skid_buffer.model.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer/packages/community.ready-valid.skid-buffer/examples/skid_buffer/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "0fe32f3d7f7e8338dab2f200f4c814a1f0f214762edf2e011f230014a955167f",
+      "size_bytes": 1914
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer.packages.community.ready-valid.skid-buffer.examples.skid_buffer.rtl.skid_buffer.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer/packages/community.ready-valid.skid-buffer/examples/skid_buffer/rtl/skid_buffer.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "b3951aef4674d8d739427c99ca664195dbf4ff5764d9cbb394dcd727103abada",
+      "size_bytes": 1276
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer.packages.community.ready-valid.skid-buffer.examples.skid_buffer.spec.md",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer/packages/community.ready-valid.skid-buffer/examples/skid_buffer/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "f74b1f713c6f475b00de373fc87c010c5c0a04fe18dc29b82e8b66d88d7d2e9b",
+      "size_bytes": 637
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer.packages.community.ready-valid.skid-buffer.openrtl-package-materialization.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer/packages/community.ready-valid.skid-buffer/openrtl-package-materialization.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "b60d02fc454aa3cc0996d5be8cb97ea402f490e27fbef47fc7e73c4820c8a014",
+      "size_bytes": 1172
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer.packages.community.sync.fifo.examples.fifo.dv.test_sync_fifo.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer/packages/community.sync.fifo/examples/fifo/dv/test_sync_fifo.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "433c70acbc0e01098687c772aa2033f647a5e18019d08ec470a52415a42d9d33",
+      "size_bytes": 2317
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer.packages.community.sync.fifo.examples.fifo.model.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer/packages/community.sync.fifo/examples/fifo/model.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "2c9e045d6e4cea6c4e155833b899a26db92284a74399bdd2747e1a50b41ae05d",
+      "size_bytes": 1696
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer.packages.community.sync.fifo.examples.fifo.rtl.sync_fifo.sv",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer/packages/community.sync.fifo/examples/fifo/rtl/sync_fifo.sv",
+      "media_type": "text/x-systemverilog",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "6af8ba3907f8ecd80e917c3e619cffac76ffc4666f054abae1bdd948893ebece",
+      "size_bytes": 2863
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer.packages.community.sync.fifo.examples.fifo.spec.md",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer/packages/community.sync.fifo/examples/fifo/spec.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "a7235fbbed55f80dd9ecd60858d86f681ba083176ec8b8dd06377670533252f3",
+      "size_bytes": 1698
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.consumer.packages.community.sync.fifo.openrtl-package-materialization.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/consumer/packages/community.sync.fifo/openrtl-package-materialization.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "53c05c439effd504c3ebe0eaccca58b0b6f866a0dd9e8b9c4cc7ea40d092973f",
+      "size_bytes": 1126
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.evidence.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "446e1c47896c3fa918e0008e30ff8ef13420fc3d820083f8048a677ccb1801c8",
+      "size_bytes": 2688
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.producer-run.coverage.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/producer-run/coverage.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "086ec6d2a1536a346b1ea72a8ac426924e8f596e952d148e26cfb226e402ff6c",
+      "size_bytes": 359
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.producer-run.report.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/producer-run/report.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "09f36c4cc7a801fce1a2d552ffe97add3dea989c515aacdcb4b98e464a1ecc78",
+      "size_bytes": 3805
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.producer-run.results.xml",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/producer-run/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "874e44e24fe9f2b579e4ddba46de4159113fc2f326ce7e5e7cc3abdc626a7b23",
+      "size_bytes": 485
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.producer-run.run.log",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/producer-run/run.log",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "4ec567afe5946c89e7269f5e4a4d11423840fb93e9367b04ec053e91c4ef1a84",
+      "size_bytes": 13375
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.producer-run.waves.vcd",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/producer-run/waves.vcd",
+      "media_type": "application/vnd.vcd",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "e805b2c7641428950e3f6fe73386ea4ac7752578913f1e49114073ec48f453f4",
+      "size_bytes": 75410
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.trusted-harness.Makefile",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/trusted-harness/Makefile",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "14df05de06f2130684126203f83861b6612281960e15632b69d15fdcf3eb429d",
+      "size_bytes": 278
+    },
+    {
+      "artifact_id": "m34.matrix.cases.w8-d4-s33.trusted-harness.test_composed_stream.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/cases/w8-d4-s33/trusted-harness/test_composed_stream.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "f45a9099bc7b2d0158c9bfd2a99913f7c1d4a53a07df8779043dbfff7d3a5821",
+      "size_bytes": 4030
+    },
+    {
+      "artifact_id": "m34.matrix.matrix-evidence.json",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/matrix/matrix-evidence.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "88d79846c1ae46555a4d2c899fe7c91bd1703bee5527d35a6a6dfa8b3942d53c",
+      "size_bytes": 4465
+    },
+    {
+      "artifact_id": "m34.sources..github.workflows.composed-package-matrix.yml",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/sources/.github/workflows/composed-package-matrix.yml",
+      "media_type": "application/yaml",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "4ad0702fc8535658ef6238f5fdf10a3b5a2027b8a413f06f6e1c0f26ba264b10",
+      "size_bytes": 2071
+    },
+    {
+      "artifact_id": "m34.sources.docs.adr.0026-composed-package-matrix.md",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/sources/docs/adr/0026-composed-package-matrix.md",
+      "media_type": "text/markdown",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "85f51ec1327f5ac89e750ebae6401fda4300235d04ddcb75d717732094ab3085",
+      "size_bytes": 1518
+    },
+    {
+      "artifact_id": "m34.sources.tests.test_composed_package_matrix.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/sources/tests/test_composed_package_matrix.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "5dff8e533b03ae531b6dc0f73ade718a4481e4a744db2442c45edc9868834f52",
+      "size_bytes": 4322
+    },
+    {
+      "artifact_id": "m34.sources.tools.composed_package_case.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/sources/tools/composed_package_case.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "a2b82b15cc0f44b8d2ec63395c6d1b415d4f0341a80c062df98da0c0dc8ec521",
+      "size_bytes": 19470
+    },
+    {
+      "artifact_id": "m34.sources.tools.composed_package_matrix.py",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/sources/tools/composed_package_matrix.py",
+      "media_type": "text/x-python",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "6de42a797fb013b81c2706a27b85e10e43593ed7eb3e599e0bca3d7ebcf7f39f",
+      "size_bytes": 6382
+    },
+    {
+      "artifact_id": "m34.validation.report",
+      "availability": "local",
+      "locator": "build/composed-package-matrix/m34-e9a9415/validation.report",
+      "media_type": "text/plain",
+      "producer": "openrtl-m34-composed-package-matrix",
+      "sha256": "bafb6be123a70767881bb70ee3cfe96f49ff432a8c75bff4681747f391fab041",
+      "size_bytes": 6491
+    }
+  ],
+  "authorization_boundary": {
+    "credential_resolution": false,
+    "gui_launched": false,
+    "package_hooks_executed": false,
+    "provider_called": false,
+    "remote_reads": false,
+    "remote_writes": false,
+    "trusted_local_simulation_executed": true
+  },
+  "base_commit": "84fbfaaa6aa401ae91b897fdbf9e9d9fcd93e8f2",
+  "cases": [
+    {
+      "case_id": "w16-d3-s91",
+      "configuration": {
+        "capacity": 4,
+        "depth": 3,
+        "seed": 91,
+        "width": 16
+      },
+      "coverage_counts": {
+        "accepted": 282,
+        "backpressure": 122,
+        "delivered": 278,
+        "max_occupancy": 4,
+        "reset_with_data": 1,
+        "resets": 2,
+        "simultaneous": 235,
+        "stalled_output": 195
+      },
+      "lock_digest": "sha256:5f7df055f7ed23cd39b3dbd05930f64bcae6b899f2df6ea9ce621fa4d7a79ce4",
+      "waveform_sha256": "529aa9a54e1b672d714edd3ac22159cb263a2850b0f15d25db96beaa7a2b10a2"
+    },
+    {
+      "case_id": "w4-d2-s7",
+      "configuration": {
+        "capacity": 3,
+        "depth": 2,
+        "seed": 7,
+        "width": 4
+      },
+      "coverage_counts": {
+        "accepted": 302,
+        "backpressure": 106,
+        "delivered": 299,
+        "max_occupancy": 3,
+        "reset_with_data": 1,
+        "resets": 2,
+        "simultaneous": 272,
+        "stalled_output": 173
+      },
+      "lock_digest": "sha256:887ddb03772e68c93922ed53a36640741d82678be85b71b46494eef2f43175c4",
+      "waveform_sha256": "fe1f32474da26089ab9664ba6d133bcd1caf31a8c3c97836876161218c143bd1"
+    },
+    {
+      "case_id": "w8-d4-s33",
+      "configuration": {
+        "capacity": 5,
+        "depth": 4,
+        "seed": 33,
+        "width": 8
+      },
+      "coverage_counts": {
+        "accepted": 284,
+        "backpressure": 131,
+        "delivered": 279,
+        "max_occupancy": 5,
+        "reset_with_data": 1,
+        "resets": 2,
+        "simultaneous": 239,
+        "stalled_output": 196
+      },
+      "lock_digest": "sha256:7eddb0bfcac60242a5c56e54b02a8162d597d8ec5d727c39cc6d0ec86840406f",
+      "waveform_sha256": "e805b2c7641428950e3f6fe73386ea4ac7752578913f1e49114073ec48f453f4"
+    }
+  ],
+  "evidence_lane": "parameterized-composed-package-matrix",
+  "evidence_scope": {
+    "configurations": [
+      {
+        "capacity": 3,
+        "depth": 2,
+        "seed": 7,
+        "width": 4
+      },
+      {
+        "capacity": 5,
+        "depth": 4,
+        "seed": 33,
+        "width": 8
+      },
+      {
+        "capacity": 4,
+        "depth": 3,
+        "seed": 91,
+        "width": 16
+      }
+    ],
+    "excluded": "Simulator build products are intentionally not retained.",
+    "isolation": "Exact source filelists and trusted-harness-only PYTHONPATH; not an OS sandbox.",
+    "not_claimed": [
+      "formal proof",
+      "exhaustive parameter coverage",
+      "public CI result"
+    ],
+    "simulation": "Real Verilator/cocotb producer and dependency-closed consumer for each configuration."
+  },
+  "implementation_commits": [
+    "e9a9415fbebca4db4887e57fe20f1a66ff5657d9"
+  ],
+  "matrix_evidence_digest": "sha256:88d79846c1ae46555a4d2c899fe7c91bd1703bee5527d35a6a6dfa8b3942d53c",
+  "milestone_id": "m34-composed-package-matrix",
+  "retention_class": "local-self-contained-matrix-without-simulation-build-products",
+  "review_state": "validated",
+  "schema": "openrtl.milestone-evidence.v1",
+  "validation_outcomes": {
+    "composed_producer_simulations": "passed_3",
+    "exact_capacity_reached": "passed_3",
+    "focused_strict_typing": "passed_4_files",
+    "focused_tests": "passed_10",
+    "full_repository_tests": "passed_150",
+    "leaf_simulations": "passed_2",
+    "materialized_consumer_simulations": "passed_3",
+    "non_power_of_two_depth": "passed_depth_3"
+  }
+}
