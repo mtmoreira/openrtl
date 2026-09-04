@@ -40,7 +40,21 @@ jobs:
       - name: Install simulation toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install --yes make verilator
+          sudo apt-get install --yes \
+            autoconf bison build-essential curl flex help2man libfl-dev make perl-doc zlib1g-dev
+          VERILATOR_ARCHIVE=/tmp/verilator-v5.036.tar.gz
+          curl --fail --location --silent --show-error \
+            --output "$VERILATOR_ARCHIVE" \
+            https://github.com/verilator/verilator/archive/refs/tags/v5.036.tar.gz
+          echo "4199964882d56cf6a19ce80c6a297ebe3b0c35ea81106cd4f722342594337c47  $VERILATOR_ARCHIVE" \
+            | sha256sum --check
+          tar --directory /tmp --extract --gzip --file "$VERILATOR_ARCHIVE"
+          cd /tmp/verilator-5.036
+          autoconf
+          ./configure --prefix=/usr/local
+          make -j2
+          sudo make install
+          /usr/local/bin/verilator --version | grep --fixed-strings 'Verilator 5.036'
       - name: Validate composed package matrix
         working-directory: openrtl
         run: |
@@ -51,12 +65,13 @@ jobs:
           uv run python tools/validate.py \
             --with-verilator \
             --verilator-output build/m34-ci/fifo \
+            --verilator-executable /usr/local/bin/verilator \
             --verilator-timeout-seconds 180
           uv run python tools/composed_package_matrix.py \
             --output-directory build/m34-ci/matrix \
             --fifo-evidence build/m34-ci/fifo/evidence.json \
             --skid-evidence build/verilator-skid-buffer-case/evidence.json \
-            --verilator-executable /usr/bin/verilator \
+            --verilator-executable /usr/local/bin/verilator \
             --make-executable /usr/bin/make \
             --cocotb-config-executable "${{ github.workspace }}/openrtl/.venv/bin/cocotb-config" \
             --timeout-seconds 180

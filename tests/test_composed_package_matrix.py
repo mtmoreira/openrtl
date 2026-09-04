@@ -12,6 +12,14 @@ from tools.verilator_canary import VerilatorToolchain
 
 
 class ComposedPackageMatrixTest(unittest.TestCase):
+    def test_ci_uses_hash_verified_supported_verilator(self) -> None:
+        workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/composed-package-matrix.yml").read_text()
+        self.assertIn("https://github.com/verilator/verilator/archive/refs/tags/v5.036.tar.gz", workflow)
+        self.assertIn("4199964882d56cf6a19ce80c6a297ebe3b0c35ea81106cd4f722342594337c47", workflow)
+        self.assertIn("/usr/local/bin/verilator --version", workflow)
+        self.assertIn("--verilator-executable /usr/local/bin/verilator", workflow)
+        self.assertNotIn("apt-get install --yes make verilator", workflow)
+
     def test_reviewed_matrix_varies_width_depth_seed_and_non_power_of_two(self) -> None:
         validate_matrix(MATRIX)
         self.assertEqual([value.case_id for value in MATRIX], ["w4-d2-s7", "w8-d4-s33", "w16-d3-s91"])
