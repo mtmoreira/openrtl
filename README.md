@@ -48,6 +48,14 @@ It does not invoke a provider or modify either repository.
 
 ## V1 toolchain
 
+The working tree is preparing 0.4.0 with the skid-buffer and composed package
+examples. Installed candidate acceptance runs the extracted examples with the
+wheel: `python tools/verify_release_install.py --examples-root .
+--expected-version 0.4.0 --expected-agentrig-version 0.3.0 --with-verilator`
+(enter the command on one line). It retains FIFO repair, skid-buffer diagnosis,
+and the three-case composed matrix under `build/` in the extracted archive.
+See [the candidate contract](docs/releases.md) for qualification requirements.
+
 - SystemVerilog
 - Verilator
 - cocotb 2.0.1

@@ -1,5 +1,19 @@
 # OpenRTL release contract
 
+## Preparing OpenRTL 0.4.0
+
+The local 0.4.0 candidate retains AgentRig 0.3.0 and adds runnable skid-buffer
+and composed FIFO/skid-buffer examples to the companion archive. Qualification
+must install the wheel in isolation, then run both reference models, FIFO repair,
+skid-buffer refill diagnosis, fresh passing leaf simulations, and all three
+composed producer/consumer cases. Each case must reach its configured capacity
+and produce identical producer and consumer waveforms. The extracted archive
+retains `build/release-v040/acceptance.json`, matrix evidence, coverage, logs,
+results and waveforms for inspection.
+
+This candidate is not yet a published release. The historical public acceptance
+lanes below continue to verify their original immutable assets.
+
 ## Current release: OpenRTL 0.3.0
 
 OpenRTL 0.3.0 is the current published release of the simulation-first,

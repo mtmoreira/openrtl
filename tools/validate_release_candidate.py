@@ -25,8 +25,9 @@ PUBLIC_AGENTRIG_VERSION = "0.3.0"
 def validate_candidate_metadata(root: Path, manifest: ReleaseManifest) -> None:
     with (root / "pyproject.toml").open("rb") as source:
         project = tomllib.load(source).get("project")
-    if not isinstance(project, dict) or manifest.version != "0.3.0":
-        raise ReleaseValidationError("candidate must be OpenRTL 0.3.0")
+    if (not isinstance(project, dict) or manifest.version not in {"0.3.0", "0.4.0"}
+            or project.get("version") != manifest.version):
+        raise ReleaseValidationError("candidate version must match OpenRTL 0.3.0 or 0.4.0 metadata")
     dependencies = project.get("dependencies")
     if not isinstance(dependencies, list) or dependencies != ["agentrig==0.3.0"]:
         raise ReleaseValidationError("candidate must pin exactly agentrig==0.3.0")
@@ -151,6 +152,11 @@ def qualify_candidate(
     if with_verilator and (not isinstance(visual, dict) or visual.get("status") != "visibly_distinct"):
         raise ReleaseValidationError("candidate lacks visibly distinct repair waveform evidence")
     output = output_directory / "qualification.json"
+    extended = extracted / "build/release-v040/acceptance.json"
+    if manifest.version == "0.4.0" and with_verilator:
+        extended_report = json.loads(extended.read_text(encoding="utf-8"))
+        if extended_report.get("status") != "passed" or extended_report.get("case_count") != 3:
+            raise ReleaseValidationError("candidate lacks complete installed 0.4 example evidence")
     document = {
         "agentrig": {
             "commit": PUBLIC_AGENTRIG_COMMIT,
@@ -166,6 +172,10 @@ def qualify_candidate(
         "tag_created": False,
         "version": manifest.version,
         "verilator_repair": "visibly_distinct" if with_verilator else "not_selected",
+        "extended_examples_sha256": (
+            hashlib.sha256(extended.read_bytes()).hexdigest()
+            if manifest.version == "0.4.0" and with_verilator else None
+        ),
     }
     output.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return output

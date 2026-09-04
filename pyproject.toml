@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "openrtl"
-version = "0.3.0"
+version = "0.4.0"
 description = "Evidence-driven multi-agent RTL design and verification"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -44,6 +44,7 @@ source-include = [
   "tools/composed_package_matrix.py",
   "tools/verilator_canary.py",
   "tools/verify_release_install.py",
+  "tools/verify_release_examples_v040.py",
 ]
 source-exclude = ["**/AGENTS.md"]
 wheel-exclude = ["**/AGENTS.md"]

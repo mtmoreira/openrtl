@@ -20,6 +20,11 @@ evidence attaches to the same artifact graph and requirement IDs.
 
 ## V1 completion gate
 
+M35 packages the completed post-0.3 examples into a local OpenRTL 0.4.0 release
+candidate. Its installed-wheel acceptance includes FIFO, skid buffer, portable
+package closure, and the three-case composed matrix. Release publication follows
+qualification; new feature work waits for user feedback on that release.
+
 - Provider-free unit and integration lanes pass.
 - Strict static typing passes when the development environment is available.
 - The package imports without simulation or provider extras.

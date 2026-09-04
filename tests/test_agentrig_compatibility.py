@@ -37,12 +37,12 @@ class AgentRigCompatibilityTest(unittest.TestCase):
             locked = tomllib.load(source)["package"]
         packages = {item["name"]: item for item in locked}
 
-        self.assertEqual(openrtl.__version__, "0.3.0")
-        self.assertEqual(version("openrtl"), "0.3.0")
+        self.assertEqual(openrtl.__version__, "0.4.0")
+        self.assertEqual(version("openrtl"), "0.4.0")
         self.assertEqual(version("agentrig"), "0.3.0")
-        self.assertEqual(project["version"], "0.3.0")
+        self.assertEqual(project["version"], "0.4.0")
         self.assertEqual(project["dependencies"], ["agentrig==0.3.0"])
-        self.assertEqual(packages["openrtl"]["version"], "0.3.0")
+        self.assertEqual(packages["openrtl"]["version"], "0.4.0")
         self.assertEqual(packages["agentrig"]["version"], "0.3.0")
         self.assertEqual(packages["agentrig"]["source"], {"editable": "../agentrig"})
 

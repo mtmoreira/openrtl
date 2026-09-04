@@ -35,6 +35,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if root in package_path.parents:
         raise RuntimeError("OpenRTL resolved from the examples archive, not the wheel")
     _run((sys.executable, "-m", "unittest", "examples.fifo.test_model"), root)
+    if arguments.expected_version == "0.4.0":
+        _run((sys.executable, "-m", "unittest", "examples.skid_buffer.test_model"), root)
     _run(
         (
             sys.executable,
@@ -70,6 +72,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         ):
             raise RuntimeError("release repair waveform levels do not prove the repair")
     print(f"CHECKPOINT installed_openrtl version {arguments.expected_version}")
+    if arguments.expected_version == "0.4.0" and arguments.with_verilator:
+        _run((sys.executable, "-m", "tools.verify_release_examples_v040"), root)
     print(f"CHECKPOINT installed_agentrig version {arguments.expected_agentrig_version}")
     print("CHECKPOINT release_examples model_and_fault passed")
     if arguments.with_verilator:
