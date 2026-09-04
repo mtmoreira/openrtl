@@ -158,6 +158,13 @@ reproduce the producer scoreboard coverage after temporary producer copies are
 removed. Preserve both runs' source hashes, coverage, results, and waveforms;
 keep this distinct from M32's synthetic dependency-graph tests.
 
+M34 broadens that proof through a bounded parameter and seed matrix. The
+reviewed cases vary width, power-of-two and non-power-of-two FIFO depth, and
+random seed. Each case repeats the complete producer/package/materialized-
+consumer path and reaches its configured FIFO-plus-skid capacity. A dedicated
+CI lane preserves this as regression evidence; it is not a parameter sweep or
+formal proof.
+
 Stop and escalate after three materially equivalent repair failures, two repair
 cycles without measurable evidence improvement, or a configured time/cost
 ceiling. The escalation records the failure signature, tried hypotheses,

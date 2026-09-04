@@ -27,6 +27,7 @@ module sync_fifo #(
   localparam logic [PTR_W-1:0] LAST_POINTER = PTR_W'(DEPTH - 1);
   localparam logic [LEVEL_W-1:0] MAX_LEVEL = LEVEL_W'(DEPTH);
   localparam bit HAS_UNUSED_POINTER_STATES = (DEPTH & (DEPTH - 1)) != 0;
+  localparam bit HAS_UNUSED_LEVEL_STATES = ((1 << LEVEL_W) - 1) > DEPTH;
 
   initial begin
     assert (WIDTH >= 1) else $fatal(1, "WIDTH must be positive");
@@ -53,14 +54,22 @@ module sync_fifo #(
     end
   endgenerate
 
+  generate
+    if (HAS_UNUSED_LEVEL_STATES) begin : unused_level_states
+      always_ff @(posedge clk) begin
+        if (rst_n) begin
+          assert (count <= MAX_LEVEL) else $fatal(1, "FIFO count exceeded DEPTH");
+        end
+      end
+    end
+  endgenerate
+
   always_ff @(posedge clk) begin
     if (!rst_n) begin
       write_pointer <= '0;
       read_pointer <= '0;
       count <= '0;
     end else begin
-      assert (count <= MAX_LEVEL) else $fatal(1, "FIFO count exceeded DEPTH");
-
       if (write_accepted) begin
         memory[write_pointer] <= wr_data;
         write_pointer <= (write_pointer == LAST_POINTER) ? '0 : write_pointer + 1'b1;

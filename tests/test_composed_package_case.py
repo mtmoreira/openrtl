@@ -26,6 +26,7 @@ class ComposedPackageCaseTest(unittest.TestCase):
             '<testsuites><testsuite><testcase name="composed_stream_contract" /></testsuite></testsuites>\n')
         (self.root / 'waves.vcd').write_text('$timescale 1ns $end\n$enddefinitions $end\n')
         self.coverage: dict[str, Any] = {'schema': 'openrtl.composed-stream-coverage.v1', 'seed': 33,
+                         'width': 8, 'depth': 4, 'capacity': 5,
                          'status': 'passed', 'drained': True,
                          'counts': {name: 5 if name == 'max_occupancy' else 1 for name in COUNTERS}}
         self._coverage()

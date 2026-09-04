@@ -24,7 +24,7 @@ from openrtl.adapters import (  # noqa: E402
 )
 from openrtl.application import PackageBundlePin  # noqa: E402
 from openrtl.domain import (  # noqa: E402
-    DesignPackage, InterfacePort, InterfaceRequirement, PackageDependency,
+    DesignPackage, InterfacePort, InterfaceRequirement, PackageDependency, Parameter,
     PackageFile, PortDirection, TrustLevel,
 )
 from tools.verilator_canary import VerilatorToolchain, discover_verilator_toolchain  # noqa: E402
@@ -63,7 +63,18 @@ def record(root: Path, path: Path) -> dict[str, Any]:
             'size_bytes': len(content)}
 
 
-def verify_run(output: Path) -> dict[str, Any]:
+def validate_configuration(width: int, depth: int, seed: int) -> None:
+    if type(width) is not int or not 1 <= width <= 1024:
+        raise ValueError('composed width must be between 1 and 1024')
+    if type(depth) is not int or not 2 <= depth <= 64:
+        raise ValueError('composed simulation depth must be between 2 and 64')
+    if type(seed) is not int or not 0 <= seed <= 2**31 - 1:
+        raise ValueError('composed seed must be a nonnegative 32-bit integer')
+
+
+def verify_run(output: Path, width: int = 8, depth: int = 4,
+               seed: int = 33) -> dict[str, Any]:
+    validate_configuration(width, depth, seed)
     log = read_file(output / 'run.log', 8 * 1024 * 1024)
     if b'%Warning-' in log or b'TESTS=1 PASS=1 FAIL=0 SKIP=0' not in log:
         raise ValueError('simulation summary or warning gate failed')
@@ -76,15 +87,18 @@ def verify_run(output: Path) -> dict[str, Any]:
     if b'$timescale' not in waveform or b'$enddefinitions $end' not in waveform:
         raise ValueError('simulation waveform incomplete')
     payload: Any = json.loads(read_file(output / 'coverage.json', 16384))
-    if not isinstance(payload, dict) or set(payload) != {'schema', 'seed', 'status', 'drained', 'counts'}:
+    if not isinstance(payload, dict) or set(payload) != {
+            'schema', 'seed', 'width', 'depth', 'capacity', 'status', 'drained', 'counts'}:
         raise ValueError('coverage fields invalid')
-    if (payload['schema'] != 'openrtl.composed-stream-coverage.v1' or payload['seed'] != 33
+    if (payload['schema'] != 'openrtl.composed-stream-coverage.v1' or payload['seed'] != seed
+            or payload['width'] != width or payload['depth'] != depth
+            or payload['capacity'] != depth + 1
             or payload['status'] != 'passed' or payload['drained'] is not True):
         raise ValueError('coverage identity invalid')
     counts = payload['counts']
     if not isinstance(counts, dict) or set(counts) != COUNTERS:
         raise ValueError('coverage counters invalid')
-    if any(type(value) is not int or value <= 0 for value in counts.values()) or counts['max_occupancy'] != 5:
+    if any(type(value) is not int or value <= 0 for value in counts.values()) or counts['max_occupancy'] != depth + 1:
         raise ValueError('required composed coverage missing')
     return dict(payload)
 
@@ -136,7 +150,9 @@ def run_bounded(command: list[str], cwd: Path, environment: dict[str, str],
 
 
 def simulate(sources: tuple[Path, ...], harness: Path, output: Path,
-             toolchain: VerilatorToolchain, timeout: int) -> dict[str, Any]:
+             toolchain: VerilatorToolchain, timeout: int, width: int = 8,
+             depth: int = 4, seed: int = 33) -> dict[str, Any]:
+    validate_configuration(width, depth, seed)
     if len(sources) != 3 or len(set(sources)) != 3:
         raise ValueError('exactly three distinct RTL sources required')
     for path in (*sources, harness / 'Makefile', harness / 'test_composed_stream.py', output):
@@ -156,15 +172,18 @@ def simulate(sources: tuple[Path, ...], harness: Path, output: Path,
         toolchain.cocotb_config.parent, toolchain.verilator.parent, toolchain.make.parent,
         Path('/usr/bin'), Path('/bin')))), 'PYTHONPATH': str(harness),
         'TMPDIR': str(output / 'tmp'), 'COMPOSED_COVERAGE': str(output / 'coverage.json'),
-        'PYTHONDONTWRITEBYTECODE': '1', 'RANDOM_SEED': '33'}
+        'PYTHONDONTWRITEBYTECODE': '1', 'RANDOM_SEED': str(seed),
+        'COMPOSED_WIDTH': str(width), 'COMPOSED_DEPTH': str(depth),
+        'COMPILE_ARGS': f'-GWIDTH={width} -GDEPTH={depth}'}
     run_bounded(command, output, environment, output, timeout)
-    coverage = verify_run(output)
+    coverage = verify_run(output, width, depth, seed)
     if source_digests != [sha(read_file(path)) for path in sources]:
         raise ValueError('simulation changed source bytes')
     if harness_digests != [sha(read_file(harness / name)) for name in ('Makefile', 'test_composed_stream.py')]:
         raise ValueError('simulation changed trusted harness')
     report = {'schema': 'openrtl.composed-stream-run.v1', 'status': 'passed',
-              'top': 'fifo_skid_stream', 'seed': 33, 'command': command,
+              'top': 'fifo_skid_stream', 'seed': seed, 'width': width, 'depth': depth,
+              'capacity': depth + 1, 'command': command,
               'source_paths': [str(path) for path in sources], 'source_sha256': source_digests,
               'trusted_harness_sha256': harness_digests, 'pythonpath': str(harness),
               'environment_names': sorted(environment), 'coverage': coverage,
@@ -191,7 +210,9 @@ def consumer_sources(workspace: Path, catalog: DependencyClosedCatalog,
 
 
 def run_case(root: Path, output: Path, fifo_evidence: Path, skid_evidence: Path,
-             toolchain: VerilatorToolchain, timeout: int) -> dict[str, Any]:
+             toolchain: VerilatorToolchain, timeout: int, width: int = 8,
+             depth: int = 4, seed: int = 33) -> dict[str, Any]:
+    validate_configuration(width, depth, seed)
     root = root.resolve(strict=True)
     output = output if output.is_absolute() else root / output
     if not output.is_relative_to(root / 'build') or '..' in output.parts or output == root / 'build':
@@ -215,24 +236,28 @@ def run_case(root: Path, output: Path, fifo_evidence: Path, skid_evidence: Path,
     sources = tuple(producer_sources / Path(name).name for name in SOURCE_PATHS)
     for name, path in zip(SOURCE_PATHS, sources, strict=True):
         path.write_bytes(originals[name])
-    producer = simulate(sources, harness, output / 'producer-run', toolchain, timeout)
+    producer = simulate(sources, harness, output / 'producer-run', toolchain, timeout,
+                        width, depth, seed)
     catalog = PortableDesignCatalog(output / 'catalog')
     pins = []
     for candidate in candidates:
         receipt = catalog.store_candidate(root, candidate)
         pins.append(PackageBundlePin(receipt.package_id, receipt.version, receipt.manifest_digest))
     root_profile = output / 'composed-profile.json'
-    write_json(root_profile, {'schema': 'openrtl.composed-stream-profile.v1', 'width': 8, 'depth': 4,
-                             'top': 'fifo_skid_stream', 'testcase': 'composed_stream_contract', 'seed': 33,
+    write_json(root_profile, {'schema': 'openrtl.composed-stream-profile.v1', 'width': width, 'depth': depth,
+                             'capacity': depth + 1, 'top': 'fifo_skid_stream',
+                             'testcase': 'composed_stream_contract', 'seed': seed,
                              'requirements': sorted(COUNTERS), 'source_sha256': producer['source_sha256']})
     ports = tuple(InterfacePort(name, direction, width) for name, direction, width in (
         ('clk', PortDirection.INPUT, 1), ('rst_n', PortDirection.INPUT, 1),
         ('s_valid', PortDirection.INPUT, 1), ('s_ready', PortDirection.OUTPUT, 1),
-        ('s_data', PortDirection.INPUT, 8), ('m_valid', PortDirection.OUTPUT, 1),
-        ('m_ready', PortDirection.INPUT, 1), ('m_data', PortDirection.OUTPUT, 8),
-        ('fifo_level', PortDirection.OUTPUT, 3), ('skid_occupied', PortDirection.OUTPUT, 1)))
+        ('s_data', PortDirection.INPUT, width), ('m_valid', PortDirection.OUTPUT, 1),
+        ('m_ready', PortDirection.INPUT, 1), ('m_data', PortDirection.OUTPUT, width),
+        ('fifo_level', PortDirection.OUTPUT, depth.bit_length()),
+        ('skid_occupied', PortDirection.OUTPUT, 1)))
     package = DesignPackage(PACKAGE_IDS[2], '1.0.0', 'composed.fifo-skid-stream', 'Apache-2.0',
-                            TrustLevel.SIMULATION_VERIFIED, ports, (),
+                            TrustLevel.SIMULATION_VERIFIED, ports,
+                            (Parameter('width', width, 1, 1024), Parameter('depth', depth, 2, 64)),
                             (PackageFile(SOURCE_PATHS[2], 'rtl', 'sha256:' + sha(originals[SOURCE_PATHS[2]])),),
                             ('ev.composed.producer',), tuple(PackageDependency(
                                 value.package.package_id, value.package.version, value.package.content_digest)
@@ -259,15 +284,18 @@ def run_case(root: Path, output: Path, fifo_evidence: Path, skid_evidence: Path,
     producer_sources.rmdir()
     workspace = output / 'consumer'
     closure.materialize(lock_path, lock_digest, workspace,
-                        (InterfaceRequirement('s_ready', PortDirection.OUTPUT, 1),))
+                        (InterfaceRequirement('s_ready', PortDirection.OUTPUT, 1),),
+                        (('width', width), ('depth', depth)))
     selected = consumer_sources(workspace, closure, lock_path, lock_digest)
-    consumer = simulate(selected, harness, output / 'consumer-run', toolchain, timeout)
+    consumer = simulate(selected, harness, output / 'consumer-run', toolchain, timeout,
+                        width, depth, seed)
     consumer_sources(workspace, closure, lock_path, lock_digest)
     if producer['coverage'] != consumer['coverage'] or producer['source_sha256'] != consumer['source_sha256']:
         raise ValueError('producer/consumer behavioral or source mismatch')
     if any(read_file(root / name) != data for name, data in originals.items()):
         raise ValueError('repository RTL changed')
     summary = {'schema': 'openrtl.composed-package-case.v1', 'status': 'passed',
+               'configuration': {'width': width, 'depth': depth, 'capacity': depth + 1, 'seed': seed},
                'lock_digest': lock_digest, 'install_order': list(lock.install_order),
                'producer_rtl_copies_removed': not producer_sources.exists(),
                'consumer_source_only': all(path.is_relative_to(workspace) for path in selected),
@@ -291,13 +319,17 @@ def main(arguments: Sequence[str] | None = None) -> int:
     parser.add_argument('--make-executable', required=True)
     parser.add_argument('--cocotb-config-executable', required=True)
     parser.add_argument('--timeout-seconds', type=int, default=180)
+    parser.add_argument('--width', type=int, default=8)
+    parser.add_argument('--depth', type=int, default=4)
+    parser.add_argument('--seed', type=int, default=33)
     parsed = parser.parse_args(arguments)
     if not 1 <= parsed.timeout_seconds <= 600:
         parser.error('timeout must be between 1 and 600 seconds')
     toolchain = discover_verilator_toolchain(verilator=parsed.verilator_executable,
         make=parsed.make_executable, cocotb_config=parsed.cocotb_config_executable)
     result = run_case(parsed.root, parsed.output_directory, parsed.fifo_evidence,
-                      parsed.skid_evidence, toolchain, parsed.timeout_seconds)
+                      parsed.skid_evidence, toolchain, parsed.timeout_seconds,
+                      parsed.width, parsed.depth, parsed.seed)
     print(json.dumps(result, sort_keys=True, indent=2))
     return 0
 

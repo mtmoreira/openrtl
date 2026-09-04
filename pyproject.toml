@@ -40,6 +40,8 @@ source-include = [
   "tools/fifo_fault_case.py",
   "tools/fifo_repair_application_case.py",
   "tools/skid_buffer_case.py",
+  "tools/composed_package_case.py",
+  "tools/composed_package_matrix.py",
   "tools/verilator_canary.py",
   "tools/verify_release_install.py",
 ]

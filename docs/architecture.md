@@ -4,7 +4,10 @@ The trusted `tools/composed_package_case.py` example validates a concrete
 FIFO/skid-buffer dependency closure through two real simulator runs. The second
 run consumes only verified materialized RTL. Generic package locking and
 materialization remain source-only; they never execute package hooks or tests.
-See ADR 0025 for the fixed-parameter evidence scope and isolation limits.
+See ADR 0025 for the single-case evidence scope and isolation limits. ADR 0026
+adds an independently packaged three-case width/depth/seed matrix, including
+the FIFO's non-power-of-two pointer path, without treating it as exhaustive
+parameter verification.
 
 ## Shared context is an artifact graph
 

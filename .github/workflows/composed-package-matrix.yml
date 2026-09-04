@@ -1,0 +1,62 @@
+name: Composed package matrix
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/composed-package-matrix.yml"
+      - "examples/composed_stream/**"
+      - "src/openrtl/adapters/package_closure.py"
+      - "src/openrtl/adapters/portable_catalog.py"
+      - "tools/composed_package_case.py"
+      - "tools/composed_package_matrix.py"
+      - "tests/test_composed_package_case.py"
+      - "tests/test_composed_package_matrix.py"
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: openrtl
+      - uses: actions/checkout@v4
+        with:
+          repository: mtmoreira/agentrig
+          ref: 31b2ecae0605f0d6b63b5f060c929ca567ae16f2
+          path: agentrig
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.3"
+      - name: Install simulation toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes make verilator
+      - name: Validate composed package matrix
+        working-directory: openrtl
+        run: |
+          uv sync --locked --extra simulation
+          uv run python -m unittest \
+            tests.test_composed_package_case \
+            tests.test_composed_package_matrix
+          uv run python tools/validate.py \
+            --with-verilator \
+            --verilator-output build/m34-ci/fifo \
+            --verilator-timeout-seconds 180
+          uv run python tools/composed_package_matrix.py \
+            --output-directory build/m34-ci/matrix \
+            --fifo-evidence build/m34-ci/fifo/evidence.json \
+            --skid-evidence build/verilator-skid-buffer-case/evidence.json \
+            --verilator-executable /usr/bin/verilator \
+            --make-executable /usr/bin/make \
+            --cocotb-config-executable "${{ github.workspace }}/openrtl/.venv/bin/cocotb-config" \
+            --timeout-seconds 180

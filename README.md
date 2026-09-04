@@ -482,9 +482,25 @@ python tools/composed_package_case.py \
   --cocotb-config-executable /absolute/path/to/cocotb-config
 ```
 
-Parameters are fixed at WIDTH=8 and DEPTH=4. Package hooks and package-supplied
-testbenches are not executed; the checked-in harness is the explicit trusted
-execution input. Consumer source-path isolation is not an OS sandbox.
+The compatible single-case defaults remain WIDTH=8, DEPTH=4, and seed 33. M34
+also provides a reviewed three-case matrix spanning widths 4, 8, and 16; FIFO
+depths 2, 4, and 3; and seeds 7, 33, and 91:
+
+```sh
+python tools/composed_package_matrix.py \
+  --output-directory build/composed-package-matrix \
+  --fifo-evidence build/verilator-fifo-canary/evidence.json \
+  --skid-evidence build/verilator-skid-buffer-case/evidence.json \
+  --verilator-executable /absolute/path/to/verilator \
+  --make-executable /absolute/path/to/make \
+  --cocotb-config-executable /absolute/path/to/cocotb-config
+```
+
+Each matrix case independently runs the producer, packages and locks its
+closure, materializes source-only inputs, and runs the consumer. Package hooks
+and package-supplied testbenches are not executed; the checked-in harness is the
+explicit trusted execution input. Consumer source-path isolation is not an OS
+sandbox, and three reviewed cases are not an exhaustive parameter sweep.
 
 ## Architecture references
 
