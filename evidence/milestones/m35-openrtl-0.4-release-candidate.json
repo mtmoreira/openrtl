@@ -1,0 +1,79 @@
+{
+  "schema": "openrtl.milestone-evidence.v1",
+  "milestone_id": "m35-openrtl-0.4-release-candidate",
+  "base_commit": "9463ace4448cab48a8351bc19da8451071e0fa57",
+  "implementation_commits": ["a8dc96fe642d5540810ac55479449878073bce78"],
+  "qualified_commit": "a8dc96fe642d5540810ac55479449878073bce78",
+  "openrtl_candidate_version": "0.4.0",
+  "review_state": "qualified_local_candidate",
+  "retention_class": "local-release-candidate-collateral",
+  "collateral_root": "build/openrtl-0.4-release-candidate/m35-a8dc96f-qtma4qm0",
+  "agentrig_release": {
+    "repository": "https://github.com/mtmoreira/agentrig.git",
+    "tag": "v0.3.0",
+    "commit": "31b2ecae0605f0d6b63b5f060c929ca567ae16f2",
+    "version": "0.3.0"
+  },
+  "artifacts": [
+    {
+      "artifact_id": "m35.wheel",
+      "availability": "local",
+      "locator": "build/openrtl-0.4-release-candidate/m35-a8dc96f-qtma4qm0/dist/openrtl-0.4.0-py3-none-any.whl",
+      "sha256": "83946b82ed64f798d1ea2e9f023f8ab8edb12ca968cd48dcc830d4dd2f868092",
+      "size_bytes": 128382
+    },
+    {
+      "artifact_id": "m35.source",
+      "availability": "local",
+      "locator": "build/openrtl-0.4-release-candidate/m35-a8dc96f-qtma4qm0/dist/openrtl-0.4.0.tar.gz",
+      "sha256": "a4c42c2321c5bf5c3bc35b15d1f748adb52109a1aa387831dfa880b85c3db2fd",
+      "size_bytes": 129188
+    },
+    {
+      "artifact_id": "m35.examples",
+      "availability": "local",
+      "locator": "build/openrtl-0.4-release-candidate/m35-a8dc96f-qtma4qm0/dist/openrtl-examples-0.4.0.tar.gz",
+      "sha256": "6d5400a655b8edbd5fe4d630f9d0ca5c94f015ae168a23d6c0a50f82eeb8e71d",
+      "size_bytes": 33514
+    },
+    {
+      "artifact_id": "m35.release-manifest",
+      "availability": "local",
+      "locator": "build/openrtl-0.4-release-candidate/m35-a8dc96f-qtma4qm0/dist/openrtl-0.4.0-release.json",
+      "sha256": "8aedf5a25685cbabbec4fdd25fc97f6b923b3320f4451ba0da2decbdb21aeefb",
+      "size_bytes": 870
+    },
+    {
+      "artifact_id": "m35.qualification",
+      "availability": "local",
+      "locator": "build/openrtl-0.4-release-candidate/m35-a8dc96f-qtma4qm0/qualification/qualification.json",
+      "sha256": "14c10caf4b59ca927ca34ddf4d5cea5a67da05209a740ee2c930a1ae5fd0b688",
+      "size_bytes": 1293
+    },
+    {
+      "artifact_id": "m35.recursive-artifact-inventory",
+      "availability": "local",
+      "locator": "build/openrtl-0.4-release-candidate/m35-a8dc96f-qtma4qm0/retained-artifacts.json",
+      "sha256": "95240f455e3385ca7f2a418b79b65d4019f22ece6eb368d0f4141324bf72e549",
+      "size_bytes": 173924
+    }
+  ],
+  "validation_outcomes": {
+    "focused_tests": "16 passed",
+    "repository_tests": "154 passed plus FIFO and skid-buffer model suites",
+    "strict_typing": "5 source files passed",
+    "reproducibility": "wheel, source distribution, examples and manifest byte-identical across two builds",
+    "installation": "0.4.0 wheel and public AgentRig 0.3.0 imported from isolated environment",
+    "fifo_repair": "fault level 0, repaired level 1 at the same marker",
+    "skid_buffer": "fault diagnosis and passing production simulation",
+    "composed_matrix": "w4-d2-s7, w8-d4-s33, w16-d3-s91 reached capacities 3, 5, 4; producer and consumer waveforms identical"
+  },
+  "authorization_boundary": {
+    "real_provider_called": false,
+    "remote_reads": true,
+    "remote_writes": false,
+    "openrtl_tag_created": false,
+    "github_release_created": false,
+    "package_registry_publication": false
+  }
+}
