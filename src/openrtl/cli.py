@@ -99,6 +99,8 @@ _FIFO_REQUIREMENTS = (
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(prog="openrtl")
     subcommands = root.add_subparsers(dest="command", required=True)
+    from openrtl.design_cli import add_design_commands
+    add_design_commands(subcommands)
     subcommands.add_parser("experts", help="list stable expert contracts")
     plan = subcommands.add_parser("plan", help="show the deterministic V1 workflow")
     plan.add_argument("--mode", choices=("build", "learn"), default="build")
@@ -451,6 +453,9 @@ def parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = parser().parse_args(argv)
+    if arguments.command in ("chat", "resume", "status", "doctor"):
+        from openrtl.design_cli import run_design_command
+        return run_design_command(arguments)
     if arguments.command == "experts":
         print(
             json.dumps(

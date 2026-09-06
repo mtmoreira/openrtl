@@ -2,7 +2,7 @@
 
 OpenRTL is an evidence-driven AI assistant for designing and verifying RTL with
 a team of explicitly configured expert agents. Version 1 targets simulation
-only: it turns requirements into traceable specifications, plans, reference
+only. The product goal is to turn requirements into traceable specifications, plans, reference
 models, synthesizable SystemVerilog, assertions, DV collateral, simulations,
 diagnostics, reviews, and guided learning sessions.
 
@@ -17,13 +17,13 @@ OpenRTL uses AgentRig for portable agent/runtime/tool contracts. OpenRTL owns
 the hardware-design schemas, artifact graph, evidence, EDA adapters, reuse
 catalog, and convergence rules.
 
-The current release is [OpenRTL 0.3.0](https://github.com/mtmoreira/openrtl/releases/tag/v0.3.0). Its checked release bundle
+The published toolkit release is [OpenRTL 0.4.0](https://github.com/mtmoreira/openrtl/releases/tag/v0.4.0). Its checked release bundle
 contains a library-only wheel, a source distribution, and a deterministic
-companion archive with the complete FIFO model, RTL, DV, waveform, fault, and
-repair examples. See [docs/releases.md](docs/releases.md) for the immutable
+companion archive with FIFO, skid-buffer and composed-package simulation
+examples. See [docs/releases.md](docs/releases.md) for the immutable
 artifact and clean-install verification contract.
 
-OpenRTL 0.3.0 pins the published AgentRig 0.3.0 contract. Its public acceptance
+The historical OpenRTL 0.3.0 release pins the published AgentRig 0.3.0 contract. Its public acceptance
 lane verifies both annotated tags and exact commits, downloads and hashes the
 published artifacts, then installs and runs the released examples in isolation:
 
@@ -48,8 +48,8 @@ It does not invoke a provider or modify either repository.
 
 ## V1 toolchain
 
-The working tree is preparing 0.4.0 with the skid-buffer and composed package
-examples. Installed candidate acceptance runs the extracted examples with the
+The 0.4.0 toolkit includes the skid-buffer and composed package examples.
+Installed candidate acceptance runs the extracted examples with the
 wheel: `python tools/verify_release_install.py --examples-root .
 --expected-version 0.4.0 --expected-agentrig-version 0.3.0 --with-verilator`
 (enter the command on one line). It retains FIFO repair, skid-buffer diagnosis,
@@ -66,6 +66,18 @@ FPGA synthesis, formal execution, device programming, and remote community
 publication are deferred behind explicit ports.
 
 ## Development
+
+### Interactive design agent: M36 implementation candidate
+
+The new `chat`, `resume`, `status` and `doctor` commands begin the executing
+design-agent layer. It uses reviewed requirements, role-specific AgentRig
+turns, durable sessions, independent model/DV context, isolated simulation and
+separate signoff/acceptance gates. It is not yet live-qualified and is not part
+of the published 0.4.0 toolkit. See [the alpha guide](docs/design-agent-alpha.md)
+for the exact permissions, runtime requirements and remaining evidence gates.
+Scripted orchestration tests are not evidence that a model designed a circuit.
+
+### Provider-free checks
 
 Keep an exact AgentRig 0.3.0 checkout at the sibling path selected by
 `tool.uv.sources`, then run the provider-free validation lane:

@@ -154,7 +154,30 @@ qualification; new feature work waits for user feedback on that release.
   consumption reverifies every bundle and atomically materializes an isolated,
   source-only package workspace without executing package content.
 
-## Convergence
+## Approved next delivery: M36–M40
+
+M36 builds the first interactive chat-to-design slice: digest-reviewed
+requirements and assumptions, persisted engineering state, role-scoped expert
+generation, independently derived model/DV collateral, isolated simulation,
+bounded candidate repair, signoff and explicit final acceptance. The ALU is a
+live acceptance design, never hard-coded generator output. Implementation is
+in progress; local validation and live qualification are not yet complete.
+
+M37 adds batch operation, scoped broad delegation with a warning for each
+assumption, durable review queues, bounded execution and crash reconciliation.
+M38 adds multiple file imports and existing-design/DV baselines, explanations
+and controlled change impact. M39 expands teaching granularity, diagnosis,
+DV-only improvement and measured simulation-level optimization. M40 qualifies
+held-out designs, installed CLI workflows, documented evidence tiers and the
+user-facing package. No milestone implies synthesis, formal execution or FPGA
+deployment.
+
+Complete as much local development and deterministic validation as possible
+before owner-shell handoffs. Provider calls, runtime installation, publication
+and remote Git effects remain separately authorized. A milestone is not
+complete merely because a scripted test or state transition succeeded.
+
+## Existing composition convergence evidence
 
 M33 adds a fixed FIFO-to-skid-buffer composition as a real dependency-closure
 consumer. Passing leaf evidence and a fresh composed producer run precede
