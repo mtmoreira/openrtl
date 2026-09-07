@@ -11,13 +11,14 @@ import sqlite3
 from typing import Callable
 
 from openrtl.adapters.design_session_store import DesignSessionStore, safe_root
+from openrtl.adapters.design_imports import import_design_files
 from openrtl.application.design_agent import DesignAgent, DesignPolicy, design_input_digest
 from openrtl.application.design_batch import bind_delegation, run_batch
-from openrtl.domain.design_session import JsonObject, MAX_CONTEXT_BYTES, STAGES, canonical, content_digest, require
+from openrtl.domain.design_session import JsonObject, MAX_CONTEXT_BYTES, STAGES, canonical, content_digest, require, object_value
 
 
 def add_design_commands(subcommands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    for command in ("chat", "resume", "batch", "recover", "status", "doctor"):
+    for command in ("chat", "resume", "batch", "recover", "status", "doctor", "import", "baseline", "change"):
         selected = subcommands.add_parser(command, help="design-agent alpha: " + command)
         selected.add_argument("--project", type=Path, required=command != "doctor")
         if command in ("chat", "resume", "batch", "recover"):
@@ -38,6 +39,19 @@ def add_design_commands(subcommands: argparse._SubParsersAction[argparse.Argumen
             selected.add_argument("--approve-delegation", required=True)
         if command == "recover":
             selected.add_argument("--abandon-operation", required=True)
+        if command in ("import", "baseline", "change"):
+            selected.add_argument("--upgrade-session", action="store_true")
+            selected.add_argument("--approve", required=command == "import")
+        if command == "import":
+            selected.add_argument("--create", action="store_true")
+            selected.add_argument("--source-root", required=True, type=Path)
+            selected.add_argument("--import-plan", required=True, type=Path)
+        if command == "baseline":
+            selected.add_argument("--manifest", required=True, type=Path)
+        if command == "change":
+            group = selected.add_mutually_exclusive_group(required=True)
+            group.add_argument("--request", type=Path)
+            group.add_argument("--plan", type=Path)
 
 
 def _json_file(path: Path) -> object:
@@ -83,12 +97,17 @@ def show(state: JsonObject, emit: Callable[[str], None]) -> None:
         emit("WARNING " + row["id"] + " [" + row["review"] + "]: " + row["text"] + " — " + row["rationale"])
     if state.get("acceptance_mode") == "delegated":
         emit("Accepted under broad delegation, not individual final user review.")
+    for path, item in state.get("imports", {}).items():
+        emit("Imported reference (not run evidence): " + path + " " + item["digest"])
+    if state.get("change_plan"):
+        emit("Reviewed change scope: " + json.dumps(state["change_plan"]["stage_paths"], sort_keys=True))
 
 
 async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input,
                        emit: Callable[[str], None] = print) -> int:
     emit("OpenRTL design-agent alpha. Raw conversation text is not saved; reviewed artifacts and events are.")
     emit("/show /spec <JSON path> /approve <digest> /ack-warning <id> /next /build /revise /detail brief|normal|detailed /quit")
+    emit("/import <reviewed-import-request.json> /explain <question> /baseline <manifest.json> /change-plan <request.json>")
     show(agent.store.read(), emit)
     while True:
         try:
@@ -107,6 +126,19 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
                 emit(json.dumps(agent.store.read()["files"], indent=2, sort_keys=True))
             elif command == "/spec":
                 show(agent.propose(_json_file(Path(argument))), emit)
+            elif command == "/import":
+                request = object_value(_json_file(Path(argument)), {"source_root", "plan", "approved_digest"})
+                if not isinstance(agent.store, DesignSessionStore):
+                    raise ValueError("local_import_store_required")
+                show(import_design_files(agent.store, Path(request["source_root"]), request["plan"], request["approved_digest"]), emit)
+            elif command == "/baseline":
+                plan = agent.plan_baseline(_json_file(Path(argument)))
+                emit(json.dumps({"plan": plan, "digest": content_digest(plan)}, indent=2, sort_keys=True))
+                emit("Quit, then use the local baseline command with --approve to adopt these exact inputs.")
+            elif command == "/change-plan":
+                plan = agent.plan_change(_json_file(Path(argument)))
+                emit(json.dumps({"plan": plan, "digest": content_digest(plan)}, indent=2, sort_keys=True))
+                emit("Save the plan object, quit, then use the local change command with --plan and --approve.")
             elif command == "/approve":
                 show(agent.approve(argument.strip()), emit)
             elif command == "/revise":
@@ -129,6 +161,11 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
                     if command == "/next" or state["status"] not in ("building", "needs_repair", "needs_signoff"):
                         show(state, emit)
                         break
+            elif command == "/explain":
+                result = await agent.explain(argument)
+                emit(result["explanation"])
+                for ref in result["references"]:
+                    emit(ref["path"] + ":" + str(ref["line"]))
             elif command.startswith("/"):
                 emit("Unknown command; no changes made.")
             elif agent.store.read()["status"] == "discovery":
@@ -163,6 +200,30 @@ def run_design_command(arguments: argparse.Namespace) -> int:
         if arguments.command == "status":
             store = DesignSessionStore(arguments.project, read_only=True)
             print(json.dumps(store.read(), indent=2, sort_keys=True))
+            return 0
+        if arguments.command in ("import", "baseline", "change"):
+            create = arguments.command == "import" and arguments.create
+            readonly = arguments.command != "import" and not arguments.approve and not arguments.upgrade_session
+            store = DesignSessionStore(arguments.project, create=create, read_only=readonly)
+            if arguments.upgrade_session:
+                store.upgrade()
+            local_agent = DesignAgent(store)
+            if arguments.command == "import":
+                show(import_design_files(store, arguments.source_root, _json_file(arguments.import_plan), arguments.approve), print)
+            elif arguments.command == "baseline":
+                selected = _json_file(arguments.manifest)
+                if arguments.approve:
+                    show(local_agent.approve_baseline(selected, arguments.approve), print)
+                else:
+                    plan = local_agent.plan_baseline(selected)
+                    print(json.dumps({"plan": plan, "digest": content_digest(plan)}, indent=2, sort_keys=True))
+            elif arguments.request is not None:
+                require(not arguments.approve, "change_request_is_not_approved_plan")
+                plan = local_agent.plan_change(_json_file(arguments.request))
+                print(json.dumps({"plan": plan, "digest": content_digest(plan)}, indent=2, sort_keys=True))
+            else:
+                require(arguments.approve is not None, "explicit_change_approval_required")
+                show(local_agent.approve_change(_json_file(arguments.plan), arguments.approve), print)
             return 0
         policy = DesignPolicy(arguments.max_calls, arguments.max_repairs)
         expert = None

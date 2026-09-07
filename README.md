@@ -67,7 +67,7 @@ publication are deferred behind explicit ports.
 
 ## Development
 
-### Interactive and batch design agent: M36–M37 candidates
+### Interactive, batch and imported-design agent: M36–M38 candidates
 
 The new `chat`, `resume`, `status` and `doctor` commands begin the executing
 design-agent layer. It uses reviewed requirements, role-specific AgentRig
@@ -78,8 +78,11 @@ for the exact permissions, runtime requirements and remaining evidence gates.
 Scripted orchestration tests are not evidence that a model designed a circuit.
 M37 adds `batch` with explicit, digest-bound scope and durable limits, reviewable
 assumption warnings, read-only status, exclusive session writers and explicit
-`recover` without automatic replay. These changes are awaiting local validation;
-the live-provider/container acceptance gate remains pending.
+`recover` without automatic replay. Its local validation passed. M38 adds
+digest-reviewed multi-file `import`, an unverified `baseline` adoption gate,
+and per-stage `change` scopes that invalidate old evidence. See the
+[import/change guide](docs/design-imports.md). M38 local validation and the
+live-provider/container acceptance gate remain pending.
 
 ### Provider-free checks
 

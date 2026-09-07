@@ -13,6 +13,7 @@ from openrtl.domain.design_session import (
     object_value, require, sequence, text, validate_files, validate_manifest, validate_spec,
 )
 from openrtl.domain.design_delegation import specification_warnings, validate_delegated_spec, warning
+from openrtl.domain.design_imports import baseline_plan, validate_change_plan
 
 
 class SessionStore(Protocol):
@@ -21,8 +22,10 @@ class SessionStore(Protocol):
     def operation_owned(self, operation_id: str) -> bool: ...
     def read(self) -> JsonObject: ...
     def contents(self, state: JsonObject) -> dict[str, str]: ...
+    def import_contents(self, state: JsonObject) -> dict[str, str]: ...
     def save(self, previous: JsonObject, updated: JsonObject, event: str,
-             fields: JsonObject | None = None, *, files: list[JsonObject] | None = None) -> JsonObject: ...
+             fields: JsonObject | None = None, *, files: list[JsonObject] | None = None,
+             imports: list[JsonObject] | None = None) -> JsonObject: ...
 
 
 @dataclass(frozen=True)
@@ -186,7 +189,7 @@ class DesignAgent:
         # Old snapshots/blobs/evidence remain inspectable; none is silently re-approved.
         updated.update(status="discovery", stage=0, approved_spec=None, files={}, manifest=None,
                        simulation=None, review=None, last_error=None, summaries={},
-                       delegation=None, approval_mode=None, acceptance_mode=None)
+                       delegation=None, approval_mode=None, acceptance_mode=None, baseline=None, change_plan=None)
         return self.store.save(state, updated, "spec.revised")
 
     def detail(self, level: str) -> JsonObject:
@@ -196,17 +199,68 @@ class DesignAgent:
         updated["detail"] = level
         return self.store.save(state, updated, "detail.changed")
 
+    def plan_baseline(self, manifest: object) -> JsonObject:
+        state = self._idle()
+        require(state["status"] == "discovery", "baseline_requires_discovery")
+        self.store.import_contents(state)
+        return baseline_plan(state["spec"], state["imports"], manifest)
+
+    def approve_baseline(self, manifest: object, approved_digest: str) -> JsonObject:
+        state = self._idle()
+        plan = self.plan_baseline(manifest)
+        require(content_digest(plan) == approved_digest, "reviewed_baseline_digest_mismatch")
+        contents = self.store.import_contents(state)
+        updated = copy.deepcopy(state)
+        self._record_spec_warnings(updated)
+        for row in updated["warnings"]:
+            if row["spec_digest"] == content_digest(state["spec"]):
+                row["review"] = "acknowledged"
+        updated.update(baseline=plan, approved_spec=content_digest(state["spec"]), approval_mode="user",
+                       delegation=None, status="building", stage=len(STAGES), manifest=plan["manifest"],
+                       simulation=None, review=None, acceptance_mode=None, last_error=None)
+        return self.store.save(state, updated, "baseline.approved", {"output_digest": approved_digest, "authority": "user"},
+                               files=[{"path": p, "content": c} for p, c in contents.items()])
+
+    def plan_change(self, request: object) -> JsonObject:
+        state = self._idle()
+        require(state["stage"] == len(STAGES) and state["manifest"] is not None, "change_requires_complete_baseline")
+        selected = object_value(request, {"specification", "stage_paths", "manifest"})
+        return validate_change_plan({"schema": "openrtl.design-change.v1", "base_input_digest": design_input_digest(state),
+                                     "base_files": state["files"], **selected})
+
+    def approve_change(self, value: object, approved_digest: str) -> JsonObject:
+        state = self._idle()
+        plan = validate_change_plan(value)
+        require(content_digest(plan) == approved_digest, "reviewed_change_digest_mismatch")
+        require(state["stage"] == len(STAGES) and state["manifest"] is not None and
+                plan["base_input_digest"] == design_input_digest(state) and plan["base_files"] == state["files"],
+                "change_baseline_stale")
+        updated = copy.deepcopy(state)
+        updated.update(spec=plan["specification"], approved_spec=content_digest(plan["specification"]),
+                       approval_mode="user", acceptance_mode=None, delegation=None, change_plan=plan,
+                       status="building", stage=0, manifest=None, simulation=None, review=None, last_error=None, summaries={})
+        self._record_spec_warnings(updated)
+        for row in updated["warnings"]:
+            if row["spec_digest"] == updated["approved_spec"]:
+                row["review"] = "acknowledged"
+        return self.store.save(state, updated, "change.approved", {"output_digest": approved_digest, "authority": "user"})
+
     def context(self, state: JsonObject, stage: str, message: str | None = None) -> JsonObject:
         files = self.store.contents(state)
+        references = {p: c for p, c in self.store.import_contents(state).items() if p not in files}
         # The reference model is derived from requirements, not implementation.
         # DV sees model + verification plan, not RTL source text.
         if stage in ("architecture", "verification_plan", "reference_model"):
             files = {p: c for p, c in files.items() if p.startswith("docs/")}
+            references = {p: c for p, c in references.items() if p.startswith("docs/")}
         elif stage == "dv":
             files = {p: c for p, c in files.items() if not p.startswith("rtl/")}
-        pack = {"schema": "openrtl.design-context.v1", "role": ROLES[stage], "stage": stage,
+            references = {p: c for p, c in references.items() if not p.startswith("rtl/")}
+        pack = {"schema": "openrtl.design-context.v2", "role": ROLES[stage], "stage": stage,
                 "specification": state["spec"], "approved_spec_digest": state["approved_spec"],
                 "artifacts": files, "artifact_digests": state["files"], "manifest": state["manifest"],
+                "reference_artifacts": references, "reference_status": "untrusted_imports_not_run_evidence",
+                "change_scope": state["change_plan"],
                 "simulation": state["simulation"], "detail": state["detail"],
                 "user_message": text(message, maximum=16000) if message else None}
         require(len(canonical(pack)) <= MAX_CONTEXT_BYTES, "expert_context_exceeds_bound")
@@ -258,6 +312,13 @@ class DesignAgent:
             return await self._simulate(state)
         stage = ("diagnosis" if state["status"] == "needs_repair" else
                  "signoff" if state["status"] == "needs_signoff" else STAGES[state["stage"]])
+        if state["change_plan"] is not None and stage in STAGES and not state["change_plan"]["stage_paths"][stage]:
+            updated = copy.deepcopy(state)
+            updated["stage"] += 1
+            updated["summaries"][stage] = "Artifacts retained by the reviewed change scope; fresh simulation still required."
+            if stage == "dv":
+                updated["manifest"] = validate_manifest(state["change_plan"]["manifest"], self.store.contents(state), state["spec"])
+            return self.store.save(state, updated, "stage.reused", {"role": ROLES[stage]})
         if stage == "diagnosis":
             state = self._limits(state)
             require(state["repairs"] < state["limits"]["max_repairs"], "repair_budget_exhausted")
@@ -274,6 +335,12 @@ class DesignAgent:
                 require(all(f["path"].startswith("rtl/") and f["path"] in previous_files for f in files),
                         "repair_outside_existing_rtl")
                 require(any(previous_files[f["path"]] != f["content"] for f in files), "repair_has_no_change")
+                if started["change_plan"] is not None:
+                    allowed = {p for s in ("rtl", "assertions") for p in started["change_plan"]["stage_paths"][s]}
+                    require(all(f["path"] in allowed for f in files), "repair_outside_reviewed_change_scope")
+            elif started["change_plan"] is not None:
+                require({f["path"] for f in files} == set(started["change_plan"]["stage_paths"][stage]),
+                        "change_stage_paths_differ_from_review")
             else:
                 require(not any(f["path"] in previous_files for f in files), "artifact_owner_conflict")
             combined = {**previous_files, **{f["path"]: f["content"] for f in files}}
@@ -282,6 +349,8 @@ class DesignAgent:
             updated = copy.deepcopy(started)
             if stage == "dv":
                 updated["manifest"] = validate_manifest(contribution["manifest"], combined, started["spec"])
+                if started["change_plan"] is not None:
+                    require(updated["manifest"] == started["change_plan"]["manifest"], "change_manifest_differs_from_review")
                 require(any(p.startswith("model/test_") for p in combined), "independent_model_tests_missing")
             else:
                 require(contribution["manifest"] is None, "stage_cannot_replace_simulation_manifest")
@@ -353,7 +422,7 @@ class DesignAgent:
         try:
             response = object_value(result, {"explanation", "references"})
             text(response["explanation"], maximum=16000)
-            files = self.store.contents(started)
+            files = {**self.store.import_contents(started), **self.store.contents(started)}
             for item in sequence(response["references"]):
                 ref = object_value(item, {"path", "line"})
                 require(ref["path"] in files and type(ref["line"]) is int and

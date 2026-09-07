@@ -14,7 +14,7 @@ from typing import Iterator, cast
 import uuid
 
 from openrtl.domain.design_session import (
-    JsonObject, MAX_ARTIFACT_BYTES, SESSION_SCHEMA, LEGACY_SESSION_SCHEMA, canonical, initial_state,
+    JsonObject, MAX_ARTIFACT_BYTES, SESSION_SCHEMA, LEGACY_SESSION_SCHEMA, PREVIOUS_SESSION_SCHEMA, canonical, initial_state,
     require, source_path, validate_state, text,
 )
 
@@ -86,14 +86,15 @@ class DesignSessionStore:
         return operation_id in self._owned_operations
 
     def upgrade(self) -> JsonObject:
-        """Explicit, append-only v1 migration; prior snapshots remain unchanged."""
+        """Explicit, append-only v1/v2 migration; prior snapshots remain unchanged."""
         state = self.read()
         if state["schema"] == SESSION_SCHEMA:
             return state
-        require(state["schema"] == LEGACY_SESSION_SCHEMA, "session_upgrade_unrecognized")
-        updated = {**initial_state(), **state, "schema": SESSION_SCHEMA,
-                   "approval_mode": "legacy_user" if state["approved_spec"] else None,
-                   "acceptance_mode": "legacy_user" if state["status"] == "accepted" else None}
+        require(state["schema"] in (LEGACY_SESSION_SCHEMA, PREVIOUS_SESSION_SCHEMA), "session_upgrade_unrecognized")
+        updated = {**initial_state(), **state, "schema": SESSION_SCHEMA}
+        if state["schema"] == LEGACY_SESSION_SCHEMA:
+            updated.update(approval_mode="legacy_user" if state["approved_spec"] else None,
+                           acceptance_mode="legacy_user" if state["status"] == "accepted" else None)
         return self.save(state, updated, "session.upgraded")
 
     def close(self) -> None:
@@ -120,7 +121,8 @@ class DesignSessionStore:
         return validate_state(json.loads(row[0]))
 
     def save(self, previous: JsonObject, updated: JsonObject, event: str,
-             fields: JsonObject | None = None, *, files: list[JsonObject] | None = None) -> JsonObject:
+             fields: JsonObject | None = None, *, files: list[JsonObject] | None = None,
+             imports: list[JsonObject] | None = None) -> JsonObject:
         allowed = {"operation_id", "role", "context_digest", "output_digest", "error_code",
                    "input_tokens", "output_tokens", "elapsed_ms", "artifact_count", "spec_digest",
                    "provider", "model", "evidence_kind", "run_id", "authority", "warning_id", "delegation_digest"}
@@ -135,12 +137,13 @@ class DesignSessionStore:
                           "operation.completed", "operation.received", "operation.failed", "simulation.completed",
                           "simulation.failed", "review.completed", "project.accepted", "detail.changed",
                           "session.upgraded", "limits.bound", "delegation.granted", "batch.step_started",
-                          "operation.abandoned", "warning.reviewed"},
+                          "operation.abandoned", "warning.reviewed", "imports.recorded", "baseline.approved",
+                          "change.approved", "stage.reused"},
                 "event_code_unrecognized")
         with self.transaction():
             require(self.read() == previous, "session_concurrent_change")
             current = json.loads(canonical(updated))
-            for item in files or []:
+            for item in (files or []) + (imports or []):
                 path = source_path(item["path"])
                 data = text(item["content"]).encode("utf-8")
                 require(len(data) <= MAX_ARTIFACT_BYTES, "artifact_too_large")
@@ -148,7 +151,12 @@ class DesignSessionStore:
                 existing = self.connection.execute("SELECT content FROM blobs WHERE digest=?", (digest,)).fetchone()
                 require(existing is None or existing[0] == data, "artifact_digest_collision")
                 self.connection.execute("INSERT OR IGNORE INTO blobs VALUES (?, ?)", (digest, data))
-                current["files"][path] = digest
+                if "source" in item:
+                    require(digest == item["digest"] and path not in current["imports"], "import_binding_or_collision_invalid")
+                    current["imports"][path] = {"digest": digest, "source": item["source"],
+                                                 "bytes": len(data), "plan_digest": item["plan_digest"]}
+                else:
+                    current["files"][path] = digest
             current["revision"] = previous["revision"] + 1
             validate_state(current)
             encoded_event = {"schema": "openrtl.design-event.v1", "sequence": current["revision"],
@@ -173,6 +181,9 @@ class DesignSessionStore:
                     "artifact_bytes_changed")
             result[path] = row[0].decode("utf-8")
         return result
+
+    def import_contents(self, state: JsonObject) -> dict[str, str]:
+        return self.contents({"files": {p: row["digest"] for p, row in state.get("imports", {}).items()}})
 
     def materialize(self, state: JsonObject) -> Path:
         parent = safe_root(self.root / "runs")

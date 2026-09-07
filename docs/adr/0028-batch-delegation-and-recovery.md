@@ -1,6 +1,8 @@
 # ADR 0028: durable batch delegation and explicit recovery
 
-Status: implementation candidate; local validation pending.
+Status: local checkpoint `9abd92216d11d78f82b7505737015c61ece2e46a`.
+45 focused tests, strict typing, full default validation and the production
+canary passed. Live provider/container acceptance remains pending.
 
 ## Decision
 

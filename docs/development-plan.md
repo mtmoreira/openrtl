@@ -168,11 +168,16 @@ pending, and the checkpoint has not been integrated into main or published.
 
 M37 adds batch operation, scoped broad delegation with a warning for each
 assumption, durable review queues, bounded execution and crash reconciliation.
-Its implementation candidate is awaiting provider-free local validation. The
+Its checkpoint `9abd92216d11d78f82b7505737015c61ece2e46a` passed 45 focused
+tests, strict typing, the 199-test main suite, both three-test example suites
+and the production canary. The
 batch runner shares M36's gates; delegation never restores provider or runtime
 permissions. M36–M40 remain a sequential local delivery, not a released agent.
 M38 adds multiple file imports and existing-design/DV baselines, explanations
-and controlled change impact. M39 expands teaching granularity, diagnosis,
+and controlled change impact. Its implementation candidate is awaiting local
+validation: source-only imports, frozen provenance, reviewed baseline adoption,
+per-stage change paths, retained-file guards and fresh-evidence requirements.
+M39 expands teaching granularity, diagnosis,
 DV-only improvement and measured simulation-level optimization. M40 qualifies
 held-out designs, installed CLI workflows, documented evidence tiers and the
 user-facing package. No milestone implies synthesis, formal execution or FPGA

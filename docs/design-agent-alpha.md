@@ -1,4 +1,4 @@
-# OpenRTL design-agent alpha (M36–M37)
+# OpenRTL design-agent alpha (M36–M38)
 
 This is an implementation candidate, not a newly qualified release. The published
 v0.4.0 package remains the simulation/evidence toolkit. M36 adds the first
@@ -92,8 +92,8 @@ One process holds the session's exclusive writer lock; a second writer fails
 closed. `status` uses a read-only connection and can run while the writer is
 active. Closing or losing the process releases the operating-system lock, not
 the recorded in-flight operation. Do not delete `.session.lock` or edit SQLite
-to bypass recovery. M36 v1 snapshots remain readable; mutating an old session
-requires `--upgrade-session`. Migration appends a v2 snapshot without changing
+to bypass recovery. M36 v1 and M37 v2 snapshots remain readable; mutating an old session
+requires `--upgrade-session`. Migration appends a v3 snapshot without changing
 historical snapshots or granting new authority.
 
 An interrupted operation blocks replay because a provider request or local run
@@ -135,7 +135,7 @@ Review that scope and its digest, then use `openrtl batch --project <directory>
 --create --spec <spec.json> --delegation <authorization.json>
 --approve-delegation <canonical-authorization-digest>` (one line). Omit `--create`
 when resuming. Digests use `sha256:` plus SHA-256 of UTF-8 JSON with sorted keys,
-compact separators and `ensure_ascii=False`, not the file's whitespace. The
+compact separators and `ensure_ascii=True`, not the file's whitespace. The
 library helper is `openrtl.domain.design_session.content_digest`.
 
 Provider and simulation flags are the same as chat and must be supplied afresh.
@@ -168,7 +168,9 @@ of this flow use doubles and are not real simulator/model qualification.
 ## Pending qualification
 
 M36's local checkpoint passed 25 focused tests, strict typing, full repository
-tests and the production FIFO canary. M37's new batch/recovery candidate still
-awaits local validation. Separately authorized live-provider generation and
-isolated simulation of a reviewed ALU remain pending. M38–M40 are not complete.
+tests and the production FIFO canary. M37 passed its local validation including
+45 focused tests and strict typing. M38 import/change workflows are described
+in [the import guide](design-imports.md) and still await local validation.
+Separately authorized live-provider generation and isolated simulation of a
+reviewed ALU remain pending. M38–M40 are not complete.
 These local candidates are not integrated, pushed or released agent packages.
