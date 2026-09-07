@@ -453,7 +453,7 @@ def parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = parser().parse_args(argv)
-    if arguments.command in ("chat", "resume", "status", "doctor"):
+    if arguments.command in ("chat", "resume", "batch", "recover", "status", "doctor"):
         from openrtl.design_cli import run_design_command
         return run_design_command(arguments)
     if arguments.command == "experts":

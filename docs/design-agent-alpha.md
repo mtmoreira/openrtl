@@ -1,4 +1,4 @@
-# OpenRTL design-agent alpha (M36)
+# OpenRTL design-agent alpha (M36–M37)
 
 This is an implementation candidate, not a newly qualified release. The published
 v0.4.0 package remains the simulation/evidence toolkit. M36 adds the first
@@ -88,15 +88,87 @@ simulation materializes the exact snapshot in `runs/<operation-id>/input`.
 Evidence artifacts and their hashes appear under the corresponding `evidence`
 directory. Logs are untrusted engineering output and must not grant authority.
 
-Concurrent changes fail closed. An interrupted active operation is retained and
-blocks automatic replay, because the previous provider request or local run may
-already have executed. M37 will add explicit reconciliation. Until then inspect
-the recorded state; do not edit the database or claim completion from a partial
-run. Model, simulation, review or artifact failures never become acceptance.
+One process holds the session's exclusive writer lock; a second writer fails
+closed. `status` uses a read-only connection and can run while the writer is
+active. Closing or losing the process releases the operating-system lock, not
+the recorded in-flight operation. Do not delete `.session.lock` or edit SQLite
+to bypass recovery. M36 v1 snapshots remain readable; mutating an old session
+requires `--upgrade-session`. Migration appends a v2 snapshot without changing
+historical snapshots or granting new authority.
+
+An interrupted operation blocks replay because a provider request or local run
+may already have executed. Inspect its exact ID using `status`, then explicitly
+use `openrtl recover --project <directory> --abandon-operation <id>`. This
+abandons the result and records a warning; it never refunds calls or fabricates
+evidence. Recovery requires a new exclusive writer, so it cannot abandon work
+started by the same active writer. A provider's remote outcome or cost may stay
+unknown. Recovery does not invoke or query the provider.
+
+Simulation recovery additionally requires `--allow-simulation` and the same
+`--simulation-profile`. It verifies the recorded runtime intent, exact local
+image, operation label and container name before removing only that container.
+An already absent container is recognized; daemon errors or identity drift fail
+closed. The next simulation is a new run, never adoption of partial evidence.
+Old M36 simulation intents without runtime ownership metadata require manual
+reconciliation; this command will not guess a cleanup target.
+
+## Batch delegation
+
+Prepare a strict specification JSON (including open questions) and an explicit
+authorization JSON. The authorization fields are exactly:
+
+```json
+{
+  "schema": "openrtl.design-delegation.v1",
+  "seed_spec_digest": "sha256:<canonical specification digest>",
+  "allow_assumptions": true,
+  "allow_requirement_proposals": false,
+  "allow_final_acceptance": false,
+  "max_calls": 20,
+  "max_repairs": 2,
+  "max_steps": 24,
+  "max_seconds": 3600
+}
+```
+
+Review that scope and its digest, then use `openrtl batch --project <directory>
+--create --spec <spec.json> --delegation <authorization.json>
+--approve-delegation <canonical-authorization-digest>` (one line). Omit `--create`
+when resuming. Digests use `sha256:` plus SHA-256 of UTF-8 JSON with sorted keys,
+compact separators and `ensure_ascii=False`, not the file's whitespace. The
+library helper is `openrtl.domain.design_session.content_digest`.
+
+Provider and simulation flags are the same as chat and must be supplied afresh.
+Without them batch stops at the corresponding unavailable capability. It never
+installs an SDK, pulls an image, starts a service, or resolves credentials on
+the strength of saved delegation. A delegation is bound to its original seed
+and cannot be silently replaced on resume.
+
+For every resolved open question, the proposed spec must carry an assumption
+with the same ID and a rationale. Every assumption is a pending warning;
+requirement/port changes additionally require the explicit proposal permission
+and generate warnings. Unknown questions cannot silently disappear. If final
+acceptance is delegated, the report says `delegated`, not individually reviewed.
+Warnings remain pending until `/ack-warning <id>` in an interactive session.
+Acknowledging a warning does not approve an edit or bypass signoff/simulation.
+
+Call and repair ceilings persist, including across specification revision. A
+resumed invocation may lower but cannot raise them. Steps are consumed before
+execution. The persisted wall-clock deadline includes time spent offline;
+resume does not restart it. Deadline cancellation leaves any in-flight intent
+for explicit recovery. `/revise` invalidates delegation and requires a newly
+reviewed seed/authorization, but does not refund calls or repairs.
+
+Batch retains a content-addressed JSON report in `reports/` containing state,
+authority, warnings, consumed budgets and artifact/evidence digests. Exit zero
+means accepted (with the authority shown); exit two means incomplete/stopped
+and requires report review. Setup/recovery errors return one. Scripted tests
+of this flow use doubles and are not real simulator/model qualification.
 
 ## Pending qualification
 
-M36 still requires passing focused tests, strict typing, full repository tests,
-the production canary, then separately authorized live-provider generation and
-isolated simulation of a reviewed ALU. M37–M40 remain pending. No M36 code has
-been committed, integrated, pushed or released by this document.
+M36's local checkpoint passed 25 focused tests, strict typing, full repository
+tests and the production FIFO canary. M37's new batch/recovery candidate still
+awaits local validation. Separately authorized live-provider generation and
+isolated simulation of a reviewed ALU remain pending. M38–M40 are not complete.
+These local candidates are not integrated, pushed or released agent packages.

@@ -13,7 +13,7 @@ import stat
 import xml.etree.ElementTree as ET
 
 from openrtl.adapters.design_session_store import safe_root
-from openrtl.domain.design_session import JsonObject, canonical, object_value, require, source_path
+from openrtl.domain.design_session import JsonObject, canonical, content_digest, object_value, require, source_path
 
 
 def parse_test_results(data: bytes, expected: list[str]) -> list[str]:
@@ -103,8 +103,18 @@ class IsolatedDesignSimulator:
         (control / "run.py").write_bytes(runner.read_bytes())
         prefix = [self.profile["docker_executable"], "--host", "unix://" + self.profile["socket"],
                   "--config", str(config)]
+        container_name = "openrtl-design-" + operation_id
+        intent = {"schema": "openrtl.design-runtime-intent.v1", "operation_id": operation_id,
+                  "container_name": container_name, "profile_digest": content_digest(self.profile),
+                  "input_digest": input_digest}
+        # Record ownership before any daemon call, including a lost create response.
+        with (run / "intent.json").open("xb") as stream:
+            stream.write(canonical(intent))
+            stream.flush()
+            os.fsync(stream.fileno())
         # A literal local image ID and --pull=never prohibit implicit downloads.
-        argv = prefix + ["create", "--pull=never", "--network=none", "--read-only",
+        argv = prefix + ["create", "--name", container_name, "--label", "openrtl.operation=" + operation_id,
+                         "--pull=never", "--network=none", "--read-only",
                          "--cap-drop=ALL", "--security-opt=no-new-privileges", "--pids-limit=128",
                          "--memory=2g", "--cpus=2", "--user=65534:65534",
                          "--tmpfs=/output:rw,nosuid,nodev,exec,size=256m,mode=1777",
@@ -165,3 +175,35 @@ class IsolatedDesignSimulator:
         finally:
             removed, _ = await self._process(prefix + ["rm", "--force", container], config, 30, 8192)
             require(removed == 0, "owned_container_cleanup_requires_reconciliation")
+
+    async def abandon(self, operation_id: str, input_digest: str) -> None:
+        """Explicit cleanup of one recorded runtime; never accept partial outputs."""
+        require(re.fullmatch(r"[a-f0-9]{32}", operation_id) is not None, "simulation_operation_invalid")
+        run = safe_root(self.project / "runs" / operation_id)
+        intent_path = safe_root(run / "intent.json")
+        require(intent_path.is_file() and intent_path.stat().st_size <= 4096,
+                "runtime_intent_missing_manual_reconciliation_required")
+        intent = object_value(json.loads(intent_path.read_bytes()),
+                              {"schema", "operation_id", "container_name", "profile_digest", "input_digest"})
+        name = "openrtl-design-" + operation_id
+        require(intent == {"schema": "openrtl.design-runtime-intent.v1", "operation_id": operation_id,
+                           "container_name": name, "profile_digest": content_digest(self.profile),
+                           "input_digest": input_digest}, "runtime_intent_binding_invalid")
+        config = safe_root(run / "docker-config")
+        require(config.is_dir() and not any(config.iterdir()), "runtime_configuration_changed")
+        prefix = [self.profile["docker_executable"], "--host", "unix://" + self.profile["socket"],
+                  "--config", str(config)]
+        code, output = await self._process(prefix + ["ps", "--all", "--no-trunc", "--filter",
+                                          "name=^/" + name + "$", "--format", "{{.ID}}"], config, 30, 8192)
+        require(code == 0, "runtime_reconciliation_query_failed")
+        container = output.decode("ascii", errors="strict").strip()
+        if not container:
+            return
+        require(re.fullmatch(r"[a-f0-9]{64}", container) is not None, "runtime_reconciliation_ambiguous")
+        template = '{{.Name}}|{{.Image}}|{{index .Config.Labels "openrtl.operation"}}'
+        code, identity = await self._process(prefix + ["inspect", "--format", template, container], config, 30, 8192)
+        require(code == 0 and identity.decode("ascii", errors="strict").strip() ==
+                "/" + name + "|" + self.profile["image_id"] + "|" + operation_id,
+                "runtime_reconciliation_identity_mismatch")
+        removed, _ = await self._process(prefix + ["rm", "--force", container], config, 30, 8192)
+        require(removed == 0, "owned_container_cleanup_requires_reconciliation")

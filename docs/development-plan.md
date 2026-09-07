@@ -160,11 +160,17 @@ M36 builds the first interactive chat-to-design slice: digest-reviewed
 requirements and assumptions, persisted engineering state, role-scoped expert
 generation, independently derived model/DV collateral, isolated simulation,
 bounded candidate repair, signoff and explicit final acceptance. The ALU is a
-live acceptance design, never hard-coded generator output. Implementation is
-in progress; local validation and live qualification are not yet complete.
+live acceptance design, never hard-coded generator output. The implementation
+checkpoint `a0b47bc615af0989abbbd814f423c8b5d262123b` passed 25 focused
+tests, strict typing, full default validation and the production canary. This
+does not qualify generated designs: live provider/container acceptance remains
+pending, and the checkpoint has not been integrated into main or published.
 
 M37 adds batch operation, scoped broad delegation with a warning for each
 assumption, durable review queues, bounded execution and crash reconciliation.
+Its implementation candidate is awaiting provider-free local validation. The
+batch runner shares M36's gates; delegation never restores provider or runtime
+permissions. M36–M40 remain a sequential local delivery, not a released agent.
 M38 adds multiple file imports and existing-design/DV baselines, explanations
 and controlled change impact. M39 expands teaching granularity, diagnosis,
 DV-only improvement and measured simulation-level optimization. M40 qualifies

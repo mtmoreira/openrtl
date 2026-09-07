@@ -236,7 +236,7 @@ class DesignAgentTest(unittest.TestCase):
         self.agent.propose(specification())
         with self.assertRaisesRegex(ValueError, "concurrent_change"):
             self.store.save(before, before, "detail.changed")
-        second = DesignSessionStore(self.root)
+        second = DesignSessionStore(self.root, read_only=True)
         try:
             self.assertEqual(second.read(), self.store.read())
         finally:

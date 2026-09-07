@@ -12,14 +12,16 @@ from typing import Callable
 
 from openrtl.adapters.design_session_store import DesignSessionStore, safe_root
 from openrtl.application.design_agent import DesignAgent, DesignPolicy, design_input_digest
-from openrtl.domain.design_session import JsonObject, MAX_CONTEXT_BYTES, STAGES, content_digest, require
+from openrtl.application.design_batch import bind_delegation, run_batch
+from openrtl.domain.design_session import JsonObject, MAX_CONTEXT_BYTES, STAGES, canonical, content_digest, require
 
 
 def add_design_commands(subcommands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    for command in ("chat", "resume", "status", "doctor"):
+    for command in ("chat", "resume", "batch", "recover", "status", "doctor"):
         selected = subcommands.add_parser(command, help="design-agent alpha: " + command)
         selected.add_argument("--project", type=Path, required=command != "doctor")
-        if command in ("chat", "resume"):
+        if command in ("chat", "resume", "batch", "recover"):
+            selected.add_argument("--upgrade-session", action="store_true")
             selected.add_argument("--allow-provider", action="store_true")
             selected.add_argument("--model")
             selected.add_argument("--credential-env", default="OPENAI_API_KEY")
@@ -29,6 +31,13 @@ def add_design_commands(subcommands: argparse._SubParsersAction[argparse.Argumen
             selected.add_argument("--timeout-seconds", type=int, default=120)
             selected.add_argument("--allow-simulation", action="store_true")
             selected.add_argument("--simulation-profile", type=Path)
+        if command == "batch":
+            selected.add_argument("--create", action="store_true")
+            selected.add_argument("--spec", type=Path)
+            selected.add_argument("--delegation", type=Path, required=True)
+            selected.add_argument("--approve-delegation", required=True)
+        if command == "recover":
+            selected.add_argument("--abandon-operation", required=True)
 
 
 def _json_file(path: Path) -> object:
@@ -70,12 +79,16 @@ def show(state: JsonObject, emit: Callable[[str], None]) -> None:
         emit("Inspect artifacts and evidence before final acceptance: /approve " + digest)
     if state["last_error"]:
         emit("Last error: " + state["last_error"])
+    for row in state.get("warnings", []):
+        emit("WARNING " + row["id"] + " [" + row["review"] + "]: " + row["text"] + " — " + row["rationale"])
+    if state.get("acceptance_mode") == "delegated":
+        emit("Accepted under broad delegation, not individual final user review.")
 
 
 async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input,
                        emit: Callable[[str], None] = print) -> int:
     emit("OpenRTL design-agent alpha. Raw conversation text is not saved; reviewed artifacts and events are.")
-    emit("/show /spec <JSON path> /approve <digest> /next /build /revise /detail brief|normal|detailed /quit")
+    emit("/show /spec <JSON path> /approve <digest> /ack-warning <id> /next /build /revise /detail brief|normal|detailed /quit")
     show(agent.store.read(), emit)
     while True:
         try:
@@ -98,6 +111,8 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
                 show(agent.approve(argument.strip()), emit)
             elif command == "/revise":
                 show(agent.revise(), emit)
+            elif command == "/ack-warning":
+                show(agent.acknowledge_warning(argument.strip()), emit)
             elif command == "/detail":
                 agent.detail(argument.strip())
                 emit("Explanation detail changed; review and evidence gates are unchanged.")
@@ -146,12 +161,13 @@ def run_design_command(arguments: argparse.Namespace) -> int:
             print(json.dumps(report, indent=2, sort_keys=True))
             return 0
         if arguments.command == "status":
-            store = DesignSessionStore(arguments.project)
+            store = DesignSessionStore(arguments.project, read_only=True)
             print(json.dumps(store.read(), indent=2, sort_keys=True))
             return 0
         policy = DesignPolicy(arguments.max_calls, arguments.max_repairs)
         expert = None
         simulator = None
+        require(arguments.command != "recover" or not arguments.allow_provider, "recovery_never_invokes_provider")
         if arguments.allow_provider:
             require(arguments.model is not None, "explicit_model_required")
             from openrtl.adapters.design_generation import openai_design_expert
@@ -166,8 +182,37 @@ def run_design_command(arguments: argparse.Namespace) -> int:
         if arguments.allow_simulation:
             from openrtl.adapters.design_simulation import IsolatedDesignSimulator
             simulator = IsolatedDesignSimulator(arguments.project, _json_file(arguments.simulation_profile))
-        store = DesignSessionStore(arguments.project, create=arguments.command == "chat")
-        return asyncio.run(conversation(DesignAgent(store, expert, simulator, policy)))
+        create = arguments.command == "chat" or arguments.command == "batch" and arguments.create
+        store = DesignSessionStore(arguments.project, create=create)
+        if arguments.upgrade_session:
+            store.upgrade()
+        agent = DesignAgent(store, expert, simulator, policy, recovery=simulator)
+        if arguments.command == "recover":
+            show(asyncio.run(agent.abandon(arguments.abandon_operation)), print)
+            return 0
+        if arguments.command == "batch":
+            if arguments.spec is not None:
+                seed = _json_file(arguments.spec)
+                state = store.read()
+                if state["spec"] is None:
+                    agent.propose(seed)
+                else:
+                    expected = state["delegation"]["seed_spec"] if state.get("delegation") else state["spec"]
+                    require(seed == expected, "batch_seed_cannot_replace_existing_spec")
+            bind_delegation(agent, _json_file(arguments.delegation), arguments.approve_delegation)
+            report = asyncio.run(run_batch(agent))
+            parent = safe_root(store.root / "reports")
+            parent.mkdir(mode=0o700, exist_ok=True)
+            target = safe_root(parent / ("batch-" + content_digest(report)[7:] + ".json"))
+            payload = canonical(report)
+            if target.exists():
+                require(target.is_file() and target.read_bytes() == payload, "batch_report_collision")
+            else:
+                with target.open("xb") as stream:
+                    stream.write(payload)
+            print(json.dumps({"outcome": report["outcome"], "report": str(target)}, sort_keys=True))
+            return 0 if report["outcome"] == "accepted" else 2
+        return asyncio.run(conversation(agent))
     except KeyboardInterrupt:
         print("Interrupted. Recorded operations are not automatically replayed; inspect status before continuing.")
         return 130

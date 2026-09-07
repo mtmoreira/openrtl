@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 import hashlib
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -13,7 +14,8 @@ from typing import Iterator, cast
 import uuid
 
 from openrtl.domain.design_session import (
-    JsonObject, MAX_ARTIFACT_BYTES, canonical, initial_state, require, source_path, validate_state, text,
+    JsonObject, MAX_ARTIFACT_BYTES, SESSION_SCHEMA, LEGACY_SESSION_SCHEMA, canonical, initial_state,
+    require, source_path, validate_state, text,
 )
 
 
@@ -25,7 +27,10 @@ def safe_root(path: Path) -> Path:
 
 
 class DesignSessionStore:
-    def __init__(self, root: Path, *, create: bool = False) -> None:
+    def __init__(self, root: Path, *, create: bool = False, read_only: bool = False) -> None:
+        require(not (create and read_only), "read_only_creation_invalid")
+        self._lock_fd: int | None = None
+        self._owned_operations: set[str] = set()
         self.root = safe_root(root)
         if create:
             require(not self.root.exists(), "new_project_must_be_absent")
@@ -37,24 +42,69 @@ class DesignSessionStore:
             require(not selected.is_symlink() and (not selected.exists() or selected.is_file()),
                     "session_storage_unrecognized")
         require(create or database.is_file(), "session_database_missing")
-        uri = database.as_uri() + ("?mode=rwc" if create else "?mode=rw")
-        self.connection = sqlite3.connect(uri, uri=True, isolation_level=None, timeout=5)
-        self.connection.execute("PRAGMA trusted_schema=OFF")
-        self.connection.execute("PRAGMA synchronous=FULL")
-        if create:
-            with self.transaction():
-                self.connection.execute("CREATE TABLE snapshots (revision INTEGER PRIMARY KEY, payload TEXT NOT NULL)")
-                self.connection.execute("CREATE TABLE blobs (digest TEXT PRIMARY KEY, content BLOB NOT NULL)")
-                self.connection.execute("CREATE TABLE events (sequence INTEGER PRIMARY KEY, payload TEXT NOT NULL)")
-                self.connection.execute("INSERT INTO snapshots VALUES (0, ?)", (canonical(initial_state()).decode(),))
-            os.chmod(database, 0o600)
-        self.read()
+        connection: sqlite3.Connection | None = None
+        try:
+            if not read_only:
+                lock = safe_root(self.root / ".session.lock")
+                require(not lock.exists() or lock.is_file(), "session_lock_unrecognized")
+                self._lock_fd = os.open(lock, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+                require(os.fstat(self._lock_fd).st_nlink == 1, "session_lock_link_invalid")
+                os.set_inheritable(self._lock_fd, False)
+                try:
+                    fcntl.flock(self._lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError:
+                    raise ValueError("session_writer_already_active") from None
+            uri = database.as_uri() + ("?mode=ro" if read_only else "?mode=rwc" if create else "?mode=rw")
+            connection = sqlite3.connect(uri, uri=True, isolation_level=None, timeout=5)
+            self.connection = connection
+            self.connection.execute("PRAGMA trusted_schema=OFF")
+            if read_only:
+                self.connection.execute("PRAGMA query_only=ON")
+            else:
+                self.connection.execute("PRAGMA synchronous=FULL")
+            if create:
+                with self.transaction():
+                    self.connection.execute("CREATE TABLE snapshots (revision INTEGER PRIMARY KEY, payload TEXT NOT NULL)")
+                    self.connection.execute("CREATE TABLE blobs (digest TEXT PRIMARY KEY, content BLOB NOT NULL)")
+                    self.connection.execute("CREATE TABLE events (sequence INTEGER PRIMARY KEY, payload TEXT NOT NULL)")
+                    self.connection.execute("INSERT INTO snapshots VALUES (0, ?)", (canonical(initial_state()).decode(),))
+                os.chmod(database, 0o600)
+            self.read()
+        except BaseException:
+            if connection is not None:
+                connection.close()
+            if self._lock_fd is not None:
+                os.close(self._lock_fd)
+                self._lock_fd = None
+            raise
+
+    @property
+    def exclusive(self) -> bool:
+        return self._lock_fd is not None
+
+    def operation_owned(self, operation_id: str) -> bool:
+        return operation_id in self._owned_operations
+
+    def upgrade(self) -> JsonObject:
+        """Explicit, append-only v1 migration; prior snapshots remain unchanged."""
+        state = self.read()
+        if state["schema"] == SESSION_SCHEMA:
+            return state
+        require(state["schema"] == LEGACY_SESSION_SCHEMA, "session_upgrade_unrecognized")
+        updated = {**initial_state(), **state, "schema": SESSION_SCHEMA,
+                   "approval_mode": "legacy_user" if state["approved_spec"] else None,
+                   "acceptance_mode": "legacy_user" if state["status"] == "accepted" else None}
+        return self.save(state, updated, "session.upgraded")
 
     def close(self) -> None:
         self.connection.close()
+        if self._lock_fd is not None:
+            os.close(self._lock_fd)
+            self._lock_fd = None
 
     @contextmanager
     def transaction(self) -> Iterator[None]:
+        require(self.exclusive, "session_read_only")
         self.connection.execute("BEGIN IMMEDIATE")
         try:
             yield
@@ -73,7 +123,7 @@ class DesignSessionStore:
              fields: JsonObject | None = None, *, files: list[JsonObject] | None = None) -> JsonObject:
         allowed = {"operation_id", "role", "context_digest", "output_digest", "error_code",
                    "input_tokens", "output_tokens", "elapsed_ms", "artifact_count", "spec_digest",
-                   "provider", "model", "evidence_kind", "run_id"}
+                   "provider", "model", "evidence_kind", "run_id", "authority", "warning_id", "delegation_digest"}
         safe_fields = dict(fields or {})
         require(set(safe_fields).issubset(allowed), "event_fields_not_allowlisted")
         require(all(type(v) in (str, int, bool) and len(str(v)) <= 256 for v in safe_fields.values()),
@@ -83,7 +133,9 @@ class DesignSessionStore:
                 text(value, maximum=256)
         require(event in {"spec.proposed", "spec.approved", "spec.revised", "operation.started",
                           "operation.completed", "operation.received", "operation.failed", "simulation.completed",
-                          "simulation.failed", "review.completed", "project.accepted", "detail.changed"},
+                          "simulation.failed", "review.completed", "project.accepted", "detail.changed",
+                          "session.upgraded", "limits.bound", "delegation.granted", "batch.step_started",
+                          "operation.abandoned", "warning.reviewed"},
                 "event_code_unrecognized")
         with self.transaction():
             require(self.read() == previous, "session_concurrent_change")
@@ -105,6 +157,10 @@ class DesignSessionStore:
                                     (current["revision"], canonical(current).decode()))
             self.connection.execute("INSERT INTO events VALUES (?, ?)",
                                     (current["revision"], canonical(encoded_event).decode()))
+        if event == "operation.started":
+            self._owned_operations.add(current["active"]["id"])
+        elif previous["active"] is not None and current["active"] is None:
+            self._owned_operations.discard(previous["active"]["id"])
         return cast(JsonObject, current)
 
     def contents(self, state: JsonObject) -> dict[str, str]:

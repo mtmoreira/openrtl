@@ -9,12 +9,16 @@ import uuid
 import time
 
 from openrtl.domain.design_session import (
-    JsonObject, MAX_CONTEXT_BYTES, ROLES, STAGES, canonical, content_digest,
+    JsonObject, MAX_CONTEXT_BYTES, ROLES, STAGES, SESSION_SCHEMA, canonical, content_digest,
     object_value, require, sequence, text, validate_files, validate_manifest, validate_spec,
 )
+from openrtl.domain.design_delegation import specification_warnings, validate_delegated_spec, warning
 
 
 class SessionStore(Protocol):
+    @property
+    def exclusive(self) -> bool: ...
+    def operation_owned(self, operation_id: str) -> bool: ...
     def read(self) -> JsonObject: ...
     def contents(self, state: JsonObject) -> dict[str, str]: ...
     def save(self, previous: JsonObject, updated: JsonObject, event: str,
@@ -39,6 +43,10 @@ class DesignSimulator(Protocol):
                        input_digest: str, operation_id: str) -> JsonObject: ...
 
 
+class DesignRecovery(Protocol):
+    async def abandon(self, operation_id: str, input_digest: str) -> None: ...
+
+
 @dataclass(frozen=True)
 class DesignPolicy:
     max_calls: int = 40
@@ -56,13 +64,54 @@ def design_input_digest(state: JsonObject) -> str:
 
 class DesignAgent:
     def __init__(self, store: SessionStore, expert: DesignExpert | None = None,
-                 simulator: DesignSimulator | None = None, policy: DesignPolicy = DesignPolicy()) -> None:
+                 simulator: DesignSimulator | None = None, policy: DesignPolicy = DesignPolicy(),
+                 recovery: DesignRecovery | None = None) -> None:
         self.store, self.expert, self.simulator, self.policy = store, expert, simulator, policy
+        self.recovery = recovery
 
     def _idle(self) -> JsonObject:
         state = self.store.read()
+        require(state["schema"] == SESSION_SCHEMA, "explicit_session_upgrade_required")
         require(state["active"] is None, "interrupted_operation_requires_reconciliation")
         return state
+
+    def _limits(self, state: JsonObject) -> JsonObject:
+        selected = {"max_calls": self.policy.max_calls, "max_repairs": self.policy.max_repairs}
+        if state["limits"] is not None:
+            selected = {k: min(v, state["limits"][k]) for k, v in selected.items()}
+        if selected == state["limits"]:
+            return state
+        updated = copy.deepcopy(state)
+        updated["limits"] = selected
+        return self.store.save(state, updated, "limits.bound")
+
+    def acknowledge_warning(self, warning_id: str) -> JsonObject:
+        state = self._idle()
+        updated = copy.deepcopy(state)
+        found = [w for w in updated["warnings"] if w["id"] == warning_id]
+        require(len(found) == 1, "warning_not_found")
+        if found[0]["review"] == "acknowledged":
+            return state
+        found[0]["review"] = "acknowledged"
+        return self.store.save(state, updated, "warning.reviewed", {"warning_id": warning_id})
+
+    async def abandon(self, operation_id: str) -> JsonObject:
+        state = self.store.read()
+        require(state["schema"] == SESSION_SCHEMA, "explicit_session_upgrade_required")
+        require(self.store.exclusive and state["active"] is not None and
+                state["active"]["id"] == operation_id, "recovery_operation_mismatch")
+        require(not self.store.operation_owned(operation_id), "operation_owned_by_current_writer")
+        if state["active"]["kind"] == "simulation":
+            require(self.recovery is not None, "explicit_runtime_reconciliation_required")
+            assert self.recovery is not None
+            await self.recovery.abandon(operation_id, design_input_digest(state))
+        updated = copy.deepcopy(state)
+        updated.update(active=None, last_error="interrupted_operation_abandoned")
+        updated["warnings"].append(warning(
+            "interrupted_operation", operation_id, content_digest(state["spec"]),
+            "Interrupted operation explicitly abandoned; its output is not accepted as evidence.",
+            "External completion or cost may be unknown. Consumed calls are not refunded."))
+        return self.store.save(state, updated, "operation.abandoned", {"operation_id": operation_id})
 
     def propose(self, specification: object) -> JsonObject:
         """Allow an explicit structured specification without requiring a model."""
@@ -71,7 +120,14 @@ class DesignAgent:
         spec = validate_spec(specification)
         updated = copy.deepcopy(state)
         updated["spec"] = spec
+        self._record_spec_warnings(updated)
         return self.store.save(state, updated, "spec.proposed", {"spec_digest": content_digest(spec)})
+
+    @staticmethod
+    def _record_spec_warnings(updated: JsonObject) -> None:
+        seed = updated["delegation"]["seed_spec"] if updated["delegation"] else None
+        existing = {w["id"] for w in updated["warnings"]}
+        updated["warnings"].extend(w for w in specification_warnings(seed, updated["spec"]) if w["id"] not in existing)
 
     async def discuss(self, message: str) -> JsonObject:
         state = self._idle()
@@ -81,34 +137,56 @@ class DesignAgent:
             spec = validate_spec(result)
             updated = copy.deepcopy(started)
             updated.update(spec=spec, active=None, last_error=None)
+            self._record_spec_warnings(updated)
             return self.store.save(started, updated, "spec.proposed", {"spec_digest": content_digest(spec)})
         except (ValueError, TypeError, KeyError):
             self._failed(started, "expert_output_invalid")
             raise ValueError("expert_output_invalid") from None
 
-    def approve(self, digest: str) -> JsonObject:
+    def approve(self, digest: str, *, delegated: bool = False) -> JsonObject:
         state = self._idle()
         updated = copy.deepcopy(state)
+        authority = "delegated" if delegated else "user"
+        if delegated:
+            require(state["delegation"] is not None, "explicit_delegation_required")
+            require(time.time_ns() < state["delegation"]["deadline_ns"], "delegation_deadline_exhausted")
         if state["status"] == "discovery":
             spec = validate_spec(state["spec"])
             require(not spec["questions"] and bool(spec["ports"]), "requirements_incomplete")
             require(digest == content_digest(spec), "reviewed_specification_digest_mismatch")
-            updated.update(approved_spec=digest, status="building")
-            return self.store.save(state, updated, "spec.approved", {"spec_digest": digest})
+            seed = state["delegation"]["seed_spec"] if delegated else None
+            if delegated:
+                validate_delegated_spec(validate_spec(seed), spec, state["delegation"]["authorization"])
+            existing = {w["id"] for w in updated["warnings"]}
+            for row in specification_warnings(seed, spec):
+                if not delegated:
+                    row["review"] = "acknowledged"
+                if row["id"] not in existing:
+                    updated["warnings"].append(row)
+                elif not delegated:
+                    for prior in updated["warnings"]:
+                        if prior["id"] == row["id"]:
+                            prior["review"] = "acknowledged"
+            updated.update(approved_spec=digest, status="building", approval_mode=authority)
+            return self.store.save(state, updated, "spec.approved", {"spec_digest": digest, "authority": authority})
         require(state["status"] == "awaiting_acceptance", "project_not_ready_for_acceptance")
         require(state["simulation"]["input_digest"] == design_input_digest(state), "simulation_stale")
         expected = content_digest({"input": design_input_digest(state), "simulation": state["simulation"],
                                    "review": state["review"]})
         require(digest == expected, "reviewed_acceptance_digest_mismatch")
+        if delegated:
+            require(state["delegation"]["authorization"]["allow_final_acceptance"], "final_acceptance_not_delegated")
         updated["status"] = "accepted"
-        return self.store.save(state, updated, "project.accepted", {"output_digest": expected})
+        updated["acceptance_mode"] = authority
+        return self.store.save(state, updated, "project.accepted", {"output_digest": expected, "authority": authority})
 
     def revise(self) -> JsonObject:
         state = self._idle()
         updated = copy.deepcopy(state)
         # Old snapshots/blobs/evidence remain inspectable; none is silently re-approved.
         updated.update(status="discovery", stage=0, approved_spec=None, files={}, manifest=None,
-                       simulation=None, review=None, repairs=0, last_error=None, summaries={})
+                       simulation=None, review=None, last_error=None, summaries={},
+                       delegation=None, approval_mode=None, acceptance_mode=None)
         return self.store.save(state, updated, "spec.revised")
 
     def detail(self, level: str) -> JsonObject:
@@ -137,7 +215,8 @@ class DesignAgent:
     async def _generate(self, state: JsonObject, stage: str,
                         message: str | None = None) -> tuple[JsonObject, JsonObject]:
         require(self.expert is not None, "expert_not_configured")
-        require(state["calls"] < self.policy.max_calls, "expert_call_budget_exhausted")
+        state = self._limits(state)
+        require(state["calls"] < state["limits"]["max_calls"], "expert_call_budget_exhausted")
         pack = self.context(state, stage, message)
         operation = uuid.uuid4().hex
         updated = copy.deepcopy(state)
@@ -180,7 +259,8 @@ class DesignAgent:
         stage = ("diagnosis" if state["status"] == "needs_repair" else
                  "signoff" if state["status"] == "needs_signoff" else STAGES[state["stage"]])
         if stage == "diagnosis":
-            require(state["repairs"] < self.policy.max_repairs, "repair_budget_exhausted")
+            state = self._limits(state)
+            require(state["repairs"] < state["limits"]["max_repairs"], "repair_budget_exhausted")
         result, started = await self._generate(state, stage)
         try:
             if stage == "signoff":
@@ -248,7 +328,11 @@ class DesignAgent:
                                    {"run_id": operation, "evidence_kind": report["evidence_kind"],
                                     "output_digest": content_digest(report)})
         except Exception:
-            self._failed(started, "simulation_execution_failed")
+            # A daemon may outlive the client. Retain the intent until explicit
+            # recovery proves that its exact owned container has been removed.
+            updated = copy.deepcopy(started)
+            updated["last_error"] = "simulation_execution_failed"
+            self.store.save(started, updated, "simulation.failed", {"error_code": "simulation_execution_failed"})
             raise ValueError("simulation_execution_failed") from None
 
     def _signoff(self, state: JsonObject, result: object) -> JsonObject:

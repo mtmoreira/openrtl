@@ -9,7 +9,8 @@ from typing import Any, cast
 
 
 JsonObject = dict[str, Any]
-SESSION_SCHEMA = "openrtl.design-session.v1"
+SESSION_SCHEMA = "openrtl.design-session.v2"
+LEGACY_SESSION_SCHEMA = "openrtl.design-session.v1"
 STAGES = ("architecture", "verification_plan", "reference_model", "rtl", "assertions", "dv")
 ROLES = {
     "discovery": "design_lead",
@@ -173,16 +174,23 @@ def validate_files(value: object, stage: str) -> list[JsonObject]:
     return result
 
 
-def initial_state() -> JsonObject:
-    return {"schema": SESSION_SCHEMA, "revision": 0, "status": "discovery", "stage": 0,
+def legacy_initial_state() -> JsonObject:
+    return {"schema": LEGACY_SESSION_SCHEMA, "revision": 0, "status": "discovery", "stage": 0,
             "spec": None, "approved_spec": None, "files": {}, "manifest": None,
             "calls": 0, "repairs": 0, "active": None, "simulation": None,
             "review": None, "detail": "normal", "last_error": None, "summaries": {}}
 
 
+def initial_state() -> JsonObject:
+    return {**legacy_initial_state(), "schema": SESSION_SCHEMA, "limits": None,
+            "delegation": None, "warnings": [], "approval_mode": None, "acceptance_mode": None}
+
+
 def validate_state(value: object) -> JsonObject:
-    state = object_value(value, set(initial_state()))
-    require(state["schema"] == SESSION_SCHEMA, "session_schema_unrecognized")
+    require(isinstance(value, dict), "session_object_required")
+    legacy = cast(JsonObject, value).get("schema") == LEGACY_SESSION_SCHEMA
+    state = object_value(value, set(legacy_initial_state() if legacy else initial_state()))
+    require(state["schema"] in (SESSION_SCHEMA, LEGACY_SESSION_SCHEMA), "session_schema_unrecognized")
     for field in ("revision", "stage", "calls", "repairs"):
         require(type(state[field]) is int and state[field] >= 0, "session_counter_invalid")
     require(state["stage"] <= len(STAGES) and state["calls"] <= 200 and state["repairs"] <= 5,
@@ -209,7 +217,8 @@ def validate_state(value: object) -> JsonObject:
         require(isinstance(active["id"], str) and re.fullmatch(r"[a-f0-9]{32}", active["id"]) is not None and
                 active["kind"] in ("expert", "simulation") and active["stage"] in (*ROLES, "simulation"),
                 "session_active_operation_invalid")
-    require(state["last_error"] in (None, "expert_output_invalid", "expert_invocation_failed", "simulation_execution_failed"),
+    require(state["last_error"] in (None, "expert_output_invalid", "expert_invocation_failed", "simulation_execution_failed",
+                                    "interrupted_operation_abandoned"),
             "session_error_code_invalid")
     require(isinstance(state["summaries"], dict) and set(state["summaries"]).issubset(ROLES), "session_summaries_invalid")
     for summary in state["summaries"].values():
@@ -227,4 +236,7 @@ def validate_state(value: object) -> JsonObject:
         require(isinstance(state["review"], dict) and state["review"].get("verdict") == "accept" and
                 state["review"].get("findings") == [], "session_signoff_invalid")
     require(len(canonical(state)) <= 2 * 1024 * 1024, "session_state_too_large")
+    if not legacy:
+        from openrtl.domain.design_delegation import validate_session_extensions
+        validate_session_extensions(state)
     return state
