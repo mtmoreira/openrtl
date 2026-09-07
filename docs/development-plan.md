@@ -174,11 +174,17 @@ and the production canary. The
 batch runner shares M36's gates; delegation never restores provider or runtime
 permissions. M36–M40 remain a sequential local delivery, not a released agent.
 M38 adds multiple file imports and existing-design/DV baselines, explanations
-and controlled change impact. Its implementation candidate is awaiting local
-validation: source-only imports, frozen provenance, reviewed baseline adoption,
+and controlled change impact. Checkpoint `2f95c5fefdc051b0b92a2a0d515aa80340098cb3`
+passed 64 focused tests, strict typing, the 218-test main suite, both three-test
+example suites and the production FIFO canary. It adds source-only imports,
+frozen provenance, reviewed baseline adoption,
 per-stage change paths, retained-file guards and fresh-evidence requirements.
-M39 expands teaching granularity, diagnosis,
-DV-only improvement and measured simulation-level optimization. M40 qualifies
+M39 expands teaching granularity, diagnosis, DV-only improvement and measured
+simulation-level experiments. Its implementation candidate is awaiting local
+validation: saved pacing, conversational but unapplied review proposals,
+requirement/source-anchored diagnosis, and comparison of reverified run artifacts.
+Comparisons do not establish equivalence, functional coverage or hardware PPA.
+M40 qualifies
 held-out designs, installed CLI workflows, documented evidence tiers and the
 user-facing package. No milestone implies synthesis, formal execution or FPGA
 deployment.

@@ -9,7 +9,8 @@ from typing import Any, cast
 
 
 JsonObject = dict[str, Any]
-SESSION_SCHEMA = "openrtl.design-session.v3"
+SESSION_SCHEMA = "openrtl.design-session.v4"
+IMPORT_SESSION_SCHEMA = "openrtl.design-session.v3"
 PREVIOUS_SESSION_SCHEMA = "openrtl.design-session.v2"
 LEGACY_SESSION_SCHEMA = "openrtl.design-session.v1"
 STAGES = ("architecture", "verification_plan", "reference_model", "rtl", "assertions", "dv")
@@ -24,6 +25,8 @@ ROLES = {
     "diagnosis": "diagnosis_closure_engineer",
     "signoff": "signoff_reviewer",
     "explain": "learning_coach",
+    "change_planning": "change_planning_engineer",
+    "analyze": "diagnosis_reviewer",
 }
 MAX_ARTIFACT_BYTES = 256 * 1024
 MAX_CONTEXT_BYTES = 512 * 1024
@@ -187,16 +190,22 @@ def previous_initial_state() -> JsonObject:
             "delegation": None, "warnings": [], "approval_mode": None, "acceptance_mode": None}
 
 
+def imported_initial_state() -> JsonObject:
+    return {**previous_initial_state(), "schema": IMPORT_SESSION_SCHEMA, "imports": {}, "baseline": None, "change_plan": None}
+
+
 def initial_state() -> JsonObject:
-    return {**previous_initial_state(), "schema": SESSION_SCHEMA, "imports": {}, "baseline": None, "change_plan": None}
+    return {**imported_initial_state(), "schema": SESSION_SCHEMA, "pace": "stage", "proposal": None, "analysis": None}
 
 
 def validate_state(value: object) -> JsonObject:
     require(isinstance(value, dict), "session_object_required")
     legacy = cast(JsonObject, value).get("schema") == LEGACY_SESSION_SCHEMA
     previous = cast(JsonObject, value).get("schema") == PREVIOUS_SESSION_SCHEMA
-    state = object_value(value, set(legacy_initial_state() if legacy else previous_initial_state() if previous else initial_state()))
-    require(state["schema"] in (SESSION_SCHEMA, PREVIOUS_SESSION_SCHEMA, LEGACY_SESSION_SCHEMA), "session_schema_unrecognized")
+    imported = cast(JsonObject, value).get("schema") == IMPORT_SESSION_SCHEMA
+    state = object_value(value, set(legacy_initial_state() if legacy else previous_initial_state() if previous else
+                                   imported_initial_state() if imported else initial_state()))
+    require(state["schema"] in (SESSION_SCHEMA, IMPORT_SESSION_SCHEMA, PREVIOUS_SESSION_SCHEMA, LEGACY_SESSION_SCHEMA), "session_schema_unrecognized")
     for field in ("revision", "stage", "calls", "repairs"):
         require(type(state[field]) is int and state[field] >= 0, "session_counter_invalid")
     require(state["stage"] <= len(STAGES) and state["calls"] <= 200 and state["repairs"] <= 5,
@@ -245,7 +254,10 @@ def validate_state(value: object) -> JsonObject:
     if not legacy:
         from openrtl.domain.design_delegation import validate_session_extensions
         validate_session_extensions(state)
-    if state["schema"] == SESSION_SCHEMA:
+    if state["schema"] in (SESSION_SCHEMA, IMPORT_SESSION_SCHEMA):
         from openrtl.domain.design_imports import validate_import_state
         validate_import_state(state)
+    if state["schema"] == SESSION_SCHEMA:
+        from openrtl.domain.design_coaching import validate_coaching_state
+        validate_coaching_state(state)
     return state

@@ -14,7 +14,7 @@ from typing import Iterator, cast
 import uuid
 
 from openrtl.domain.design_session import (
-    JsonObject, MAX_ARTIFACT_BYTES, SESSION_SCHEMA, LEGACY_SESSION_SCHEMA, PREVIOUS_SESSION_SCHEMA, canonical, initial_state,
+    JsonObject, MAX_ARTIFACT_BYTES, SESSION_SCHEMA, LEGACY_SESSION_SCHEMA, PREVIOUS_SESSION_SCHEMA, IMPORT_SESSION_SCHEMA, canonical, initial_state,
     require, source_path, validate_state, text,
 )
 
@@ -86,11 +86,11 @@ class DesignSessionStore:
         return operation_id in self._owned_operations
 
     def upgrade(self) -> JsonObject:
-        """Explicit, append-only v1/v2 migration; prior snapshots remain unchanged."""
+        """Explicit, append-only v1/v2/v3 migration; prior snapshots remain unchanged."""
         state = self.read()
         if state["schema"] == SESSION_SCHEMA:
             return state
-        require(state["schema"] in (LEGACY_SESSION_SCHEMA, PREVIOUS_SESSION_SCHEMA), "session_upgrade_unrecognized")
+        require(state["schema"] in (LEGACY_SESSION_SCHEMA, PREVIOUS_SESSION_SCHEMA, IMPORT_SESSION_SCHEMA), "session_upgrade_unrecognized")
         updated = {**initial_state(), **state, "schema": SESSION_SCHEMA}
         if state["schema"] == LEGACY_SESSION_SCHEMA:
             updated.update(approval_mode="legacy_user" if state["approved_spec"] else None,
@@ -138,7 +138,7 @@ class DesignSessionStore:
                           "simulation.failed", "review.completed", "project.accepted", "detail.changed",
                           "session.upgraded", "limits.bound", "delegation.granted", "batch.step_started",
                           "operation.abandoned", "warning.reviewed", "imports.recorded", "baseline.approved",
-                          "change.approved", "stage.reused"},
+                          "change.approved", "stage.reused", "pace.changed", "change.proposed", "analysis.recorded"},
                 "event_code_unrecognized")
         with self.transaction():
             require(self.read() == previous, "session_concurrent_change")
@@ -184,6 +184,19 @@ class DesignSessionStore:
 
     def import_contents(self, state: JsonObject) -> dict[str, str]:
         return self.contents({"files": {p: row["digest"] for p, row in state.get("imports", {}).items()}})
+
+    def historical_state(self, revision: int) -> JsonObject:
+        require(type(revision) is int and revision >= 0, "historical_revision_invalid")
+        row = self.connection.execute("SELECT payload FROM snapshots WHERE revision=?", (revision,)).fetchone()
+        require(row is not None and len(row[0]) <= 2 * 1024 * 1024, "historical_snapshot_unavailable")
+        state = validate_state(json.loads(row[0]))
+        self.contents(state)
+        return state
+
+    def measurement(self, state: JsonObject) -> JsonObject:
+        from openrtl.adapters.design_measurements import measured_run
+        self.contents(state)
+        return measured_run(self.root, state)
 
     def materialize(self, state: JsonObject) -> Path:
         parent = safe_root(self.root / "runs")

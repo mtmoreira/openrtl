@@ -1,4 +1,4 @@
-# OpenRTL design-agent alpha (M36–M38)
+# OpenRTL design-agent alpha (M36–M39)
 
 This is an implementation candidate, not a newly qualified release. The published
 v0.4.0 package remains the simulation/evidence toolkit. M36 adds the first
@@ -92,8 +92,8 @@ One process holds the session's exclusive writer lock; a second writer fails
 closed. `status` uses a read-only connection and can run while the writer is
 active. Closing or losing the process releases the operating-system lock, not
 the recorded in-flight operation. Do not delete `.session.lock` or edit SQLite
-to bypass recovery. M36 v1 and M37 v2 snapshots remain readable; mutating an old session
-requires `--upgrade-session`. Migration appends a v3 snapshot without changing
+to bypass recovery. M36 v1, M37 v2 and M38 v3 snapshots remain readable; mutating an old session
+requires `--upgrade-session`. Migration appends a v4 snapshot without changing
 historical snapshots or granting new authority.
 
 An interrupted operation blocks replay because a provider request or local run
@@ -169,8 +169,10 @@ of this flow use doubles and are not real simulator/model qualification.
 
 M36's local checkpoint passed 25 focused tests, strict typing, full repository
 tests and the production FIFO canary. M37 passed its local validation including
-45 focused tests and strict typing. M38 import/change workflows are described
-in [the import guide](design-imports.md) and still await local validation.
+45 focused tests and strict typing. M38 passed 64 focused tests, strict typing,
+full default validation and the production canary. Its import/change workflows
+are described in [the import guide](design-imports.md). M39's
+[coaching and comparisons](design-coaching.md) await local validation.
 Separately authorized live-provider generation and isolated simulation of a
-reviewed ALU remain pending. M38–M40 are not complete.
+reviewed ALU remain pending. M39–M40 are not complete.
 These local candidates are not integrated, pushed or released agent packages.

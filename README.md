@@ -67,7 +67,7 @@ publication are deferred behind explicit ports.
 
 ## Development
 
-### Interactive, batch and imported-design agent: M36–M38 candidates
+### Interactive, batch and existing-design agent: M36–M39 candidates
 
 The new `chat`, `resume`, `status` and `doctor` commands begin the executing
 design-agent layer. It uses reviewed requirements, role-specific AgentRig
@@ -81,8 +81,11 @@ assumption warnings, read-only status, exclusive session writers and explicit
 `recover` without automatic replay. Its local validation passed. M38 adds
 digest-reviewed multi-file `import`, an unverified `baseline` adoption gate,
 and per-stage `change` scopes that invalidate old evidence. See the
-[import/change guide](docs/design-imports.md). M38 local validation and the
-live-provider/container acceptance gate remain pending.
+[import/change guide](docs/design-imports.md). M38 passed local validation.
+M39 adds conversational reviewable change proposals, persistent pacing,
+anchored diagnosis and evidence-bound simulation comparisons. Its local checks
+are pending; see [the coaching guide](docs/design-coaching.md). Live-provider
+generation and isolated generated-design acceptance remain pending separately.
 
 ### Provider-free checks
 

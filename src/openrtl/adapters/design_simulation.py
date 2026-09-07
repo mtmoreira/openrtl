@@ -100,7 +100,8 @@ class IsolatedDesignSimulator:
                    "timeout_seconds": self.profile["timeout_seconds"] - 5}
         (control / "request.json").write_bytes(canonical(runtime))
         runner = Path(__file__).with_name("_design_runner.py")
-        (control / "run.py").write_bytes(runner.read_bytes())
+        runner_bytes = runner.read_bytes()
+        (control / "run.py").write_bytes(runner_bytes)
         prefix = [self.profile["docker_executable"], "--host", "unix://" + self.profile["socket"],
                   "--config", str(config)]
         container_name = "openrtl-design-" + operation_id
@@ -165,7 +166,9 @@ class IsolatedDesignSimulator:
                 require(b"$enddefinitions" in decoded["waves.vcd"] and b"#" in decoded["waves.vcd"],
                         "waveform_evidence_invalid")
             require(payload["error_code"] in (None, "isolated_tests_or_build_failed"), "runner_error_code_invalid")
-            report: JsonObject = {"schema": "openrtl.design-simulation.v1", "input_digest": input_digest,
+            report: JsonObject = {"schema": "openrtl.design-simulation.v2", "input_digest": input_digest,
+                                  "runtime": {"profile_digest": content_digest(self.profile),
+                                              "runner_digest": "sha256:" + hashlib.sha256(runner_bytes).hexdigest()},
                                   "status": payload["status"], "evidence_kind": "isolated_verilator_cocotb",
                                   "run_id": operation_id, "tests": tests, "model_tests": payload["model_tests"],
                                   "artifacts": artifact_digests, "error_code": payload["error_code"],

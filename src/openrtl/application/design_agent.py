@@ -13,7 +13,8 @@ from openrtl.domain.design_session import (
     object_value, require, sequence, text, validate_files, validate_manifest, validate_spec,
 )
 from openrtl.domain.design_delegation import specification_warnings, validate_delegated_spec, warning
-from openrtl.domain.design_imports import baseline_plan, validate_change_plan
+from openrtl.domain.design_imports import baseline_plan, digest_value, validate_change_plan
+from openrtl.domain.design_coaching import analysis_input_digest, validate_analysis, validate_intent, validate_proposal
 
 
 class SessionStore(Protocol):
@@ -23,6 +24,8 @@ class SessionStore(Protocol):
     def read(self) -> JsonObject: ...
     def contents(self, state: JsonObject) -> dict[str, str]: ...
     def import_contents(self, state: JsonObject) -> dict[str, str]: ...
+    def historical_state(self, revision: int) -> JsonObject: ...
+    def measurement(self, state: JsonObject) -> JsonObject: ...
     def save(self, previous: JsonObject, updated: JsonObject, event: str,
              fields: JsonObject | None = None, *, files: list[JsonObject] | None = None,
              imports: list[JsonObject] | None = None) -> JsonObject: ...
@@ -189,7 +192,8 @@ class DesignAgent:
         # Old snapshots/blobs/evidence remain inspectable; none is silently re-approved.
         updated.update(status="discovery", stage=0, approved_spec=None, files={}, manifest=None,
                        simulation=None, review=None, last_error=None, summaries={},
-                       delegation=None, approval_mode=None, acceptance_mode=None, baseline=None, change_plan=None)
+                       delegation=None, approval_mode=None, acceptance_mode=None, baseline=None, change_plan=None,
+                       proposal=None, analysis=None)
         return self.store.save(state, updated, "spec.revised")
 
     def detail(self, level: str) -> JsonObject:
@@ -217,7 +221,7 @@ class DesignAgent:
                 row["review"] = "acknowledged"
         updated.update(baseline=plan, approved_spec=content_digest(state["spec"]), approval_mode="user",
                        delegation=None, status="building", stage=len(STAGES), manifest=plan["manifest"],
-                       simulation=None, review=None, acceptance_mode=None, last_error=None)
+                       simulation=None, review=None, acceptance_mode=None, last_error=None, proposal=None, analysis=None)
         return self.store.save(state, updated, "baseline.approved", {"output_digest": approved_digest, "authority": "user"},
                                files=[{"path": p, "content": c} for p, c in contents.items()])
 
@@ -238,14 +242,83 @@ class DesignAgent:
         updated = copy.deepcopy(state)
         updated.update(spec=plan["specification"], approved_spec=content_digest(plan["specification"]),
                        approval_mode="user", acceptance_mode=None, delegation=None, change_plan=plan,
-                       status="building", stage=0, manifest=None, simulation=None, review=None, last_error=None, summaries={})
+                       status="building", stage=0, manifest=None, simulation=None, review=None, last_error=None, summaries={},
+                       proposal=None, analysis=None)
         self._record_spec_warnings(updated)
         for row in updated["warnings"]:
             if row["spec_digest"] == updated["approved_spec"]:
                 row["review"] = "acknowledged"
         return self.store.save(state, updated, "change.approved", {"output_digest": approved_digest, "authority": "user"})
 
-    def context(self, state: JsonObject, stage: str, message: str | None = None) -> JsonObject:
+    def pace(self, selected: str) -> JsonObject:
+        require(selected in ("stage", "continuous"), "coaching_pace_invalid")
+        state = self._idle()
+        updated = copy.deepcopy(state)
+        updated["pace"] = selected
+        return self.store.save(state, updated, "pace.changed")
+
+    async def propose_improvement(self, message: str, *, intent: str = "feature") -> JsonObject:
+        state = self._idle()
+        require(intent in ("feature", "dv", "optimization"), "change_intent_invalid")
+        require(state["stage"] == len(STAGES) and state["manifest"] is not None, "change_requires_complete_baseline")
+        result, started = await self._generate(state, "change_planning", message, intent=intent)
+        try:
+            output = object_value(result, {"summary", "specification", "stage_paths", "manifest"})
+            plan = validate_change_plan({"schema": "openrtl.design-change.v1", "base_input_digest": design_input_digest(state),
+                                         "base_files": state["files"], "specification": output["specification"],
+                                         "stage_paths": output["stage_paths"], "manifest": output["manifest"]})
+            validate_intent(plan, intent, state)
+            proposal = validate_proposal({"schema": "openrtl.design-change-proposal.v1", "intent": intent,
+                                          "summary": output["summary"], "plan": plan, "status": "awaiting_review"})
+            updated = copy.deepcopy(started)
+            updated.update(active=None, last_error=None, proposal=proposal)
+            self.store.save(started, updated, "change.proposed", {"output_digest": content_digest(proposal)})
+            return proposal
+        except (ValueError, KeyError, TypeError):
+            self._failed(started, "expert_output_invalid")
+            raise ValueError("expert_output_invalid") from None
+
+    def approve_improvement(self, digest: str) -> JsonObject:
+        state = self._idle()
+        proposal = validate_proposal(state["proposal"])
+        require(content_digest(proposal) == digest, "reviewed_proposal_digest_mismatch")
+        validate_intent(proposal["plan"], proposal["intent"], state)
+        # M38 independently rechecks base input and file hashes before mutation.
+        return self.approve_change(proposal["plan"], content_digest(proposal["plan"]))
+
+    async def analyze(self, message: str) -> JsonObject:
+        state = self._idle()
+        require(state["spec"] is not None and bool(state["files"] or state["imports"]), "analysis_inputs_missing")
+        result, started = await self._generate(state, "analyze", message)
+        try:
+            output = object_value(result, {"summary", "findings"})
+            report = validate_analysis({"schema": "openrtl.design-analysis.v1", "input_digest": analysis_input_digest(state), **output})
+            files = {**self.store.import_contents(state), **self.store.contents(state)}
+            requirements = {r["id"] for r in state["spec"]["requirements"]}
+            for finding in report["findings"]:
+                require(finding["requirement_id"] in requirements, "analysis_requirement_unknown")
+                if finding["basis"] == "simulation":
+                    require(state["simulation"] is not None and state["simulation"]["input_digest"] == design_input_digest(state),
+                            "analysis_simulation_evidence_missing")
+                require(finding["basis"] == "hypothesis" or bool(finding["references"]), "analysis_anchors_required")
+                for ref in finding["references"]:
+                    require(ref["path"] in files and ref["line"] <= len(files[ref["path"]].splitlines()), "analysis_anchor_invalid")
+            updated = copy.deepcopy(started)
+            updated.update(active=None, last_error=None, analysis=report)
+            self.store.save(started, updated, "analysis.recorded", {"output_digest": content_digest(report)})
+            return report
+        except (ValueError, KeyError, TypeError):
+            self._failed(started, "expert_output_invalid")
+            raise ValueError("expert_output_invalid") from None
+
+    def compare(self, baseline_revision: int) -> JsonObject:
+        from openrtl.application.design_comparison import compare_runs
+        state = self._idle()
+        require(baseline_revision < state["revision"], "comparison_requires_prior_revision")
+        before = self.store.historical_state(baseline_revision)
+        return compare_runs(before, state, self.store.measurement(before), self.store.measurement(state))
+
+    def context(self, state: JsonObject, stage: str, message: str | None = None, *, intent: str | None = None) -> JsonObject:
         files = self.store.contents(state)
         references = {p: c for p, c in self.store.import_contents(state).items() if p not in files}
         # The reference model is derived from requirements, not implementation.
@@ -256,22 +329,23 @@ class DesignAgent:
         elif stage == "dv":
             files = {p: c for p, c in files.items() if not p.startswith("rtl/")}
             references = {p: c for p, c in references.items() if not p.startswith("rtl/")}
-        pack = {"schema": "openrtl.design-context.v2", "role": ROLES[stage], "stage": stage,
+        pack = {"schema": "openrtl.design-context.v3", "role": ROLES[stage], "stage": stage,
                 "specification": state["spec"], "approved_spec_digest": state["approved_spec"],
                 "artifacts": files, "artifact_digests": state["files"], "manifest": state["manifest"],
                 "reference_artifacts": references, "reference_status": "untrusted_imports_not_run_evidence",
                 "change_scope": state["change_plan"],
+                "improvement_intent": intent, "pace": state["pace"],
                 "simulation": state["simulation"], "detail": state["detail"],
                 "user_message": text(message, maximum=16000) if message else None}
         require(len(canonical(pack)) <= MAX_CONTEXT_BYTES, "expert_context_exceeds_bound")
         return pack
 
     async def _generate(self, state: JsonObject, stage: str,
-                        message: str | None = None) -> tuple[JsonObject, JsonObject]:
+                        message: str | None = None, *, intent: str | None = None) -> tuple[JsonObject, JsonObject]:
         require(self.expert is not None, "expert_not_configured")
         state = self._limits(state)
         require(state["calls"] < state["limits"]["max_calls"], "expert_call_budget_exhausted")
-        pack = self.context(state, stage, message)
+        pack = self.context(state, stage, message, intent=intent)
         operation = uuid.uuid4().hex
         updated = copy.deepcopy(state)
         updated.update(active={"id": operation, "kind": "expert", "stage": stage}, calls=state["calls"] + 1)
@@ -354,7 +428,7 @@ class DesignAgent:
                 require(any(p.startswith("model/test_") for p in combined), "independent_model_tests_missing")
             else:
                 require(contribution["manifest"] is None, "stage_cannot_replace_simulation_manifest")
-            updated.update(active=None, last_error=None)
+            updated.update(active=None, last_error=None, analysis=None)
             updated["summaries"][stage] = contribution["summary"]
             if stage == "diagnosis":
                 updated.update(repairs=started["repairs"] + 1, status="building", review=None)
@@ -378,11 +452,18 @@ class DesignAgent:
         assert self.simulator is not None
         try:
             report = await self.simulator.simulate(files, manifest, design_input_digest(state), operation)
-            report = object_value(report, {"schema", "input_digest", "status", "evidence_kind", "run_id",
-                                           "tests", "model_tests", "artifacts", "error_code", "diagnostics"})
-            require(report["schema"] == "openrtl.design-simulation.v1" and
+            fields = {"schema", "input_digest", "status", "evidence_kind", "run_id",
+                      "tests", "model_tests", "artifacts", "error_code", "diagnostics"}
+            if report.get("schema") == "openrtl.design-simulation.v2":
+                fields.add("runtime")
+            report = object_value(report, fields)
+            require(report["schema"] in ("openrtl.design-simulation.v1", "openrtl.design-simulation.v2") and
                     report["input_digest"] == design_input_digest(state) and report["run_id"] == operation,
                     "simulation_evidence_binding_invalid")
+            if report["schema"] == "openrtl.design-simulation.v2":
+                runtime = object_value(report["runtime"], {"profile_digest", "runner_digest"})
+                digest_value(runtime["profile_digest"])
+                digest_value(runtime["runner_digest"])
             require(report["evidence_kind"] == "isolated_verilator_cocotb", "real_simulation_evidence_required")
             require(report["status"] in ("passed", "failed"), "simulation_status_invalid")
             if report["status"] == "passed":
@@ -391,7 +472,7 @@ class DesignAgent:
                         bool(report["artifacts"]), "simulation_evidence_incomplete")
             require(len(canonical(report)) <= 64000, "simulation_report_too_large")
             updated = copy.deepcopy(started)
-            updated.update(active=None, simulation=report, review=None, last_error=None,
+            updated.update(active=None, simulation=report, review=None, last_error=None, analysis=None,
                            status="needs_signoff" if report["status"] == "passed" else "needs_repair")
             return self.store.save(started, updated, "simulation.completed",
                                    {"run_id": operation, "evidence_kind": report["evidence_kind"],

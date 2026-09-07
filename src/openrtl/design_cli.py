@@ -15,10 +15,11 @@ from openrtl.adapters.design_imports import import_design_files
 from openrtl.application.design_agent import DesignAgent, DesignPolicy, design_input_digest
 from openrtl.application.design_batch import bind_delegation, run_batch
 from openrtl.domain.design_session import JsonObject, MAX_CONTEXT_BYTES, STAGES, canonical, content_digest, require, object_value
+from openrtl.domain.design_coaching import analysis_input_digest
 
 
 def add_design_commands(subcommands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    for command in ("chat", "resume", "batch", "recover", "status", "doctor", "import", "baseline", "change"):
+    for command in ("chat", "resume", "batch", "recover", "status", "doctor", "import", "baseline", "change", "compare"):
         selected = subcommands.add_parser(command, help="design-agent alpha: " + command)
         selected.add_argument("--project", type=Path, required=command != "doctor")
         if command in ("chat", "resume", "batch", "recover"):
@@ -52,6 +53,8 @@ def add_design_commands(subcommands: argparse._SubParsersAction[argparse.Argumen
             group = selected.add_mutually_exclusive_group(required=True)
             group.add_argument("--request", type=Path)
             group.add_argument("--plan", type=Path)
+        if command == "compare":
+            selected.add_argument("--baseline-revision", type=int, required=True)
 
 
 def _json_file(path: Path) -> object:
@@ -64,6 +67,7 @@ def _json_file(path: Path) -> object:
 
 def show(state: JsonObject, emit: Callable[[str], None]) -> None:
     emit("State: " + state["status"] + "; expert calls: " + str(state["calls"]))
+    emit("Detail: " + state["detail"] + "; pace: " + state.get("pace", "stage"))
     if state["active"] is not None:
         emit("Interrupted operation retained; no automatic replay: " + state["active"]["id"])
     if state["spec"] is not None:
@@ -101,6 +105,30 @@ def show(state: JsonObject, emit: Callable[[str], None]) -> None:
         emit("Imported reference (not run evidence): " + path + " " + item["digest"])
     if state.get("change_plan"):
         emit("Reviewed change scope: " + json.dumps(state["change_plan"]["stage_paths"], sort_keys=True))
+    if state.get("proposal"):
+        proposal = state["proposal"]
+        emit("UNAPPLIED PROPOSAL: " + json.dumps(proposal, indent=2, sort_keys=True))
+        if proposal["plan"]["base_input_digest"] == design_input_digest(state):
+            emit("Review the complete proposal, then: /approve-change " + content_digest(proposal))
+        else:
+            emit("Proposal is stale; request a new proposal before approval.")
+    if state.get("analysis"):
+        label = "Current" if state["analysis"]["input_digest"] == analysis_input_digest(state) else "Stale"
+        emit(label + " analysis (not an applied repair): " + json.dumps(state["analysis"], indent=2, sort_keys=True))
+
+
+def coaching_preference(agent: DesignAgent, message: str, emit: Callable[[str], None]) -> bool:
+    phrase = message.casefold().strip().rstrip(".! ")
+    detail = {"keep it brief": "brief", "explain in detail": "detailed", "normal detail": "normal"}
+    pace = {"go step by step": "stage", "one step at a time": "stage", "continue automatically": "continuous"}
+    if phrase in detail:
+        agent.detail(detail[phrase])
+    elif phrase in pace:
+        agent.pace(pace[phrase])
+    else:
+        return False
+    emit("Preference saved. No engineering step, approval or provider permission was granted; use /continue to proceed.")
+    return True
 
 
 async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input,
@@ -108,6 +136,8 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
     emit("OpenRTL design-agent alpha. Raw conversation text is not saved; reviewed artifacts and events are.")
     emit("/show /spec <JSON path> /approve <digest> /ack-warning <id> /next /build /revise /detail brief|normal|detailed /quit")
     emit("/import <reviewed-import-request.json> /explain <question> /baseline <manifest.json> /change-plan <request.json>")
+    emit("/propose-change <request> /propose-dv <request> /propose-optimization <request> /approve-change <digest>")
+    emit("/diagnose <question> /compare <baseline-revision> /pace stage|continuous /continue")
     show(agent.store.read(), emit)
     while True:
         try:
@@ -121,6 +151,8 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
             return 0
         command, _, argument = message.partition(" ")
         try:
+            if coaching_preference(agent, message, emit):
+                continue
             if command == "/show":
                 show(agent.store.read(), emit)
                 emit(json.dumps(agent.store.read()["files"], indent=2, sort_keys=True))
@@ -141,6 +173,20 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
                 emit("Save the plan object, quit, then use the local change command with --plan and --approve.")
             elif command == "/approve":
                 show(agent.approve(argument.strip()), emit)
+            elif command in ("/propose-change", "/propose-dv", "/propose-optimization"):
+                intent = {"/propose-change": "feature", "/propose-dv": "dv", "/propose-optimization": "optimization"}[command]
+                await agent.propose_improvement(argument, intent=intent)
+                show(agent.store.read(), emit)
+            elif command == "/approve-change":
+                show(agent.approve_improvement(argument.strip()), emit)
+            elif command == "/diagnose":
+                result = await agent.analyze(argument or "Explain current findings and recommend discriminating checks.")
+                emit(json.dumps(result, indent=2, sort_keys=True))
+            elif command == "/compare":
+                emit(json.dumps(agent.compare(int(argument)), indent=2, sort_keys=True))
+            elif command == "/pace":
+                agent.pace(argument.strip())
+                emit("Pace saved; approvals and evidence gates are unchanged.")
             elif command == "/revise":
                 show(agent.revise(), emit)
             elif command == "/ack-warning":
@@ -148,7 +194,8 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
             elif command == "/detail":
                 agent.detail(argument.strip())
                 emit("Explanation detail changed; review and evidence gates are unchanged.")
-            elif command in ("/next", "/build"):
+            elif command in ("/next", "/build", "/continue"):
+                single = command == "/next" or command == "/continue" and agent.store.read()["pace"] == "stage"
                 while True:
                     state = agent.store.read()
                     stage = (STAGES[state["stage"]] if state["status"] == "building" and
@@ -158,7 +205,7 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
                     emit("Recorded: " + state["status"] + "; revision " + str(state["revision"]))
                     if stage in state["summaries"]:
                         emit(state["summaries"][stage])
-                    if command == "/next" or state["status"] not in ("building", "needs_repair", "needs_signoff"):
+                    if single or state["status"] not in ("building", "needs_repair", "needs_signoff"):
                         show(state, emit)
                         break
             elif command == "/explain":
@@ -200,6 +247,10 @@ def run_design_command(arguments: argparse.Namespace) -> int:
         if arguments.command == "status":
             store = DesignSessionStore(arguments.project, read_only=True)
             print(json.dumps(store.read(), indent=2, sort_keys=True))
+            return 0
+        if arguments.command == "compare":
+            store = DesignSessionStore(arguments.project, read_only=True)
+            print(json.dumps(DesignAgent(store).compare(arguments.baseline_revision), indent=2, sort_keys=True))
             return 0
         if arguments.command in ("import", "baseline", "change"):
             create = arguments.command == "import" and arguments.create

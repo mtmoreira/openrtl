@@ -1,8 +1,9 @@
-# Import, explain and revise existing collateral (M38 candidate)
+# Import, explain and revise existing collateral (M38 local checkpoint)
 
 These commands are development candidates, not the published v0.4.0 toolkit.
 They do not call a provider, launch a container or execute imported Python.
-Local validation is pending; real provider/container qualification is separate.
+M38 local validation passed; real provider/container qualification is separate.
+M39 conversational proposal additions are described in [the coaching guide](design-coaching.md).
 
 ## Import multiple files
 
@@ -31,7 +32,7 @@ openrtl import --project /absolute/new-session --create \
 ```
 
 Omit `--create` for an existing idle discovery session. Use `--upgrade-session`
-explicitly for v1/v2 sessions. Input files are relative to the chosen source
+explicitly for v1/v2/v3 sessions in the M39 candidate. Input files are relative to the chosen source
 root; targets belong to `rtl/`, `dv/`, `model/` or `docs/`. Allowed suffixes are
 SV/Verilog sources/headers, Python for DV/model, and MD/TXT/JSON for documents.
 Source and target suffixes must match. Select at most 64 files, 256 KiB each and

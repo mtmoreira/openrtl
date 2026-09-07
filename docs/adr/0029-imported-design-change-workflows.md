@@ -1,6 +1,8 @@
 # ADR 0029: imported design baselines and scoped revisions
 
-Status: implementation candidate; local validation pending.
+Status: local checkpoint `2f95c5fefdc051b0b92a2a0d515aa80340098cb3` validated:
+64 focused tests, strict typing, full default validation and the production
+FIFO canary passed. Live provider/generated-design acceptance remains pending.
 
 ## Decision
 
