@@ -1,0 +1,52 @@
+{
+  "title": "Acceptance saturating counter",
+  "top": "counter4",
+  "behavior": "Unsigned 4-bit saturating counter. On rising clk: synchronous active-high reset sets count to 0; otherwise enable increments unless count is 15. Hold when disabled or saturated. full continuously equals (count == 15).",
+  "clock_reset": "Rising-edge clk. Synchronous active-high reset has priority over enable. No asynchronous reset.",
+  "requirements": [
+    {
+      "id": "counter.reset",
+      "text": "Reset sets count to zero on the next rising edge, regardless of enable.",
+      "acceptance": "Reset at zero, middle and saturation; check reset asserted between edges does not change count until the edge."
+    },
+    {
+      "id": "counter.enable",
+      "text": "Increment by one on each enabled non-reset rising edge; otherwise hold.",
+      "acceptance": "Use directed and deterministic seeded enable/reset sequences against a Python reference, with falling-edge drive and post-edge sampling."
+    },
+    {
+      "id": "counter.saturate",
+      "text": "Hold at 15 until reset, with full equal to count == 15.",
+      "acceptance": "Run beyond 16 enabled cycles; verify no wrap and full at boundary and after reset."
+    }
+  ],
+  "ports": [
+    {
+      "name": "clk",
+      "direction": "input",
+      "width": 1
+    },
+    {
+      "name": "reset",
+      "direction": "input",
+      "width": 1
+    },
+    {
+      "name": "enable",
+      "direction": "input",
+      "width": 1
+    },
+    {
+      "name": "count",
+      "direction": "output",
+      "width": 4
+    },
+    {
+      "name": "full",
+      "direction": "output",
+      "width": 1
+    }
+  ],
+  "questions": [],
+  "assumptions": []
+}

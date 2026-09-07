@@ -45,6 +45,11 @@ source-include = [
   "tools/verilator_canary.py",
   "tools/verify_release_install.py",
   "tools/verify_release_examples_v040.py",
+  "tools/verify_design_agent_install.py",
+  "docs/design-agent-alpha.md",
+  "docs/design-imports.md",
+  "docs/design-coaching.md",
+  "docs/design-agent-acceptance.md",
 ]
 source-exclude = ["**/AGENTS.md"]
 wheel-exclude = ["**/AGENTS.md"]

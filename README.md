@@ -67,7 +67,7 @@ publication are deferred behind explicit ports.
 
 ## Development
 
-### Interactive, batch and existing-design agent: M36–M39 candidates
+### Interactive, batch and existing-design agent: M36–M40 candidates
 
 The new `chat`, `resume`, `status` and `doctor` commands begin the executing
 design-agent layer. It uses reviewed requirements, role-specific AgentRig
@@ -84,8 +84,11 @@ and per-stage `change` scopes that invalidate old evidence. See the
 [import/change guide](docs/design-imports.md). M38 passed local validation.
 M39 adds conversational reviewable change proposals, persistent pacing,
 anchored diagnosis and evidence-bound simulation comparisons. Its local checks
-are pending; see [the coaching guide](docs/design-coaching.md). Live-provider
-generation and isolated generated-design acceptance remain pending separately.
+passed; see [the coaching guide](docs/design-coaching.md). M40 adds a read-only
+`acceptance` inventory, specification-only evaluation scenarios and an exact
+installed-target CLI smoke test. See [acceptance and evaluation](docs/design-agent-acceptance.md).
+M40 checks, live-provider generation and isolated generated-design acceptance
+remain pending separately. No new published version is implied.
 
 ### Provider-free checks
 

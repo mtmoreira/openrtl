@@ -19,7 +19,7 @@ from openrtl.domain.design_coaching import analysis_input_digest
 
 
 def add_design_commands(subcommands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    for command in ("chat", "resume", "batch", "recover", "status", "doctor", "import", "baseline", "change", "compare"):
+    for command in ("chat", "resume", "batch", "recover", "status", "doctor", "import", "baseline", "change", "compare", "acceptance"):
         selected = subcommands.add_parser(command, help="design-agent alpha: " + command)
         selected.add_argument("--project", type=Path, required=command != "doctor")
         if command in ("chat", "resume", "batch", "recover"):
@@ -55,6 +55,8 @@ def add_design_commands(subcommands: argparse._SubParsersAction[argparse.Argumen
             group.add_argument("--plan", type=Path)
         if command == "compare":
             selected.add_argument("--baseline-revision", type=int, required=True)
+        if command == "acceptance":
+            selected.add_argument("--expected-spec", type=Path)
 
 
 def _json_file(path: Path) -> object:
@@ -248,6 +250,12 @@ def run_design_command(arguments: argparse.Namespace) -> int:
             store = DesignSessionStore(arguments.project, read_only=True)
             print(json.dumps(store.read(), indent=2, sort_keys=True))
             return 0
+        if arguments.command == "acceptance":
+            from openrtl.adapters.design_acceptance import acceptance_report
+            store = DesignSessionStore(arguments.project, read_only=True)
+            report = acceptance_report(store, _json_file(arguments.expected_spec) if arguments.expected_spec else None)
+            print(json.dumps(report, indent=2, sort_keys=True))
+            return 0 if report["status"] == "local_gates_satisfied" else 2
         if arguments.command == "compare":
             store = DesignSessionStore(arguments.project, read_only=True)
             print(json.dumps(DesignAgent(store).compare(arguments.baseline_revision), indent=2, sort_keys=True))

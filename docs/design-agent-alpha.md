@@ -1,4 +1,4 @@
-# OpenRTL design-agent alpha (M36–M39)
+# OpenRTL design-agent alpha (M36–M40)
 
 This is an implementation candidate, not a newly qualified release. The published
 v0.4.0 package remains the simulation/evidence toolkit. M36 adds the first
@@ -172,7 +172,10 @@ tests and the production FIFO canary. M37 passed its local validation including
 45 focused tests and strict typing. M38 passed 64 focused tests, strict typing,
 full default validation and the production canary. Its import/change workflows
 are described in [the import guide](design-imports.md). M39's
-[coaching and comparisons](design-coaching.md) await local validation.
+[coaching and comparisons](design-coaching.md) passed 87 focused tests, strict typing,
+full default validation and the production canary. M40's candidate acceptance
+report, installed-target smoke and evaluation bundle are described in the
+[acceptance guide](design-agent-acceptance.md); their local validation is pending.
 Separately authorized live-provider generation and isolated simulation of a
-reviewed ALU remain pending. M39–M40 are not complete.
+reviewed ALU and additional designs remain pending. M40 is not complete.
 These local candidates are not integrated, pushed or released agent packages.

@@ -1,6 +1,7 @@
 # ADR 0030: reviewable coaching and evidence-bound comparisons
 
-Status: implementation candidate; local validation and live qualification pending.
+Status: local checkpoint `661024ff30e973b9b7dc51aeb329a1d4a33ce819` validated;
+live qualification remains pending.
 
 ## Decision
 

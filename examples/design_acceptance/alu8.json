@@ -1,0 +1,57 @@
+{
+  "title": "Acceptance ALU, 8-bit combinational",
+  "top": "alu8",
+  "behavior": "Unsigned 8-bit ALU: op 0 ADD, 1 SUB, 2 AND, 3 OR, 4 XOR, 5 logical left shift, 6 logical right shift, 7 unsigned less-than. Shifts use b[2:0]. Arithmetic wraps modulo 256. carry is unsigned add carry for ADD, borrow (a < b) for SUB, otherwise zero. zero is (result == 0). No signed overflow flag.",
+  "clock_reset": "Combinational; no clock, reset, pipeline, enable or handshake.",
+  "requirements": [
+    {
+      "id": "alu.operations",
+      "text": "Implement all eight specified opcodes without latches.",
+      "acceptance": "For every opcode compare RTL to an independently derived Python reference on all pairs from {0,1,2,7,8,15,16,127,128,254,255}, then 2048 deterministic seeded operand pairs per opcode. Unit-test reference-model boundaries separately. This is bounded simulation, not exhaustive RTL proof."
+    },
+    {
+      "id": "alu.flags",
+      "text": "Compute carry/borrow and zero exactly as specified for every opcode.",
+      "acceptance": "Compare both flags with the reference for every simulated vector, explicitly including wrap, borrow, equal operands and zero."
+    },
+    {
+      "id": "alu.shifts",
+      "text": "Only b[2:0] sets the logical shift count; shifted-out bits are discarded.",
+      "acceptance": "Exercise all eight counts, high b bits and values 0x00, 0x01, 0x80 and 0xff."
+    }
+  ],
+  "ports": [
+    {
+      "name": "a",
+      "direction": "input",
+      "width": 8
+    },
+    {
+      "name": "b",
+      "direction": "input",
+      "width": 8
+    },
+    {
+      "name": "op",
+      "direction": "input",
+      "width": 3
+    },
+    {
+      "name": "result",
+      "direction": "output",
+      "width": 8
+    },
+    {
+      "name": "carry",
+      "direction": "output",
+      "width": 1
+    },
+    {
+      "name": "zero",
+      "direction": "output",
+      "width": 1
+    }
+  ],
+  "questions": [],
+  "assumptions": []
+}

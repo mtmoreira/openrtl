@@ -180,14 +180,20 @@ example suites and the production FIFO canary. It adds source-only imports,
 frozen provenance, reviewed baseline adoption,
 per-stage change paths, retained-file guards and fresh-evidence requirements.
 M39 expands teaching granularity, diagnosis, DV-only improvement and measured
-simulation-level experiments. Its implementation candidate is awaiting local
-validation: saved pacing, conversational but unapplied review proposals,
+simulation-level experiments. Checkpoint `661024ff30e973b9b7dc51aeb329a1d4a33ce819`
+passed 87 focused tests, strict typing across 11 files, the 241-test main suite,
+both three-test example suites and the FIFO canary. It adds saved pacing, conversational but unapplied review proposals,
 requirement/source-anchored diagnosis, and comparison of reverified run artifacts.
 Comparisons do not establish equivalence, functional coverage or hardware PPA.
-M40 qualifies
-held-out designs, installed CLI workflows, documented evidence tiers and the
-user-facing package. No milestone implies synthesis, formal execution or FPGA
-deployment.
+M40 targets held-out designs, installed CLI workflows, documented evidence tiers
+and the user-facing package. Its candidate adds reverified read-only acceptance
+inventories, three solution-free evaluation specifications, an installed-target
+CLI smoke test and a normalized guide/spec archive. Local validation is pending.
+The installed smoke deliberately reuses existing interpreter dependencies; it is
+not a clean-machine or live-provider qualification. Published evaluation inputs
+are not secret held-out designs. Real provider/container execution and additional
+held-out trials require separate runtime/model choices and authorization.
+No milestone implies synthesis, formal execution or FPGA deployment.
 
 Complete as much local development and deterministic validation as possible
 before owner-shell handoffs. Provider calls, runtime installation, publication
