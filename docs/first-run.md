@@ -14,8 +14,10 @@ The launcher first checks for Python 3.12 or newer. Select a particular existing
 interpreter with `OPENRTL_PYTHON=/absolute/path/to/python ./openrtl`; an unavailable
 explicit interpreter stops setup without installing a replacement. If no usable
 default Python exists, the candidate offers private uv 0.12.3 / CPython 3.13.15
-(build 20260807) provisioning. This new path still requires actual installation
-qualification. macOS Apple Silicon and Linux x86-64 with glibc are candidate
+(build 20260807) provisioning. Actual private provisioning and offline reuse
+passed on the owner's macOS Apple Silicon host with no Python in the launcher's
+PATH. This is isolated-state evidence, not a clean-OS-user qualification.
+macOS Apple Silicon and Linux x86-64 with glibc are candidate
 targets; minimum OS/glibc versions and clean-user tests remain pending. Other
 runtime targets fail closed. Native Windows is not qualified.
 
@@ -33,8 +35,8 @@ Startup disables inherited Python search paths and site initialization. The
 SDK-only evaluation environment and development package installations are not
 silently used as product dependencies. Optional SDK setup uses the checked-in,
 hashed 16-distribution OpenAI SDK 2.47.0 lock and requires a separate explicit
-choice. This product setup path is implemented but not yet qualified with actual
-packages. The existing installed
+choice. Actual installation of those locked packages and offline SDK readiness
+passed in private macOS state without provider calls. The existing installed
 development CLI's separately authorized provider workflow remains documented in
 the alpha guide; it does not qualify customer onboarding.
 
@@ -96,6 +98,14 @@ wheel fails closed. A missing public artifact or unavailable network stops with
 an actionable diagnostic; no package index, alternate version or source build is
 substituted. Download consent is separate from provider and simulation permission.
 
+Download failures distinguish a missing public artifact, anonymous-access refusal,
+rate limiting, other HTTP errors, TLS verification, DNS, connection/time limits,
+rejected redirects and artifact verification. Each has a corresponding recovery
+hint. Diagnostics contain fixed categories rather than remote response bodies or
+exception text. Never disable TLS verification or supply credentials to recover
+an anonymous public dependency download. A Python TLS failure can be specific to
+the selected interpreter even when another HTTPS client succeeds.
+
 When Python is absent, `--allow-runtime-install` approves the pinned uv/Python
 preparation. `--runtime-artifacts /absolute/artifacts --offline` supplies existing
 archives instead of downloading them. The directory must contain
@@ -148,10 +158,13 @@ preferences use `setup --noninteractive`.
   The runtime/SDK additions passed 66 focused tests, strict typing across eight
   files, 323 repository tests, both model suites and six offline launcher checks;
   [their evidence manifest](../evidence/milestones/m41-runtime-sdk-local.json) records
-  the qualified implementation. Real installation qualification remains pending.
-  Qualify public AgentRig download availability, private Python
-  provisioning and SDK setup before closing M41. uv/SDK adoption was approved;
-  no real runtime or SDK download/install was performed during implementation.
+  the qualified implementation. The separately approved macOS real-setup run
+  passed missing-Python provisioning, offline runtime reuse, actual locked SDK
+  installation and offline SDK readiness. Its public AgentRig download failed
+  with the earlier generic diagnostic; the HTTP/network cause remains unverified.
+  Public dependency availability and fresh-user acceptance still block M41.
+  The successful runtime lane used the retained pinned AgentRig wheel and does
+  not prove public availability. Linux and clean-OS-user qualification are pending.
 - M42: select and qualify an owned isolated runtime/image with explicit consent.
   Preserve all existing unrelated Docker runners; there is no host fallback.
 - M43–M45: complete conversational review, import/evolution, export and diagnostics.

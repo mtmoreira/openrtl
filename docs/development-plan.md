@@ -217,9 +217,12 @@ implementation adds consent-gated uv 0.12.3 / CPython 3.13.15 provisioning and
 hash-locked optional SDK 2.47.0 setup. Its local gate passed 66 focused tests,
 strict typing across eight files, 323 repository tests, both model suites and six
 actual offline launcher checks. [The runtime/SDK evidence manifest](../evidence/milestones/m41-runtime-sdk-local.json)
-binds those results to the implementation commit. Real runtime/SDK installation
-qualification, public dependency availability and clean-user acceptance remain
-pending; M41 is not complete. See [the first-run guide](first-run.md) and
+binds those results to the implementation commit. A separately approved real
+macOS setup run passed private Python provisioning with no Python in PATH,
+offline reuse, locked SDK installation and offline SDK readiness. Public AgentRig
+download failed; its earlier generic error did not establish an HTTP/network
+cause. Public dependency availability and clean-user acceptance remain pending;
+M41 is not complete. See [the first-run guide](first-run.md) and
 [the local evidence manifest](../evidence/milestones/m41-first-run-base.json).
 
 M42 will manage an explicitly owned isolated simulation runtime and pinned

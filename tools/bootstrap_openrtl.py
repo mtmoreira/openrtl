@@ -16,11 +16,14 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import socket
+import ssl
 import stat
 import subprocess
 import sys
 import time
 from typing import Any, Callable, Sequence
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, HTTPSHandler, ProxyHandler, Request, build_opener
 import uuid
@@ -31,6 +34,21 @@ ROOT = Path(__file__).resolve().parents[1]
 LOCK = ROOT / "bootstrap" / "dependencies.json"
 MAX_WHEEL_BYTES = 8 * 1024 * 1024
 MAX_EXPANDED_BYTES = 32 * 1024 * 1024
+
+# Child failures cross the process boundary as fixed exit codes, never remote
+# response bodies, URLs, headers or exception messages.
+DOWNLOAD_FAILURES = {
+    20: ("public_wheel_not_found", "The pinned public artifact returned HTTP 404/410. Report the missing release artifact; an approved offline wheelhouse can supply the same pinned bytes."),
+    21: ("public_wheel_access_denied", "The public artifact refused anonymous access. Do not supply credentials; report the public release availability problem."),
+    22: ("public_wheel_rate_limited", "The public host rate-limited this request. Wait before retrying the same setup command."),
+    23: ("public_wheel_http_error", "The public host returned an HTTP error. Retry later or use an approved offline wheelhouse."),
+    24: ("public_wheel_tls_failed", "Python could not establish verified TLS. Check the selected interpreter's trusted certificate setup or use an approved offline wheelhouse; keep TLS verification enabled."),
+    25: ("public_wheel_dns_failed", "Python could not resolve the public host. Check network/DNS access, then retry the same setup command."),
+    26: ("download_deadline_exceeded", "The download timed out. Check connectivity, then retry the same setup command."),
+    27: ("public_wheel_connection_failed", "The public connection failed. Check connectivity or use an approved offline wheelhouse."),
+    28: ("public_wheel_verification_failed", "The downloaded artifact failed the pinned integrity or archive checks. Preserve the pin and report the release artifact mismatch."),
+    29: ("public_wheel_redirect_rejected", "The download left the allowed HTTPS release hosts. Report the release redirect; do not widen trust automatically."),
+}
 
 
 class BootstrapError(ValueError):
@@ -166,9 +184,38 @@ def download(pin: WheelPin) -> bytes:
         )
     except subprocess.TimeoutExpired:
         raise BootstrapError("download_deadline_exceeded") from None
-    require(completed.returncode == 0, "public_wheel_download_unavailable")
+    if completed.returncode != 0:
+        raise BootstrapError(DOWNLOAD_FAILURES.get(
+            completed.returncode, ("public_wheel_download_unavailable", ""))[0])
     verify_wheel(completed.stdout, pin)
     return completed.stdout
+
+
+def fetch_wheel_with_consent() -> int:
+    """Internal protocol for the checked-in public pin, with value-free errors."""
+    try:
+        pinned = load_pin()
+        payload = _download_bytes(pinned)
+        verify_wheel(payload, pinned)
+        sys.stdout.buffer.write(payload)
+    except HTTPError as error:
+        if error.code in (404, 410):
+            return 20
+        if error.code in (401, 403):
+            return 21
+        return 22 if error.code == 429 else 23
+    except (URLError, OSError) as error:
+        reason = error.reason if isinstance(error, URLError) else error
+        if isinstance(reason, ssl.SSLError):
+            return 24
+        if isinstance(reason, socket.gaierror):
+            return 25
+        return 26 if isinstance(reason, TimeoutError) else 27
+    except BootstrapError as error:
+        return 29 if str(error) in ("download_redirect_rejected", "download_origin_rejected") else 28
+    except Exception:
+        return 2
+    return 0
 
 
 def cached_wheel(state: Path, pin: WheelPin) -> Path | None:
@@ -306,6 +353,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("Setup interrupted. Verified cached dependencies remain reusable; execution permissions are not saved.")
         return 130
     except BootstrapError as error:
+        hint = next((hint for code, hint in DOWNLOAD_FAILURES.values() if code == str(error)), None)
+        if hint is not None:
+            print(f"OpenRTL setup stopped: {error}. {hint}")
+            return 2
         print("OpenRTL setup stopped: " + str(error) + ". Check consent, the selected wheel and private state; rerun ./openrtl doctor for readiness.")
         return 2
     except (OSError, ValueError, TypeError, KeyError, subprocess.TimeoutExpired, zipfile.BadZipFile):
@@ -317,12 +368,5 @@ if __name__ == "__main__":
     if sys.argv[1:] == ["--fetch-wheel-with-consent"]:
         # Internal child protocol: an exact explicit download action, restricted
         # to the checked-in pin; no arbitrary URLs, credentials or input payloads.
-        try:
-            pinned = load_pin()
-            payload = _download_bytes(pinned)
-            verify_wheel(payload, pinned)
-            sys.stdout.buffer.write(payload)
-        except Exception:
-            raise SystemExit(2) from None
-        raise SystemExit(0)
+        raise SystemExit(fetch_wheel_with_consent())
     raise SystemExit(main())

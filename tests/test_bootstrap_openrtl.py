@@ -4,18 +4,22 @@ from __future__ import annotations
 
 from contextlib import redirect_stdout
 from dataclasses import replace
+from email.message import Message
 import hashlib
 import io
 import json
 import os
 from pathlib import Path
 import shutil
+import socket
+import ssl
 import stat
 import subprocess
 import sys
 import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
+from urllib.error import HTTPError, URLError
 from urllib.request import ProxyHandler, Request
 import warnings
 import zipfile
@@ -399,6 +403,58 @@ class BootstrapLocalStateTest(unittest.TestCase):
 
 
 class BootstrapDownloadPolicyTest(unittest.TestCase):
+    def test_child_classifies_failures_without_emitting_untrusted_values(self) -> None:
+        marker = "synthetic-untrusted-remote-response"
+        failures: list[tuple[Exception, int]] = [
+            (HTTPError(ORIGIN, status, marker, Message(), None), code)
+            for status, code in ((404, 20), (410, 20), (401, 21), (403, 21),
+                                 (429, 22), (500, 23))
+        ]
+        for error, code in ((ssl.SSLCertVerificationError(marker), 24),
+                            (socket.gaierror(marker), 25), (TimeoutError(marker), 26),
+                            (ConnectionRefusedError(marker), 27)):
+            failures.extend(((error, code), (URLError(error), code)))
+        failures.extend(((URLError(marker), 27), (RuntimeError(marker), 2),
+                         (bootstrap.BootstrapError("download_redirect_rejected"), 29),
+                         (bootstrap.BootstrapError("wheel_hash_or_size_mismatch"), 28)))
+        for failure, expected in failures:
+            with self.subTest(error=type(failure), expected=expected), \
+                    patch("tools.bootstrap_openrtl._download_bytes", side_effect=failure), \
+                    patch("tools.bootstrap_openrtl.verify_wheel") as verify, \
+                    redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(bootstrap.fetch_wheel_with_consent(), expected)
+                self.assertEqual(output.getvalue(), "")
+                verify.assert_not_called()
+
+    def test_child_returns_only_verified_wheel_bytes_on_success(self) -> None:
+        data = wheel_bytes()
+        output = MagicMock()
+        with patch("tools.bootstrap_openrtl.load_pin", return_value=wheel_pin(data)), \
+                patch("tools.bootstrap_openrtl._download_bytes", return_value=data), \
+                patch("tools.bootstrap_openrtl.sys.stdout", output):
+            self.assertEqual(bootstrap.fetch_wheel_with_consent(), 0)
+        output.buffer.write.assert_called_once_with(data)
+        output.reset_mock()
+        with patch("tools.bootstrap_openrtl._download_bytes", return_value=data), \
+                patch("tools.bootstrap_openrtl.sys.stdout", output):
+            self.assertEqual(bootstrap.fetch_wheel_with_consent(), 28)
+        output.buffer.write.assert_not_called()
+
+    def test_parent_maps_child_codes_and_frontend_shows_safe_recovery_hints(self) -> None:
+        for exit_code, (code, hint) in bootstrap.DOWNLOAD_FAILURES.items():
+            completed: subprocess.CompletedProcess[bytes] = subprocess.CompletedProcess(
+                args=[], returncode=exit_code, stdout=b"synthetic-untrusted-response")
+            with self.subTest(code=code), \
+                    patch("tools.bootstrap_openrtl.subprocess.run", return_value=completed):
+                with self.assertRaisesRegex(bootstrap.BootstrapError, "^" + code + "$"):
+                    bootstrap.download(bootstrap.load_pin())
+            with patch("tools.bootstrap_sdk.cached_sdk", return_value=None), \
+                    patch("tools.bootstrap_openrtl.load_pin", side_effect=bootstrap.BootstrapError(code)), \
+                    redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(bootstrap.main([]), 2)
+            self.assertIn(hint, output.getvalue())
+            self.assertNotIn("synthetic-untrusted-response", output.getvalue())
+
     def test_download_uses_no_proxy_or_authentication_and_bounds_bytes(self) -> None:
         data = wheel_bytes()
         pin = wheel_pin(data)
