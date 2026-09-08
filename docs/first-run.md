@@ -160,11 +160,15 @@ preferences use `setup --noninteractive`.
   [their evidence manifest](../evidence/milestones/m41-runtime-sdk-local.json) records
   the qualified implementation. The separately approved macOS real-setup run
   passed missing-Python provisioning, offline runtime reuse, actual locked SDK
-  installation and offline SDK readiness. Its public AgentRig download failed
-  with the earlier generic diagnostic; the HTTP/network cause remains unverified.
+  installation and offline SDK readiness. The subsequent diagnostic retry passed
+  69 focused tests, 326 repository tests, both model suites, strict typing and
+  six offline launcher checks. Both existing and privately provisioned Python
+  received HTTP 404/410 for the pinned public AgentRig URL.
   Public dependency availability and fresh-user acceptance still block M41.
   The successful runtime lane used the retained pinned AgentRig wheel and does
   not prove public availability. Linux and clean-OS-user qualification are pending.
+  [The setup and public-dependency evidence](../evidence/milestones/m41-public-dependency.json)
+  binds the successful local checks and the failed public download separately.
 - M42: select and qualify an owned isolated runtime/image with explicit consent.
   Preserve all existing unrelated Docker runners; there is no host fallback.
 - M43–M45: complete conversational review, import/evolution, export and diagnostics.

@@ -220,8 +220,12 @@ actual offline launcher checks. [The runtime/SDK evidence manifest](../evidence/
 binds those results to the implementation commit. A separately approved real
 macOS setup run passed private Python provisioning with no Python in PATH,
 offline reuse, locked SDK installation and offline SDK readiness. Public AgentRig
-download failed; its earlier generic error did not establish an HTTP/network
-cause. Public dependency availability and clean-user acceptance remain pending;
+download failed. A diagnostic retry passed 69 focused tests, 326 repository tests,
+both model suites, strict typing and six offline launcher checks, while both
+interpreters received HTTP 404/410 for the pinned public URL. The existing local
+release artifact does not establish anonymous public availability.
+[The retained evidence](../evidence/milestones/m41-public-dependency.json) records
+these outcomes separately. Public dependency availability and clean-user acceptance remain pending;
 M41 is not complete. See [the first-run guide](first-run.md) and
 [the local evidence manifest](../evidence/milestones/m41-first-run-base.json).
 
