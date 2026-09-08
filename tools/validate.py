@@ -48,6 +48,7 @@ def _validate_text_files() -> None:
         if path.suffix not in {".json", ".md", ".py", ".toml", ".sv", ".zsh"} and path.name not in {
             ".gitignore",
             "LICENSE",
+            "openrtl",
         }:
             continue
         data = path.read_bytes()
@@ -64,6 +65,14 @@ def _validate_architecture() -> None:
         "AGENTS.md",
         "LICENSE",
         "README.md",
+        "openrtl",
+        "bootstrap/dependencies.json",
+        "tools/bootstrap_openrtl.py",
+        "tools/verify_onboarding.py",
+        "src/openrtl/onboarding.py",
+        "tests/test_onboarding.py",
+        "tests/test_bootstrap_openrtl.py",
+        "docs/first-run.md",
         "docs/architecture.md",
         "docs/development-plan.md",
         "docs/adr/0001-artifact-first-context.md",

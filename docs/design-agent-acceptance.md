@@ -1,7 +1,11 @@
 # Evaluating the OpenRTL design-agent candidate
 
-M36–M39 have local validated checkpoints. M40 is an implementation candidate;
-its local checks and real generated-design acceptance are not yet recorded.
+M36–M40 have local validated implementation checkpoints. M40 passed 103 focused
+tests, selected strict typing, the 257-test main suite and both three-test example
+suites, the existing FIFO canary, offline package preparation and 33 installed
+CLI checks. M41 preflight re-ran the default suite successfully. Retained M40
+package/report/source hashes were reverified; real generated-design acceptance
+remains pending.
 The published v0.4.0 toolkit is not this agent. Do not replace its release assets
 with these development artifacts or identify this candidate by version alone.
 

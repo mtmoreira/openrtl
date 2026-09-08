@@ -175,7 +175,9 @@ are described in [the import guide](design-imports.md). M39's
 [coaching and comparisons](design-coaching.md) passed 87 focused tests, strict typing,
 full default validation and the production canary. M40's candidate acceptance
 report, installed-target smoke and evaluation bundle are described in the
-[acceptance guide](design-agent-acceptance.md); their local validation is pending.
+[acceptance guide](design-agent-acceptance.md); local validation passed, including
+103 focused tests, strict typing, default validation, the existing FIFO canary,
+offline candidate preparation and 33 installed CLI checks.
 Separately authorized live-provider generation and isolated simulation of a
 reviewed ALU and additional designs remain pending. M40 is not complete.
 These local candidates are not integrated, pushed or released agent packages.

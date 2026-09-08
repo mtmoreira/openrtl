@@ -35,6 +35,11 @@ agentrig = { path = "../agentrig", editable = true }
 
 [tool.uv.build-backend]
 source-include = [
+  "openrtl",
+  "bootstrap/**",
+  "tools/bootstrap_openrtl.py",
+  "tools/verify_onboarding.py",
+  "docs/first-run.md",
   "examples/**",
   "tools/__init__.py",
   "tools/fifo_fault_case.py",

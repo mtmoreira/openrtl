@@ -188,7 +188,11 @@ Comparisons do not establish equivalence, functional coverage or hardware PPA.
 M40 targets held-out designs, installed CLI workflows, documented evidence tiers
 and the user-facing package. Its candidate adds reverified read-only acceptance
 inventories, three solution-free evaluation specifications, an installed-target
-CLI smoke test and a normalized guide/spec archive. Local validation is pending.
+CLI smoke test and a normalized guide/spec archive. Checkpoint
+`71bc8b81640580a19f623bc98183dafc96fabc88` passed 103 focused tests, selected
+strict typing, the 257-test main suite and both three-test example suites, the
+existing FIFO canary, offline candidate preparation and 33 installed CLI checks.
+M41 preflight re-ran the default suite and rehashed retained evidence successfully.
 The installed smoke deliberately reuses existing interpreter dependencies; it is
 not a clean-machine or live-provider qualification. Published evaluation inputs
 are not secret held-out designs. Real provider/container execution and additional
@@ -199,6 +203,29 @@ Complete as much local development and deterministic validation as possible
 before owner-shell handoffs. Provider calls, runtime installation, publication
 and remote Git effects remain separately authorized. A milestone is not
 complete merely because a scripted test or state transition succeeded.
+
+## Approved local continuation: M41–M45
+
+M41 adds the checked-in launcher, private resumable first-run configuration,
+explicit dependency consent and separate readiness reporting. Its current
+implementation requires existing Python 3.12+ and uses a pinned pure AgentRig
+wheel without an editable sibling, pip or package hooks. Managed Python and SDK
+provisioning, execution of new tests and clean-user acceptance remain pending;
+M41 is not complete. See [the first-run guide](first-run.md).
+
+M42 will manage an explicitly owned isolated simulation runtime and pinned
+images, preserving unrelated Docker runners and forbidding host fallback.
+M43 will complete conversational routing, readiness reviews, shown-review
+approvals and ordinary batch policy inputs. M44 will complete import previews,
+in-chat evolution, independent collateral for RTL-only inputs and usable source
+export. M45 will add session discovery/portable export, bounded progress,
+actionable diagnostics and recovery qualification. Continue in sequential
+milestone worktrees with validated local checkpoints and retained evidence.
+
+M46 live engineering qualification requires separately authorized actual provider
+calls and isolated simulations of new designs plus an independent adequacy review.
+M47 release requires clean-user qualification, a distinct immutable identity and
+separately authorized publication. Neither is complete or implied by local tests.
 
 ## Existing composition convergence evidence
 

@@ -67,6 +67,16 @@ publication are deferred behind explicit ports.
 
 ## Development
 
+### Clone launcher: M41 work in progress
+
+`./openrtl` starts the checked-in first-run flow using an existing Python 3.12+
+interpreter. Dependency preparation requires explicit consent and uses a pinned
+pure AgentRig wheel; it does not require the developer's sibling checkout.
+`./openrtl doctor` explains separate local review, provider and runtime readiness.
+See [first-run setup](docs/first-run.md) for offline/unattended use and the pending
+Python/SDK provisioning and clean-user gates. M41 is not complete; this is not a
+new release or evidence of real provider-designed RTL.
+
 ### Interactive, batch and existing-design agent: M36–M40 candidates
 
 The new `chat`, `resume`, `status` and `doctor` commands begin the executing
@@ -87,13 +97,18 @@ anchored diagnosis and evidence-bound simulation comparisons. Its local checks
 passed; see [the coaching guide](docs/design-coaching.md). M40 adds a read-only
 `acceptance` inventory, specification-only evaluation scenarios and an exact
 installed-target CLI smoke test. See [acceptance and evaluation](docs/design-agent-acceptance.md).
-M40 checks, live-provider generation and isolated generated-design acceptance
-remain pending separately. No new published version is implied.
+M40 passed local validation, existing FIFO canary, offline package preparation
+and 33 installed-target CLI checks. Its default 257-test suite and both three-test
+example suites were re-run successfully during M41 preflight. Live-provider
+generation and isolated generated-design acceptance remain pending separately.
+No new published version is implied.
 
 ### Provider-free checks
 
-Keep an exact AgentRig 0.3.0 checkout at the sibling path selected by
-`tool.uv.sources`, then run the provider-free validation lane:
+The historical developer uv environment still selects an exact AgentRig 0.3.0
+checkout at the sibling path in `tool.uv.sources`. This is separate from the
+clone launcher's immutable public wheel cache. In that development environment,
+run the provider-free validation lane:
 
 ```sh
 uv sync --locked --extra simulation

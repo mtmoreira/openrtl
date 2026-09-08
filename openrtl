@@ -1,0 +1,12 @@
+#!/bin/sh
+# Product entry point. This never installs a runtime merely by being invoked.
+set -eu
+openrtl_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+openrtl_python=${OPENRTL_PYTHON:-python3}
+if ! "$openrtl_python" -I -S -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 12) else 2)' >/dev/null 2>&1; then
+    printf '%s\n' 'OpenRTL needs a working Python 3.12 or newer.' \
+        'Select an existing interpreter with OPENRTL_PYTHON=/absolute/path/to/python ./openrtl.' \
+        'No runtime was installed. Managed Python provisioning and clean-user qualification remain pending.' >&2
+    exit 2
+fi
+exec "$openrtl_python" -I -S "$openrtl_root/tools/bootstrap_openrtl.py" "$@"

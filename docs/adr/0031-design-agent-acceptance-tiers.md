@@ -1,6 +1,6 @@
 # ADR 0031: design-agent acceptance evidence tiers
 
-Status: M40 implementation candidate; local and live qualification pending.
+Status: M40 local implementation checkpoint validated; live qualification pending.
 
 ## Decision
 
