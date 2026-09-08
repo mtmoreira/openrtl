@@ -1,0 +1,186 @@
+{
+  "schema": "openrtl.milestone-evidence.v1",
+  "milestone_id": "m41-first-run-base",
+  "base_commit": "71bc8b81640580a19f623bc98183dafc96fabc88",
+  "qualified_commit": "081bef87563b0d40e977c492c30ed9b0260b7237",
+  "implementation_commits": [
+    "081bef87563b0d40e977c492c30ed9b0260b7237"
+  ],
+  "review_state": "validated-local-implementation-slice",
+  "qualification_lane": "offline-onboarding-existing-python",
+  "milestone_complete": false,
+  "collateral_root": "build/retained-evidence/m41-base-081bef8",
+  "locator_roots": {
+    "openrtl-primary-checkout": {
+      "kind": "declared-external-checkout",
+      "repository": "openrtl",
+      "resolution": "Resolve relative to the retained primary OpenRTL checkout; artifacts are not distributed with a clone."
+    }
+  },
+  "artifacts": [
+    {
+      "artifact_id": "m41.validation.v3",
+      "locator": "build/retained-evidence/m41-base-081bef8/objects/b816089afa8114cf1c220f47d528bc6a4d957e13d482d16e27b97b5b581aa372",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "openrtl.m41-local-validation.v3",
+      "media_type": "application/json",
+      "sha256": "b816089afa8114cf1c220f47d528bc6a4d957e13d482d16e27b97b5b581aa372",
+      "size_bytes": 2190,
+      "producer": "openrtl-owner-validation",
+      "evidence_lane": "local-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-and-size-verified"
+    },
+    {
+      "artifact_id": "m41.focused_tests",
+      "locator": "build/retained-evidence/m41-base-081bef8/objects/d38726795e17a64820214fe8941fc5dc87465a0babeeb753a3cefe329f57e6fa",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "text-log.v1",
+      "media_type": "text/plain",
+      "sha256": "d38726795e17a64820214fe8941fc5dc87465a0babeeb753a3cefe329f57e6fa",
+      "size_bytes": 149,
+      "producer": "openrtl-owner-validation",
+      "evidence_lane": "local-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-and-size-verified"
+    },
+    {
+      "artifact_id": "m41.strict_typing",
+      "locator": "build/retained-evidence/m41-base-081bef8/objects/e317872697c2cbfdefa321527a6efe73290dff3a390b0fa8723b87092eccba6a",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "text-log.v1",
+      "media_type": "text/plain",
+      "sha256": "e317872697c2cbfdefa321527a6efe73290dff3a390b0fa8723b87092eccba6a",
+      "size_bytes": 43,
+      "producer": "openrtl-owner-validation",
+      "evidence_lane": "local-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-and-size-verified"
+    },
+    {
+      "artifact_id": "m41.full_default_validation",
+      "locator": "build/retained-evidence/m41-base-081bef8/objects/ed31bd8c207f7261575f566a1c9b635b6a44e403d1cdac0b10eff74d92f64be6",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "text-log.v1",
+      "media_type": "text/plain",
+      "sha256": "ed31bd8c207f7261575f566a1c9b635b6a44e403d1cdac0b10eff74d92f64be6",
+      "size_bytes": 1115,
+      "producer": "openrtl-owner-validation",
+      "evidence_lane": "local-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-and-size-verified"
+    },
+    {
+      "artifact_id": "m41.reviewed-source.v3",
+      "locator": "build/retained-evidence/m41-base-081bef8/objects/e30326c5dafa3495c061f554f4b5aaec84af001b6085c345fe1320c732fd7564",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "openrtl.m41-reviewed-source.v1",
+      "media_type": "application/json",
+      "sha256": "e30326c5dafa3495c061f554f4b5aaec84af001b6085c345fe1320c732fd7564",
+      "size_bytes": 2989,
+      "producer": "openrtl-owner-validation",
+      "evidence_lane": "local-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-and-size-verified"
+    },
+    {
+      "artifact_id": "m41.retained-evidence.v3",
+      "locator": "build/retained-evidence/m41-base-081bef8/objects/bae637f1a01295f8c76b8a2dc185d66bb923aed0752ec9bc10bb152f1d5f1c54",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "openrtl.m41-retained-validation.v1",
+      "media_type": "application/json",
+      "sha256": "bae637f1a01295f8c76b8a2dc185d66bb923aed0752ec9bc10bb152f1d5f1c54",
+      "size_bytes": 41484,
+      "producer": "openrtl-owner-validation",
+      "evidence_lane": "local-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-and-size-verified"
+    },
+    {
+      "artifact_id": "m41.offline-launcher",
+      "locator": "build/retained-evidence/m41-base-081bef8/objects/d3f22cad18489900cf60e3dabb75f261f6d74e4cdd5cae44896c4dcd2df2320f",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "openrtl.onboarding-smoke.v1",
+      "media_type": "application/json",
+      "sha256": "d3f22cad18489900cf60e3dabb75f261f6d74e4cdd5cae44896c4dcd2df2320f",
+      "size_bytes": 1798,
+      "producer": "openrtl-owner-validation",
+      "evidence_lane": "local-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-and-size-verified"
+    },
+    {
+      "artifact_id": "m41.existing-fifo",
+      "locator": "build/retained-evidence/m41-base-081bef8/objects/960389cbe766c5c911daf71929e5f5772f01a5ae411d3c9c868ac21705ef064d",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "openrtl.verilator-canary-evidence.v1",
+      "media_type": "application/json",
+      "sha256": "960389cbe766c5c911daf71929e5f5772f01a5ae411d3c9c868ac21705ef064d",
+      "size_bytes": 1036,
+      "producer": "openrtl-owner-validation",
+      "evidence_lane": "local-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-and-size-verified"
+    },
+    {
+      "artifact_id": "m41.recursive-artifact-inventory",
+      "locator": "build/retained-evidence/m41-base-081bef8/inventory.json",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "openrtl.retained-evidence-inventory.v1",
+      "media_type": "application/json",
+      "sha256": "b84e94f7206e526c81906f07fba300eb28a16a7d1d54447eaa01beeb422453d2",
+      "size_bytes": 140551,
+      "producer": "codex-retention-reconciliation",
+      "evidence_lane": "local-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "all-declared-artifacts-rehashed"
+    }
+  ],
+  "validation_outcomes": {
+    "focused_tests": "50 passed in v3",
+    "strict_typing": "5 source files passed in v3",
+    "repository_tests": "307 passed in v3",
+    "example_model_tests": "FIFO 3 and skid-buffer 3 passed in v3",
+    "offline_launcher": "6 checks passed in v2; production source and evidence rehashed unchanged in v3",
+    "existing_fifo_canary": "passed in v2; RTL and retained artifact hashes reverified in v3",
+    "source_binding": "All 15 implementation files equal the passing v3 source manifest; only test indentation changed after the v2 launcher/canary run."
+  },
+  "pending": [
+    "managed-python-provisioning",
+    "optional-sdk-setup",
+    "public-agentrig-wheel-availability",
+    "clean-user-m41-acceptance",
+    "m42-managed-isolated-runtime",
+    "m43-conversation",
+    "m44-import-evolution",
+    "m45-sessions-diagnostics",
+    "m46-live-rtl-qualification",
+    "m47-release"
+  ],
+  "authorization_boundary": {
+    "local_implementation_and_commits": true,
+    "production_authorized": false,
+    "provider_calls": false,
+    "credential_resolution": false,
+    "runtime_downloads": false,
+    "runtime_installation": false,
+    "new_production_dependencies": false,
+    "docker_contact": false,
+    "remote_git_mutations": false,
+    "publication": false
+  },
+  "qualification_limits": [
+    "Existing Python and a retained AgentRig wheel were used for local launcher validation.",
+    "The existing FIFO canary is historical fixture evidence, not a real-agent new-RTL design demonstration.",
+    "No M41 milestone integration or release qualification is claimed."
+  ]
+}

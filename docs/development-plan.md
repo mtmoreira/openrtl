@@ -209,9 +209,13 @@ complete merely because a scripted test or state transition succeeded.
 M41 adds the checked-in launcher, private resumable first-run configuration,
 explicit dependency consent and separate readiness reporting. Its current
 implementation requires existing Python 3.12+ and uses a pinned pure AgentRig
-wheel without an editable sibling, pip or package hooks. Managed Python and SDK
-provisioning, execution of new tests and clean-user acceptance remain pending;
-M41 is not complete. See [the first-run guide](first-run.md).
+wheel without an editable sibling, pip or package hooks. The base slice passed
+50 focused tests, strict typing, 307 repository tests and both three-test model
+suites. The actual offline launcher and existing FIFO canary also passed, with
+retained evidence rehashed against unchanged production source. Managed Python
+and SDK provisioning, public dependency availability and clean-user acceptance
+remain pending; M41 is not complete. See [the first-run guide](first-run.md) and
+[the local evidence manifest](../evidence/milestones/m41-first-run-base.json).
 
 M42 will manage an explicitly owned isolated simulation runtime and pinned
 images, preserving unrelated Docker runners and forbidding host fallback.

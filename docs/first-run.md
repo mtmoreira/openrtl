@@ -97,8 +97,10 @@ preferences use `setup --noninteractive`.
 
 ## Remaining acceptance work
 
-- M41: execute the new tests and actual launcher review path; qualify public
-  download availability, managed Python provisioning and SDK setup. No new
+- M41: the 50 focused tests, strict typing, full repository suite, actual offline
+  launcher review and existing FIFO canary passed. Retained local evidence is
+  recorded in [the base-slice manifest](../evidence/milestones/m41-first-run-base.json).
+  Qualify public download availability, managed Python provisioning and SDK setup. No new
   installer production dependency is silently introduced by this candidate.
 - M42: select and qualify an owned isolated runtime/image with explicit consent.
   Preserve all existing unrelated Docker runners; there is no host fallback.
