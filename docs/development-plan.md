@@ -225,8 +225,15 @@ both model suites, strict typing and six offline launcher checks, while both
 interpreters received HTTP 404/410 for the pinned public URL. The existing local
 release artifact does not establish anonymous public availability.
 [The retained evidence](../evidence/milestones/m41-public-dependency.json) records
-these outcomes separately. Public dependency availability and clean-user acceptance remain pending;
-M41 is not complete. See [the first-run guide](first-run.md) and
+these outcomes separately. The later approved AgentRig publication passed
+anonymous verification of all three immutable assets and actual public-launcher
+specification review in fresh private state, using product-provisioned Python.
+[Publication evidence](../evidence/milestones/m41-publication.json) records the
+source and artifact identities. Split at the environment boundary: M41a local
+installation/onboarding implementation is validated; M41b clean-OS-user and Linux
+acceptance remains pending. The original complete M41 gate remains open. Do not
+repeat installation merely to combine already passing independent lanes, and do
+not call owner-isolated state a clean OS user. See [the first-run guide](first-run.md) and
 [the local evidence manifest](../evidence/milestones/m41-first-run-base.json).
 
 M42 will manage an explicitly owned isolated simulation runtime and pinned

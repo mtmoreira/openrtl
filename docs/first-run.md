@@ -164,9 +164,18 @@ preferences use `setup --noninteractive`.
   69 focused tests, 326 repository tests, both model suites, strict typing and
   six offline launcher checks. Both existing and privately provisioned Python
   received HTTP 404/410 for the pinned public AgentRig URL.
-  Public dependency availability and fresh-user acceptance still block M41.
-  The successful runtime lane used the retained pinned AgentRig wheel and does
-  not prove public availability. Linux and clean-OS-user qualification are pending.
+  Those HTTP failures are historical. The approved AgentRig v0.3.0 publication
+  subsequently passed anonymous byte verification for the wheel, sdist and release
+  manifest. The actual cloned launcher downloaded the public wheel into fresh
+  private state and completed specification review, offline doctor and saved-state
+  checks using the product-provisioned Python. No provider or Docker was contacted.
+  [Publication evidence](../evidence/milestones/m41-publication.json) binds those
+  results to the unchanged implementation. The bootstrap pin's original provenance
+  remains historical; the publication attestation records the later verification.
+  M41a local implementation is validated. M41b Linux/clean-OS-user acceptance
+  remains pending: private owner state is not a fresh OS account. This split
+  permits independent local implementation without claiming the original M41
+  acceptance gate or a supported-platform release is complete.
   [The setup and public-dependency evidence](../evidence/milestones/m41-public-dependency.json)
   binds the successful local checks and the failed public download separately.
 - M42: select and qualify an owned isolated runtime/image with explicit consent.
