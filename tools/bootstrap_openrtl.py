@@ -1,7 +1,7 @@
 """Consent-gated, pinned pure-wheel bootstrap; no pip, build hooks or sibling source.
 
-The cloned OpenRTL source remains the selected application. The existing Python
-runtime is explicit; managed interpreter provisioning is not qualified here.
+The cloned OpenRTL source remains the selected application. Runtime and optional
+SDK setup are separate consent gates; clean-user qualification remains pending.
 """
 
 from __future__ import annotations
@@ -240,20 +240,43 @@ def main(argv: Sequence[str] | None = None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--allow-install", action="store_true")
+    parser.add_argument("--allow-runtime-install", action="store_true")
+    parser.add_argument("--runtime-artifacts", type=Path)
+    parser.add_argument("--allow-sdk-install", action="store_true")
+    parser.add_argument("--sdk-wheelhouse", type=Path)
     parser.add_argument("--offline", action="store_true")
     parser.add_argument("--wheelhouse", type=Path)
     parser.add_argument("--state-dir", type=Path)
     options, forwarded = parser.parse_known_args(arguments)
     # The cloned source is explicit; never add a sibling checkout to sys.path.
     sys.path.insert(0, str(ROOT / "src"))
+    sys.path.insert(0, str(ROOT))
+    sys.dont_write_bytecode = True
     from openrtl import onboarding
+    from tools import bootstrap_sdk
     try:
         require(sys.version_info >= (3, 12), "python_3_12_required")
         state = options.state_dir or onboarding.default_state_dir()
         frontend = (["--state-dir", str(state)] if options.state_dir is not None else []) + forwarded
         if forwarded and forwarded[0] in ("--help", "-h"):
-            print("Launcher options: --allow-install --offline --wheelhouse DIR --state-dir DIR")
+            print("Launcher options: --allow-install --allow-runtime-install --runtime-artifacts DIR "
+                  "--offline --wheelhouse DIR --state-dir DIR; optional: setup-sdk --allow-sdk-install --sdk-wheelhouse DIR")
             return onboarding.main(frontend)
+        if forwarded and forwarded[0] == "setup-sdk":
+            require(forwarded == ["setup-sdk"], "sdk_setup_arguments_invalid")
+            print("Optional setup uses uv 0.12.3 and the hashed OpenAI SDK 2.47.0 wheel lock in private OpenRTL state.")
+            print("This permits SDK setup only. No credentials are read; no model or simulator is called.")
+            if not options.allow_sdk_install:
+                print("To approve SDK/tool preparation, rerun setup-sdk with --allow-sdk-install. "
+                      "Offline setup also needs --sdk-wheelhouse DIR --runtime-artifacts DIR --offline.")
+                return 2
+            bootstrap_sdk.install_sdk(state, authorized=True, offline=options.offline,
+                                      wheelhouse=options.sdk_wheelhouse, artifacts=options.runtime_artifacts)
+            print("Optional SDK cache verified. Provider access and live qualification remain unverified.")
+            return 0
+        sdk = bootstrap_sdk.cached_sdk(state)
+        if sdk is not None:
+            sys.path.insert(0, str(sdk))
         pin = load_pin()
         selected = cached_wheel(state, pin)
         if selected is not None:
@@ -285,7 +308,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except BootstrapError as error:
         print("OpenRTL setup stopped: " + str(error) + ". Check consent, the selected wheel and private state; rerun ./openrtl doctor for readiness.")
         return 2
-    except (OSError, ValueError, TypeError, KeyError, zipfile.BadZipFile):
+    except (OSError, ValueError, TypeError, KeyError, subprocess.TimeoutExpired, zipfile.BadZipFile):
         print("OpenRTL setup stopped: dependency or state unavailable. Check connectivity or select an offline wheelhouse; no package hook or model call was run.")
         return 2
 

@@ -50,7 +50,8 @@ def verify(wheel: Path, output: Path) -> dict[str, object]:
     output.mkdir(mode=0o700)
     copied = output / "clone with spaces"
     copied.mkdir(mode=0o700)
-    sources = ["openrtl", "tools/bootstrap_openrtl.py", "bootstrap/dependencies.json"]
+    sources = ["openrtl", "tools/bootstrap_openrtl.py", "tools/bootstrap_sdk.py",
+               "tools/bootstrap_runtime.sh", "bootstrap/dependencies.json", "bootstrap/sdk-requirements.lock"]
     sources.extend(p.relative_to(ROOT).as_posix() for p in sorted((ROOT / "src/openrtl").rglob("*"))
                    if p.suffix == ".py" or p.name == "py.typed")
     source_manifest = []

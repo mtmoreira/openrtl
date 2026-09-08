@@ -69,12 +69,13 @@ publication are deferred behind explicit ports.
 
 ### Clone launcher: M41 work in progress
 
-`./openrtl` starts the checked-in first-run flow using an existing Python 3.12+
-interpreter. Dependency preparation requires explicit consent and uses a pinned
+`./openrtl` starts the checked-in first-run flow, using Python 3.12+ when available
+or offering separately approved private provisioning. Dependency preparation requires explicit consent and uses a pinned
 pure AgentRig wheel; it does not require the developer's sibling checkout.
 `./openrtl doctor` explains separate local review, provider and runtime readiness.
-See [first-run setup](docs/first-run.md) for offline/unattended use and the pending
-Python/SDK provisioning and clean-user gates. M41 is not complete; this is not a
+See [first-run setup](docs/first-run.md) for offline/unattended use, separately
+consented private Python and optional SDK setup, and their pending real-install
+and clean-user validation gates. M41 is not complete; this is not a
 new release or evidence of real provider-designed RTL.
 
 ### Interactive, batch and existing-design agent: M36–M40 candidates

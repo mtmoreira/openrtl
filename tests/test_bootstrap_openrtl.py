@@ -510,14 +510,14 @@ class BootstrapShellLauncherTest(unittest.TestCase):
             recorded_args = recorded.read_bytes().decode().split("\x00")
             boundary = recorded_args.index("__CALL_END__")
             self.assertEqual(recorded_args[:3], ["-I", "-S", "-c"])
-            self.assertEqual(recorded_args[boundary + 1:], ["-I", "-S", str(root / "tools" / "bootstrap_openrtl.py"),
+            self.assertEqual(recorded_args[boundary + 1:], ["-I", "-S", "-B", str(root / "tools" / "bootstrap_openrtl.py"),
                                                            *arguments, "__CALL_END__", ""])
             recorded.unlink()
             environment["OPENRTL_STUB_PROBE_STATUS"] = "2"
             result = subprocess.run(["/bin/sh", str(launcher), *arguments], env=environment,
                                     capture_output=True, check=False, timeout=10)
             self.assertEqual(result.returncode, 2)
-            self.assertIn("No runtime was installed", result.stderr.decode())
+            self.assertIn("No replacement was installed", result.stderr.decode())
             self.assertEqual(recorded.read_bytes().decode().split("\x00").count("__CALL_END__"), 1)
 
 

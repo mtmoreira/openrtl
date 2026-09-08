@@ -10,12 +10,14 @@ From a clone, run:
 ./openrtl
 ```
 
-The current candidate requires an existing Python 3.12 or newer. It checks that
-prerequisite before doing anything else. Select a particular existing interpreter
-with `OPENRTL_PYTHON=/absolute/path/to/python ./openrtl`. Managed Python
-provisioning is still pending; a fresh machine without Python is not yet a
-passing M41 installation. macOS Apple Silicon and Linux x86-64 are proposed
-targets, contingent on M47 clean-user tests. Native Windows is not qualified.
+The launcher first checks for Python 3.12 or newer. Select a particular existing
+interpreter with `OPENRTL_PYTHON=/absolute/path/to/python ./openrtl`; an unavailable
+explicit interpreter stops setup without installing a replacement. If no usable
+default Python exists, the candidate offers private uv 0.12.3 / CPython 3.13.15
+(build 20260807) provisioning. This new path still requires actual installation
+qualification. macOS Apple Silicon and Linux x86-64 with glibc are candidate
+targets; minimum OS/glibc versions and clean-user tests remain pending. Other
+runtime targets fail closed. Native Windows is not qualified.
 
 When the pinned application dependency is missing, the launcher explains the
 download and asks permission. Declining leaves setup stopped. The dependency is
@@ -29,8 +31,10 @@ source. This does not authenticate the checkout's origin.
 
 Startup disables inherited Python search paths and site initialization. The
 SDK-only evaluation environment and development package installations are not
-silently used as product dependencies. Guided SDK provisioning remains pending;
-the launcher therefore does not yet enable live model use. The existing installed
+silently used as product dependencies. Optional SDK setup uses the checked-in,
+hashed 16-distribution OpenAI SDK 2.47.0 lock and requires a separate explicit
+choice. This product setup path is implemented but not yet qualified with actual
+packages. The existing installed
 development CLI's separately authorized provider workflow remains documented in
 the alpha guide; it does not qualify customer onboarding.
 
@@ -56,6 +60,7 @@ Useful setup commands:
 ./openrtl doctor --json --require-local
 ./openrtl setup --noninteractive --model gpt-5.4-nano-2026-03-17 --max-calls 20
 ./openrtl --state-dir "/absolute/private directory" setup --noninteractive
+./openrtl setup-sdk
 ```
 
 `doctor` is read-only and performs no daemon contact, model call or credential
@@ -91,6 +96,46 @@ wheel fails closed. A missing public artifact or unavailable network stops with
 an actionable diagnostic; no package index, alternate version or source build is
 substituted. Download consent is separate from provider and simulation permission.
 
+When Python is absent, `--allow-runtime-install` approves the pinned uv/Python
+preparation. `--runtime-artifacts /absolute/artifacts --offline` supplies existing
+archives instead of downloading them. The directory must contain
+`uv-<target>.tar.gz` and
+`cpython-3.13.15+20260807-<target>-install_only_stripped.tar.gz`, where `<target>` is
+`aarch64-apple-darwin` or `x86_64-unknown-linux-gnu`. Artifact identities and
+provenance are in `bootstrap/runtime-provenance.json`. The bootstrap limits uv
+and Python archives to 64 MiB and 128 MiB respectively, checks SHA-256 before
+execution/extraction, and runs uv against a verified local mirror in offline mode.
+No unpinned runtime or source build is substituted. Runtime mirror state paths
+containing `%`, `#`, `?` or backslashes are rejected; spaces are supported.
+
+Optional provider SDK preparation is explicit, including in a terminal:
+
+```sh
+./openrtl setup-sdk --allow-sdk-install
+./openrtl setup-sdk --allow-sdk-install --offline --runtime-artifacts /absolute/artifacts --sdk-wheelhouse /absolute/sdk-wheels
+```
+
+SDK setup prepares pinned uv if necessary and copies only wheels allowed by
+`bootstrap/sdk-requirements.lock` into private, interpreter-specific state. The
+offline SDK path needs the uv archive plus compatible wheels for every locked
+distribution. It does not require a Python archive when using existing Python.
+Online SDK setup uses PyPI; source builds, dependency re-resolution, package
+hooks, keyring providers and automatic Python downloads are disabled. The SDK
+import check never creates a client or resolves a credential. Neither
+`--allow-install` nor `--allow-runtime-install` grants SDK consent, and
+`--allow-sdk-install` does not grant provider or simulation permission.
+
+Successful SDK state has a receipt covering every installed file and exact
+distribution version. Normal launches check that receipt before adding the
+cache to Python's search path; startup hooks and bytecode files are rejected.
+Changed caches stop without replacement. Interrupted attempts remain in private
+state for inspection and retries use new attempts. A killed runtime setup can
+leave an empty `runtime/uv-0.12.3-<target>/setup.lock`; after confirming no setup
+is running, remove only that empty directory with `rmdir` before retrying.
+The bootstrap never guesses a process owner or kills an existing runner.
+Runtime completion receipts record setup, not a tamper-proof installed-tree
+attestation: the account owning private state can modify its own runtime.
+
 The existing batch spec/delegation contract remains in the alpha guide; ordinary
 batch policy input is M43 work. No-argument setup needs a terminal; noninteractive
 preferences use `setup --noninteractive`.
@@ -100,8 +145,10 @@ preferences use `setup --noninteractive`.
 - M41: the 50 focused tests, strict typing, full repository suite, actual offline
   launcher review and existing FIFO canary passed. Retained local evidence is
   recorded in [the base-slice manifest](../evidence/milestones/m41-first-run-base.json).
-  Qualify public download availability, managed Python provisioning and SDK setup. No new
-  installer production dependency is silently introduced by this candidate.
+  The later runtime/SDK additions still need Python tests and real installation
+  qualification. Qualify public AgentRig download availability, private Python
+  provisioning and SDK setup before closing M41. uv/SDK adoption was approved;
+  no real runtime or SDK download/install was performed during implementation.
 - M42: select and qualify an owned isolated runtime/image with explicit consent.
   Preserve all existing unrelated Docker runners; there is no host fallback.
 - M43–M45: complete conversational review, import/evolution, export and diagnostics.

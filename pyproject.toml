@@ -38,6 +38,8 @@ source-include = [
   "openrtl",
   "bootstrap/**",
   "tools/bootstrap_openrtl.py",
+  "tools/bootstrap_sdk.py",
+  "tools/bootstrap_runtime.sh",
   "tools/verify_onboarding.py",
   "docs/first-run.md",
   "examples/**",

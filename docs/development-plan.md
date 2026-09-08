@@ -208,13 +208,16 @@ complete merely because a scripted test or state transition succeeded.
 
 M41 adds the checked-in launcher, private resumable first-run configuration,
 explicit dependency consent and separate readiness reporting. Its current
-implementation requires existing Python 3.12+ and uses a pinned pure AgentRig
+validated base uses existing Python 3.12+ and a pinned pure AgentRig
 wheel without an editable sibling, pip or package hooks. The base slice passed
 50 focused tests, strict typing, 307 repository tests and both three-test model
 suites. The actual offline launcher and existing FIFO canary also passed, with
-retained evidence rehashed against unchanged production source. Managed Python
-and SDK provisioning, public dependency availability and clean-user acceptance
-remain pending; M41 is not complete. See [the first-run guide](first-run.md) and
+retained evidence rehashed against unchanged production source. The subsequent
+implementation adds consent-gated uv 0.12.3 / CPython 3.13.15 provisioning and
+hash-locked optional SDK 2.47.0 setup. This addition is awaiting Python validation
+and actual installation qualification; earlier evidence applies only to the base
+slice. Public dependency availability and clean-user acceptance also remain
+pending; M41 is not complete. See [the first-run guide](first-run.md) and
 [the local evidence manifest](../evidence/milestones/m41-first-run-base.json).
 
 M42 will manage an explicitly owned isolated simulation runtime and pinned

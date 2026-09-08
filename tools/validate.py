@@ -45,7 +45,7 @@ def _validate_text_files() -> None:
             part in IGNORED_DIRECTORY_NAMES for part in relative_path.parts
         ):
             continue
-        if path.suffix not in {".json", ".md", ".py", ".toml", ".sv", ".zsh"} and path.name not in {
+        if path.suffix not in {".json", ".md", ".py", ".toml", ".sv", ".zsh", ".sh", ".lock"} and path.name not in {
             ".gitignore",
             "LICENSE",
             "openrtl",
@@ -68,6 +68,12 @@ def _validate_architecture() -> None:
         "openrtl",
         "bootstrap/dependencies.json",
         "tools/bootstrap_openrtl.py",
+        "tools/bootstrap_sdk.py",
+        "tools/bootstrap_runtime.sh",
+        "bootstrap/runtime-provenance.json",
+        "bootstrap/sdk-requirements.lock",
+        "tests/test_bootstrap_sdk.py",
+        "tests/test_bootstrap_runtime.py",
         "tools/verify_onboarding.py",
         "src/openrtl/onboarding.py",
         "tests/test_onboarding.py",
