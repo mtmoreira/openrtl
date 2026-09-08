@@ -214,9 +214,11 @@ wheel without an editable sibling, pip or package hooks. The base slice passed
 suites. The actual offline launcher and existing FIFO canary also passed, with
 retained evidence rehashed against unchanged production source. The subsequent
 implementation adds consent-gated uv 0.12.3 / CPython 3.13.15 provisioning and
-hash-locked optional SDK 2.47.0 setup. This addition is awaiting Python validation
-and actual installation qualification; earlier evidence applies only to the base
-slice. Public dependency availability and clean-user acceptance also remain
+hash-locked optional SDK 2.47.0 setup. Its local gate passed 66 focused tests,
+strict typing across eight files, 323 repository tests, both model suites and six
+actual offline launcher checks. [The runtime/SDK evidence manifest](../evidence/milestones/m41-runtime-sdk-local.json)
+binds those results to the implementation commit. Real runtime/SDK installation
+qualification, public dependency availability and clean-user acceptance remain
 pending; M41 is not complete. See [the first-run guide](first-run.md) and
 [the local evidence manifest](../evidence/milestones/m41-first-run-base.json).
 

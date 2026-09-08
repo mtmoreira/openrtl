@@ -145,8 +145,11 @@ preferences use `setup --noninteractive`.
 - M41: the 50 focused tests, strict typing, full repository suite, actual offline
   launcher review and existing FIFO canary passed. Retained local evidence is
   recorded in [the base-slice manifest](../evidence/milestones/m41-first-run-base.json).
-  The later runtime/SDK additions still need Python tests and real installation
-  qualification. Qualify public AgentRig download availability, private Python
+  The runtime/SDK additions passed 66 focused tests, strict typing across eight
+  files, 323 repository tests, both model suites and six offline launcher checks;
+  [their evidence manifest](../evidence/milestones/m41-runtime-sdk-local.json) records
+  the qualified implementation. Real installation qualification remains pending.
+  Qualify public AgentRig download availability, private Python
   provisioning and SDK setup before closing M41. uv/SDK adoption was approved;
   no real runtime or SDK download/install was performed during implementation.
 - M42: select and qualify an owned isolated runtime/image with explicit consent.
