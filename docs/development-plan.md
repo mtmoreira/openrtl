@@ -248,11 +248,16 @@ backend onboarding, the dependency decision, immutable image distribution and
 the original real isolated simulator acceptance gate. M42 as a whole remains
 incomplete; see [the candidate guide](managed-simulation.md) and
 [local evidence](../evidence/milestones/m42-local-runtime.json).
-M43's local candidate adds bounded conversational routing, anchored readiness
+M43a's validated local implementation adds bounded conversational routing, anchored readiness
 decisions, approvals bound to the displayed review, invocation-local capability
 revocation and ordinary batch policy inputs. Existing specs remain readable and
 are not silently given readiness evidence. See [the conversation guide](conversational-review.md).
-Local validation and live qualification are distinct. M44 will complete import previews,
+The owner gate passed 381 repository tests, both three-test model suites, 158
+focused regressions, eleven-file strict typing and eight offline controller lanes.
+See [the evidence manifest](../evidence/milestones/m43-conversational-review.json).
+M43b retains the original live conversational design acceptance criterion; it
+requires M46 qualification and is not satisfied by the scripted ALU review.
+M44 will complete import previews,
 in-chat evolution, independent collateral for RTL-only inputs and usable source
 export. M45 will add session discovery/portable export, bounded progress,
 actionable diagnostics and recovery qualification. Continue in sequential

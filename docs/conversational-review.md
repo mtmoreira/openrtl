@@ -104,6 +104,15 @@ with `--policy`; it cannot be mixed with normal policy options.
 
 ## Qualification limits
 
+M43a is locally validated at implementation commit
+`9e47877af97c66261e1e3c91da8409b7c991b465`. The owner gate passed 381 repository
+tests, both three-test model suites, 158 focused regressions, strict typing in
+eleven files and all eight offline validation lanes. The evidence manifest is
+[`m43-conversational-review.json`](../evidence/milestones/m43-conversational-review.json).
+M43b retains live conversational design acceptance with M46; M43 as a whole
+remains incomplete. Managed full-suite filesystem failures are retained separately
+and are not reported as passing.
+
 Local tests use labeled provider/simulator doubles and an offline actual launcher.
 They validate routing, review binding, state persistence, denial and recovery
 contracts. They do not prove an agent designed an ALU or any other new RTL.
