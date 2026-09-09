@@ -180,6 +180,9 @@ preferences use `setup --noninteractive`.
   binds the successful local checks and the failed public download separately.
 - M42: select and qualify an owned isolated runtime/image with explicit consent.
   Preserve all existing unrelated Docker runners; there is no host fallback.
+  The [managed simulation candidate](managed-simulation.md) provides read-only
+  planning, explicit rootless-runtime selection and fixed self-test/recovery
+  code. Its macOS backend, image distribution and real runtime gate remain pending.
 - M43–M45: complete conversational review, import/evolution, export and diagnostics.
 - M46: freeze a candidate and qualify real provider-generated designs, with an
   independent adequacy review and retained meaningful waveforms.

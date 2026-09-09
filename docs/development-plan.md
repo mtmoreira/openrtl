@@ -238,6 +238,11 @@ not call owner-isolated state a clean OS user. See [the first-run guide](first-r
 
 M42 will manage an explicitly owned isolated simulation runtime and pinned
 images, preserving unrelated Docker runners and forbidding host fallback.
+Its current local slice adds version-2 identity/resource-bound profiles, private
+selection, an explicit fixed infrastructure self-test, rehashed receipts and
+owned-operation recovery. Unit process doubles do not qualify a real runtime.
+The macOS backend/dependency decision, immutable image distribution and original
+real isolated simulator acceptance remain pending; see [the candidate guide](managed-simulation.md).
 M43 will complete conversational routing, readiness reviews, shown-review
 approvals and ordinary batch policy inputs. M44 will complete import previews,
 in-chat evolution, independent collateral for RTL-only inputs and usable source

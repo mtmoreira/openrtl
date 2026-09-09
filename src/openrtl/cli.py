@@ -101,6 +101,8 @@ def parser() -> argparse.ArgumentParser:
     subcommands = root.add_subparsers(dest="command", required=True)
     from openrtl.design_cli import add_design_commands
     add_design_commands(subcommands)
+    from openrtl.runtime_cli import add_runtime_command
+    add_runtime_command(subcommands)
     subcommands.add_parser("experts", help="list stable expert contracts")
     plan = subcommands.add_parser("plan", help="show the deterministic V1 workflow")
     plan.add_argument("--mode", choices=("build", "learn"), default="build")
@@ -453,6 +455,9 @@ def parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = parser().parse_args(argv)
+    if arguments.command == "runtime":
+        from openrtl.runtime_cli import run_runtime_command
+        return run_runtime_command(arguments)
     if arguments.command in ("chat", "resume", "batch", "recover", "status", "doctor", "import", "baseline", "change", "compare", "acceptance"):
         from openrtl.design_cli import run_design_command
         return run_design_command(arguments)

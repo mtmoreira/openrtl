@@ -42,6 +42,7 @@ source-include = [
   "tools/bootstrap_runtime.sh",
   "tools/verify_onboarding.py",
   "docs/first-run.md",
+  "docs/managed-simulation.md",
   "examples/**",
   "tools/__init__.py",
   "tools/fifo_fault_case.py",

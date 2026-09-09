@@ -14,6 +14,7 @@ import xml.etree.ElementTree as ET
 
 from openrtl.adapters.design_session_store import safe_root
 from openrtl.domain.design_session import JsonObject, canonical, content_digest, object_value, require, source_path
+from openrtl.domain.simulation_runtime import PROFILE_SCHEMA, resource_arguments, validate_profile
 
 
 def parse_test_results(data: bytes, expected: list[str]) -> list[str]:
@@ -35,6 +36,11 @@ def parse_test_results(data: bytes, expected: list[str]) -> list[str]:
 class IsolatedDesignSimulator:
     def __init__(self, project: Path, profile: object) -> None:
         self.project = safe_root(project)
+        if isinstance(profile, dict) and profile.get("schema") == PROFILE_SCHEMA:
+            from openrtl.adapters.runtime_selection import verify_local_identity
+            self.profile = validate_profile(profile)
+            verify_local_identity(self.profile)
+            return
         selected = object_value(profile, {"schema", "docker_executable", "socket", "image_id",
                                           "python_executable", "verilator_version", "timeout_seconds"})
         require(selected["schema"] == "openrtl.design-container.v1", "simulation_profile_unrecognized")
@@ -55,6 +61,9 @@ class IsolatedDesignSimulator:
 
     async def _process(self, argv: list[str], config: Path, timeout: int,
                        bound: int = 48 * 1024 * 1024) -> tuple[int, bytes]:
+        if self.profile.get("schema") == PROFILE_SCHEMA:
+            from openrtl.adapters.runtime_selection import verify_local_identity
+            verify_local_identity(self.profile)
         process = await asyncio.create_subprocess_exec(
             *argv, stdin=asyncio.subprocess.DEVNULL, stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
@@ -113,12 +122,14 @@ class IsolatedDesignSimulator:
             stream.write(canonical(intent))
             stream.flush()
             os.fsync(stream.fileno())
+        if self.profile.get("schema") == PROFILE_SCHEMA:
+            from openrtl.adapters.runtime_selection import inspect_selection
+            await inspect_selection(self.profile, config, self._process, authorized=True)
         # A literal local image ID and --pull=never prohibit implicit downloads.
         argv = prefix + ["create", "--name", container_name, "--label", "openrtl.operation=" + operation_id,
                          "--pull=never", "--network=none", "--read-only",
-                         "--cap-drop=ALL", "--security-opt=no-new-privileges", "--pids-limit=128",
-                         "--memory=2g", "--cpus=2", "--user=65534:65534",
-                         "--tmpfs=/output:rw,nosuid,nodev,exec,size=256m,mode=1777",
+                         "--cap-drop=ALL", "--security-opt=no-new-privileges", "--user=65534:65534",
+                         *resource_arguments(self.profile),
                          "--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=64m,mode=1777",
                          "--mount", "type=bind,src=" + str(inputs) + ",dst=/input,readonly",
                          "--mount", "type=bind,src=" + str(control) + ",dst=/control,readonly",
@@ -196,6 +207,9 @@ class IsolatedDesignSimulator:
         require(config.is_dir() and not any(config.iterdir()), "runtime_configuration_changed")
         prefix = [self.profile["docker_executable"], "--host", "unix://" + self.profile["socket"],
                   "--config", str(config)]
+        if self.profile.get("schema") == PROFILE_SCHEMA:
+            from openrtl.adapters.runtime_selection import inspect_selection
+            await inspect_selection(self.profile, config, self._process, authorized=True)
         code, output = await self._process(prefix + ["ps", "--all", "--no-trunc", "--filter",
                                           "name=^/" + name + "$", "--format", "{{.ID}}"], config, 30, 8192)
         require(code == 0, "runtime_reconciliation_query_failed")

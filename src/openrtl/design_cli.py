@@ -33,6 +33,7 @@ def add_design_commands(subcommands: argparse._SubParsersAction[argparse.Argumen
             selected.add_argument("--timeout-seconds", type=int, default=120)
             selected.add_argument("--allow-simulation", action="store_true")
             selected.add_argument("--simulation-profile", type=Path)
+            selected.add_argument("--runtime-state", type=Path, help="use a privately selected runtime with reverified self-test evidence")
         if command == "batch":
             selected.add_argument("--create", action="store_true")
             selected.add_argument("--spec", type=Path)
@@ -297,11 +298,22 @@ def run_design_command(arguments: argparse.Namespace) -> int:
                                           max_output_tokens=arguments.max_output_tokens)
             print("Provider calls authorized for this invocation: OpenAI model " + arguments.model +
                   "; provider-managed retention; bounded project context will leave this computer.")
-        require(arguments.allow_simulation == (arguments.simulation_profile is not None),
+        require(not (arguments.simulation_profile is not None and arguments.runtime_state is not None),
+                "choose_one_simulation_selection")
+        require(arguments.allow_simulation == (arguments.simulation_profile is not None or arguments.runtime_state is not None),
                 "simulation_profile_and_authorization_required_together")
         if arguments.allow_simulation:
             from openrtl.adapters.design_simulation import IsolatedDesignSimulator
-            simulator = IsolatedDesignSimulator(arguments.project, _json_file(arguments.simulation_profile))
+            simulation_profile: object
+            if arguments.runtime_state is not None:
+                from openrtl.runtime_cli import ready_profile
+                simulation_profile = ready_profile(arguments.runtime_state)
+            else:
+                simulation_profile = _json_file(arguments.simulation_profile)
+                require(not isinstance(simulation_profile, dict) or
+                        simulation_profile.get("schema") != "openrtl.design-container.v2",
+                        "runtime_state_required_for_qualified_profile")
+            simulator = IsolatedDesignSimulator(arguments.project, simulation_profile)
         create = arguments.command == "chat" or arguments.command == "batch" and arguments.create
         store = DesignSessionStore(arguments.project, create=create)
         if arguments.upgrade_session:
