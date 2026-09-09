@@ -1,8 +1,8 @@
 # Import, review, evolve and export
 
 Use the checked-in `./openrtl` launcher and [first-run guide](first-run.md).
-The following local candidate extends the immutable import contracts; live
-provider/design qualification remains pending. Temporary owner-shell development
+M44a extends the immutable import contracts and passed local owner validation;
+live provider/design qualification remains pending. Temporary owner-shell development
 handoffs are not customer setup.
 
 ## Select and review files
@@ -121,7 +121,15 @@ The advanced `./openrtl export-design --project ./design --destination ./new-exp
 prints a preview and approval digest. Repeat with `--approve <digest>` to export;
 `--sources-only` explicitly excludes evidence. It never invokes a provider/runtime.
 
-M44 local tests use labeled fixtures and offline launcher flows. M44's unfamiliar
+Implementation `3256ce5544a900457d40b4824f0a4dc9e98438f5` passed 408 repository
+tests, both three-test model suites, 185 focused regressions, nine-file strict
+typing and eight owner validation lanes. The actual offline launcher imported,
+adopted and exported selected fixture files with their original bytes preserved;
+87 launcher source hashes were verified. See the
+[M44a evidence manifest](../evidence/milestones/m44-import-evolution.json).
+Managed full-suite attempts remain recorded as filesystem-restricted failures.
+
+M44 local tests use labeled fixtures and offline launcher flows. M44b's unfamiliar
 design explanation/feature/DV acceptance still needs live qualification under
 M46. M41b/M42b/M43b and M47 remain pending; none of these local contracts proves
 that the real agent can design new RTL.
