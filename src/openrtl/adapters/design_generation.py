@@ -29,15 +29,22 @@ def _array(item: JsonObject) -> JsonObject:
     return {"type": "array", "items": item}
 
 
-def response_schema(stage: str) -> JsonObject:
+def response_schema(stage: str, *, include_readiness: bool = True) -> JsonObject:
     string: JsonObject = {"type": "string"}
     integer: JsonObject = {"type": "integer"}
     if stage == "discovery":
-        return _object({"title": string, "top": string, "behavior": string, "clock_reset": string,
+        properties = {"title": string, "top": string, "behavior": string, "clock_reset": string,
                         "requirements": _array(_object({"id": string, "text": string, "acceptance": string})),
                         "ports": _array(_object({"name": string, "direction": {"type": "string", "enum": ["input", "output", "inout"]}, "width": integer})),
                         "questions": _array(_object({"id": string, "text": string})),
-                        "assumptions": _array(_object({"id": string, "text": string, "rationale": string}))})
+                        "assumptions": _array(_object({"id": string, "text": string, "rationale": string}))}
+        if include_readiness:
+            from openrtl.domain.design_readiness import CATEGORIES
+            properties["readiness"] = _object({"schema": {"type": "string", "enum": ["openrtl.design-readiness.v1"]},
+                "items": _array(_object({"category": {"type": "string", "enum": list(CATEGORIES)},
+                    "status": {"type": "string", "enum": ["specified", "not_applicable", "unresolved"]},
+                    "decision": string, "requirement_ids": _array(string), "ports": _array(string)}))})
+        return _object(properties)
     if stage == "explain":
         return _object({"explanation": string, "references": _array(_object({"path": string, "line": integer}))})
     if stage == "analyze":
@@ -52,14 +59,14 @@ def response_schema(stage: str) -> JsonObject:
                         "expected_tests": _array(string), "seed": integer,
                         "requirement_tests": _array(_object({"requirement_id": string, "tests": _array(string)}))})
     if stage == "change_planning":
-        return _object({"summary": string, "specification": response_schema("discovery"),
+        return _object({"summary": string, "specification": response_schema("discovery", include_readiness=include_readiness),
                         "stage_paths": _object({s: _array(string) for s in STAGES}), "manifest": manifest})
     return _object({"summary": string, "files": _array(_object({"path": string, "content": string})),
                     "manifest": manifest if stage == "dv" else {"type": "null"}})
 
 
 _INSTRUCTIONS = {
-    "discovery": "Elicit a complete digital circuit specification. Ask unresolved required questions. Propose defaults only as explicit assumptions with rationale for user review. Preserve stable requirement IDs. Never claim unknown user choices were approved.",
+    "discovery": "Elicit a complete digital circuit specification. Ask unresolved required questions. Propose defaults only as explicit assumptions with rationale for user review. Preserve stable requirement IDs. Never claim unknown user choices were approved. Provide all seven readiness categories: interfaces, widths_signedness, clock_reset, timing_latency, handshake, exceptional_behavior, acceptance. Each decision cites existing requirement IDs and relevant port names. Explain not-applicable choices; unknown decisions stay unresolved. Interfaces and widths/signedness must cover every port; acceptance must cover every requirement. Explicitly state signedness, timing, reset behavior and exceptional outcomes. A filled checklist is review material, not a guarantee of completeness.",
     "architecture": "Write docs/architecture.md with a block-neutral architecture derived only from the approved specification, including interfaces, timing, corner cases and requirement IDs.",
     "verification_plan": "Write docs/verification-plan.md. Map every requirement to independent checks, boundary conditions, directed and seeded tests. Do not weaken the approved specification.",
     "reference_model": "Write an independent executable Python reference model and model/test_model.py unittest tests. Derive behavior from requirements, not RTL. Use only the standard library. Use model as a namespace package; do not add imports needing installation.",
@@ -108,10 +115,13 @@ class AgentRigDesignExpert:
             require(isinstance(result, dict) and len(canonical(result)) <= MAX_CONTEXT_BYTES,
                     "expert_output_invalid")
             return cast(JsonObject, result)
+        include_readiness = stage != "change_planning" or "readiness" in (context.get("specification") or {})
+        schema_version = ".v2" if stage in ("discovery", "change_planning") and include_readiness else ".v1"
         request = StructuredGenerationRequest(
             input=TextGenerationRequest(prompt=encoded.decode(), max_output_tokens=self.max_output_tokens),
             output_schema=StructuredOutputSchema[JsonObject](
-                schema_id="openrtl.design." + stage + ".v1", json_schema=response_schema(stage), decoder=decode),
+                schema_id="openrtl.design." + stage + schema_version,
+                json_schema=response_schema(stage, include_readiness=include_readiness), decoder=decode),
         )
         request.require_supported_by(self.generator.descriptor)
         cancellation = CancellationSource()

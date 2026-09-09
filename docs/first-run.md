@@ -184,6 +184,8 @@ preferences use `setup --noninteractive`.
   planning, explicit rootless-runtime selection and fixed self-test/recovery
   code. Its macOS backend, image distribution and real runtime gate remain pending.
 - M43–M45: complete conversational review, import/evolution, export and diagnostics.
+  The [M43 conversation and batch guide](conversational-review.md) describes the
+  current local candidate; provider/runtime and live qualification remain separate.
 - M46: freeze a candidate and qualify real provider-generated designs, with an
   independent adequacy review and retained meaningful waveforms.
 - M47: clean-user tests, distinct release identity and separately authorized

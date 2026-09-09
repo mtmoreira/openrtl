@@ -43,6 +43,7 @@ source-include = [
   "tools/verify_onboarding.py",
   "docs/first-run.md",
   "docs/managed-simulation.md",
+  "docs/conversational-review.md",
   "examples/**",
   "tools/__init__.py",
   "tools/fifo_fault_case.py",

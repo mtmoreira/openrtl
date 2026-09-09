@@ -91,8 +91,10 @@ def sequence(value: object, *, maximum: int = 64) -> list[Any]:
 
 
 def validate_spec(value: object) -> JsonObject:
-    spec = object_value(value, {"title", "top", "behavior", "clock_reset", "requirements",
-                                "ports", "questions", "assumptions"})
+    fields = {"title", "top", "behavior", "clock_reset", "requirements", "ports", "questions", "assumptions"}
+    if isinstance(value, dict) and "readiness" in value:
+        fields.add("readiness")
+    spec = object_value(value, fields)
     text(spec["title"], maximum=256)
     name(spec["top"])
     text(spec["behavior"], maximum=32000)
@@ -124,6 +126,9 @@ def validate_spec(value: object) -> JsonObject:
             if field == "assumptions":
                 text(row["rationale"], maximum=8000)
         require(len(item_ids) == len(set(item_ids)), "decision_ids_duplicate")
+    if "readiness" in spec:
+        from openrtl.domain.design_readiness import validate_readiness
+        validate_readiness(spec["readiness"], spec)
     require(len(canonical(spec)) <= MAX_CONTEXT_BYTES, "specification_too_large")
     return spec
 
@@ -222,6 +227,9 @@ def validate_state(value: object) -> JsonObject:
         validate_spec(state["spec"])
     if state["status"] != "discovery":
         spec = validate_spec(state["spec"])
+        if "readiness" in spec:
+            from openrtl.domain.design_readiness import require_ready
+            require_ready(spec)
         require(state["approved_spec"] == content_digest(spec) and not spec["questions"] and bool(spec["ports"]),
                 "session_approval_invalid")
     else:

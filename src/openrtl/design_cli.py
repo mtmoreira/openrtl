@@ -36,9 +36,16 @@ def add_design_commands(subcommands: argparse._SubParsersAction[argparse.Argumen
             selected.add_argument("--runtime-state", type=Path, help="use a privately selected runtime with reverified self-test evidence")
         if command == "batch":
             selected.add_argument("--create", action="store_true")
-            selected.add_argument("--spec", type=Path)
-            selected.add_argument("--delegation", type=Path, required=True)
-            selected.add_argument("--approve-delegation", required=True)
+            seed = selected.add_mutually_exclusive_group()
+            seed.add_argument("--spec", type=Path)
+            seed.add_argument("--intent", type=Path, help="plain .txt/.md design request; discovery needs explicit provider permission")
+            policy = selected.add_mutually_exclusive_group(required=True)
+            policy.add_argument("--delegation", type=Path)
+            policy.add_argument("--policy", choices=("review", "assumptions", "explore"))
+            selected.add_argument("--approve-delegation")
+            selected.add_argument("--allow-final-acceptance", action="store_true")
+            selected.add_argument("--max-steps", type=int, default=128)
+            selected.add_argument("--max-seconds", type=int, default=1800)
         if command == "recover":
             selected.add_argument("--abandon-operation", required=True)
         if command in ("import", "baseline", "change"):
@@ -66,6 +73,16 @@ def _json_file(path: Path) -> object:
             "explicit_nonhidden_json_file_required")
     require(selected.is_file() and selected.stat().st_size <= MAX_CONTEXT_BYTES, "json_file_unavailable_or_large")
     return json.loads(selected.read_bytes())
+
+
+def _intent_file(path: Path) -> str:
+    from openrtl.domain.design_session import text
+    selected = safe_root(path)
+    require(selected.suffix in (".txt", ".md") and not any(p.startswith(".") for p in selected.parts),
+            "explicit_nonhidden_text_intent_required")
+    require(selected.is_file() and selected.stat().st_nlink == 1 and selected.stat().st_size <= 16000,
+            "intent_file_unavailable_or_large")
+    return text(selected.read_bytes().decode("utf-8"), maximum=16000)
 
 
 def show(state: JsonObject, emit: Callable[[str], None]) -> None:
@@ -136,12 +153,21 @@ def coaching_preference(agent: DesignAgent, message: str, emit: Callable[[str], 
 
 async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input,
                        emit: Callable[[str], None] = print) -> int:
+    from openrtl.application.design_conversation import ShownReview, approve_shown, revoke, route, show_review
+    shown: ShownReview | None = None
+    def present(state: JsonObject) -> None:
+        nonlocal shown
+        if state["proposal"] or state["spec"] is not None and state["status"] in ("discovery", "awaiting_acceptance"):
+            shown = show_review(agent, emit)
+        else:
+            show(state, emit)
+            shown = None
     emit("OpenRTL design-agent alpha. Raw conversation text is not saved; reviewed artifacts and events are.")
-    emit("/show /spec <JSON path> /approve <digest> /ack-warning <id> /next /build /revise /detail brief|normal|detailed /quit")
-    emit("/import <reviewed-import-request.json> /explain <question> /baseline <manifest.json> /change-plan <request.json>")
-    emit("/propose-change <request> /propose-dv <request> /propose-optimization <request> /approve-change <digest>")
-    emit("/diagnose <question> /compare <baseline-revision> /pace stage|continuous /continue")
-    show(agent.store.read(), emit)
+    emit("Describe your design or ask to propose missing details. Say 'keep it brief' or 'go step by step' to adjust explanations.")
+    emit("Use /help for advanced commands; /quit saves and exits.")
+    emit("Say 'review', 'approve this specification', 'approve this change', 'accept this design', or 'continue'.")
+    emit("Say 'revoke provider permission' or 'revoke simulation permission' to disable that capability for this invocation.")
+    present(agent.store.read())
     while True:
         try:
             message = read("OpenRTL > ").strip()
@@ -156,11 +182,44 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
         try:
             if coaching_preference(agent, message, emit):
                 continue
-            if command == "/show":
-                show(agent.store.read(), emit)
+            if not command.startswith("/"):
+                action = route(message, agent.store.read())
+                if action == "clarify":
+                    emit("Please specify: explain, propose a change, review, approve this specification/change, accept this design, or continue. No action taken.")
+                    continue
+                if action == "discuss":
+                    present(await agent.discuss(message))
+                    continue
+                commands = {"review": "/review", "approve-specification": "/approve-specification",
+                    "approve-change": "/approve-shown-change", "approve-acceptance": "/approve-acceptance",
+                    "continue": "/continue", "next": "/next", "revoke-provider": "/revoke-provider",
+                    "revoke-simulation": "/revoke-simulation", "revise": "/revise", "quit": "/quit",
+                    "explain": "/explain", "propose-feature": "/propose-change", "propose-dv": "/propose-dv",
+                    "propose-optimization": "/propose-optimization"}
+                command, argument = commands[action], message
+            if command == "/quit":
+                emit("Session saved. Resume using the same project directory.")
+                return 0
+            elif command == "/help":
+                emit("/show /review /spec <JSON path> /approve <digest> /ack-warning <id> /next /build /revise /detail brief|normal|detailed /quit")
+                emit("/import <reviewed-import-request.json> /explain <question> /baseline <manifest.json> /change-plan <request.json>")
+                emit("/propose-change <request> /propose-dv <request> /propose-optimization <request> /approve-change <digest>")
+                emit("/diagnose <question> /compare <baseline-revision> /pace stage|continuous /continue")
+            elif command == "/review":
+                shown = show_review(agent, emit)
+            elif command in ("/approve-specification", "/approve-shown-change", "/approve-acceptance"):
+                kind = {"/approve-specification": "specification", "/approve-shown-change": "change", "/approve-acceptance": "acceptance"}[command]
+                pending, shown = shown, None
+                present(approve_shown(agent, pending, kind))
+            elif command in ("/revoke-provider", "/revoke-simulation"):
+                revoke(agent, command.removeprefix("/revoke-"))
+                shown = None
+                emit("Capability revoked for this invocation. Saved preferences and later text cannot restore it.")
+            elif command == "/show":
+                present(agent.store.read())
                 emit(json.dumps(agent.store.read()["files"], indent=2, sort_keys=True))
             elif command == "/spec":
-                show(agent.propose(_json_file(Path(argument))), emit)
+                present(agent.propose(_json_file(Path(argument))))
             elif command == "/import":
                 request = object_value(_json_file(Path(argument)), {"source_root", "plan", "approved_digest"})
                 if not isinstance(agent.store, DesignSessionStore):
@@ -175,13 +234,13 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
                 emit(json.dumps({"plan": plan, "digest": content_digest(plan)}, indent=2, sort_keys=True))
                 emit("Save the plan object, quit, then use the local change command with --plan and --approve.")
             elif command == "/approve":
-                show(agent.approve(argument.strip()), emit)
+                present(agent.approve(argument.strip()))
             elif command in ("/propose-change", "/propose-dv", "/propose-optimization"):
                 intent = {"/propose-change": "feature", "/propose-dv": "dv", "/propose-optimization": "optimization"}[command]
                 await agent.propose_improvement(argument, intent=intent)
-                show(agent.store.read(), emit)
+                present(agent.store.read())
             elif command == "/approve-change":
-                show(agent.approve_improvement(argument.strip()), emit)
+                present(agent.approve_improvement(argument.strip()))
             elif command == "/diagnose":
                 result = await agent.analyze(argument or "Explain current findings and recommend discriminating checks.")
                 emit(json.dumps(result, indent=2, sort_keys=True))
@@ -191,7 +250,7 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
                 agent.pace(argument.strip())
                 emit("Pace saved; approvals and evidence gates are unchanged.")
             elif command == "/revise":
-                show(agent.revise(), emit)
+                present(agent.revise())
             elif command == "/ack-warning":
                 show(agent.acknowledge_warning(argument.strip()), emit)
             elif command == "/detail":
@@ -209,7 +268,7 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
                     if stage in state["summaries"]:
                         emit(state["summaries"][stage])
                     if single or state["status"] not in ("building", "needs_repair", "needs_signoff"):
-                        show(state, emit)
+                        present(state)
                         break
             elif command == "/explain":
                 result = await agent.explain(argument)
@@ -225,10 +284,18 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
                 emit(result["explanation"])
                 for ref in result["references"]:
                     emit(ref["path"] + ":" + str(ref["line"]))
-        except (ValueError, OSError, sqlite3.Error, KeyError, TypeError):
+        except (ValueError, OSError, sqlite3.Error, KeyError, TypeError) as error:
             # Provider exceptions may contain private payloads. Only standardized state codes are shown.
+            shown = None
             state = agent.store.read()
-            emit("Request stopped: " + (state["last_error"] or "review_configuration_or_operation_state"))
+            hints = {"show_current_review_before_approval": "Show the current review before approving it.",
+                     "shown_review_stale": "The state changed since the review. Review it again before approval.",
+                     "readiness_review_required_for_legacy_specification": "Ask to complete the readiness review for this older specification.",
+                     "readiness_decisions_unresolved": "Resolve the readiness decisions and questions before approval.",
+                     "expert_not_configured": "Provider permission is unavailable. Restart with explicit provider options to enable calls.",
+                     "change_requires_complete_baseline": "Finish the baseline first, or explicitly revise the specification."}
+            hint = hints.get(str(error)) if type(error) is ValueError else None
+            emit("Request stopped: " + (hint or state["last_error"] or "review_configuration_or_operation_state"))
             if state["active"] is not None:
                 return 1
 
@@ -236,6 +303,12 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
 def run_design_command(arguments: argparse.Namespace) -> int:
     store: DesignSessionStore | None = None
     try:
+        if arguments.command == "batch":
+            require((arguments.delegation is not None) == (arguments.approve_delegation is not None),
+                    "explicit_delegation_approval_required_together")
+            require(arguments.policy is not None or (arguments.intent is None and not arguments.allow_final_acceptance
+                    and arguments.max_steps == 128 and arguments.max_seconds == 1800), "normal_policy_options_require_policy")
+            require(1 <= arguments.max_steps <= 256 and 1 <= arguments.max_seconds <= 86400, "batch_policy_bound_invalid")
         if arguments.command == "doctor":
             report: JsonObject = {"schema": "openrtl.design-doctor.v1", "provider_calls": False,
                                    "credential_resolution": False, "simulation_performed": False}
@@ -323,7 +396,14 @@ def run_design_command(arguments: argparse.Namespace) -> int:
             show(asyncio.run(agent.abandon(arguments.abandon_operation)), print)
             return 0
         if arguments.command == "batch":
-            if arguments.spec is not None:
+            if arguments.policy is not None:
+                from openrtl.application.design_batch_policy import run_policy_batch
+                report = asyncio.run(run_policy_batch(agent, arguments.policy,
+                    specification=_json_file(arguments.spec) if arguments.spec is not None else None,
+                    intent=_intent_file(arguments.intent) if arguments.intent is not None else None,
+                    final_acceptance=arguments.allow_final_acceptance, max_steps=arguments.max_steps,
+                    max_seconds=arguments.max_seconds))
+            elif arguments.spec is not None:
                 seed = _json_file(arguments.spec)
                 state = store.read()
                 if state["spec"] is None:
@@ -331,8 +411,9 @@ def run_design_command(arguments: argparse.Namespace) -> int:
                 else:
                     expected = state["delegation"]["seed_spec"] if state.get("delegation") else state["spec"]
                     require(seed == expected, "batch_seed_cannot_replace_existing_spec")
-            bind_delegation(agent, _json_file(arguments.delegation), arguments.approve_delegation)
-            report = asyncio.run(run_batch(agent))
+            if arguments.policy is None:
+                bind_delegation(agent, _json_file(arguments.delegation), arguments.approve_delegation)
+                report = asyncio.run(run_batch(agent))
             parent = safe_root(store.root / "reports")
             parent.mkdir(mode=0o700, exist_ok=True)
             target = safe_root(parent / ("batch-" + content_digest(report)[7:] + ".json"))

@@ -158,6 +158,9 @@ class DesignAgent:
             require(time.time_ns() < state["delegation"]["deadline_ns"], "delegation_deadline_exhausted")
         if state["status"] == "discovery":
             spec = validate_spec(state["spec"])
+            if "readiness" in spec:
+                from openrtl.domain.design_readiness import require_ready
+                require_ready(spec)
             require(not spec["questions"] and bool(spec["ports"]), "requirements_incomplete")
             require(digest == content_digest(spec), "reviewed_specification_digest_mismatch")
             seed = state["delegation"]["seed_spec"] if delegated else None
@@ -236,6 +239,9 @@ class DesignAgent:
         state = self._idle()
         plan = validate_change_plan(value)
         require(content_digest(plan) == approved_digest, "reviewed_change_digest_mismatch")
+        if "readiness" in plan["specification"]:
+            from openrtl.domain.design_readiness import require_ready
+            require_ready(plan["specification"])
         require(state["stage"] == len(STAGES) and state["manifest"] is not None and
                 plan["base_input_digest"] == design_input_digest(state) and plan["base_files"] == state["files"],
                 "change_baseline_stale")
@@ -329,7 +335,7 @@ class DesignAgent:
         elif stage == "dv":
             files = {p: c for p, c in files.items() if not p.startswith("rtl/")}
             references = {p: c for p, c in references.items() if not p.startswith("rtl/")}
-        pack = {"schema": "openrtl.design-context.v3", "role": ROLES[stage], "stage": stage,
+        pack = {"schema": "openrtl.design-context.v4", "role": ROLES[stage], "stage": stage,
                 "specification": state["spec"], "approved_spec_digest": state["approved_spec"],
                 "artifacts": files, "artifact_digests": state["files"], "manifest": state["manifest"],
                 "reference_artifacts": references, "reference_status": "untrusted_imports_not_run_evidence",

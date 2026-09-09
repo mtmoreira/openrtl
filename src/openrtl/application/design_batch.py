@@ -12,7 +12,7 @@ from openrtl.domain.design_delegation import validate_authorization
 from openrtl.domain.design_session import JsonObject, SESSION_SCHEMA, content_digest, require, validate_spec
 
 
-def bind_delegation(agent: DesignAgent, value: object, approved_digest: str) -> JsonObject:
+def bind_delegation(agent: DesignAgent, value: object, approved_digest: str, *, started_ns: int | None = None) -> JsonObject:
     plan = validate_authorization(value)
     require(content_digest(plan) == approved_digest, "reviewed_delegation_digest_mismatch")
     state = agent.store.read()
@@ -28,6 +28,9 @@ def bind_delegation(agent: DesignAgent, value: object, approved_digest: str) -> 
     prior = state["limits"] or {"max_calls": agent.policy.max_calls, "max_repairs": agent.policy.max_repairs}
     updated["limits"] = {k: min(prior[k], plan[k], getattr(agent.policy, k)) for k in prior}
     now = time.time_ns()
+    if started_ns is not None:
+        require(type(started_ns) is int and 0 < started_ns <= now, "delegation_start_invalid")
+        now = started_ns
     updated["delegation"] = {"authorization": plan, "seed_spec": seed, "digest": approved_digest,
                              "steps": 0, "started_ns": now, "deadline_ns": now + plan["max_seconds"] * 10**9}
     return agent.store.save(state, updated, "delegation.granted", {"delegation_digest": approved_digest})
@@ -47,10 +50,16 @@ def batch_report(agent: DesignAgent, outcome: str) -> JsonObject:
             "artifacts": state["files"], "simulation_digest": content_digest(state["simulation"])}
 
 
-async def run_batch(agent: DesignAgent, *, emit: Callable[[str], None] = print) -> JsonObject:
+async def run_batch(agent: DesignAgent, *, emit: Callable[[str], None] = print,
+                    reviewed_contracts: bool = False) -> JsonObject:
     """No provider/runtime permission is inferred from saved delegation."""
+    shown_warnings: set[str] = set()
     while True:
         state = agent.store.read()
+        for row in state["warnings"]:
+            if row["id"] not in shown_warnings:
+                emit("WARNING " + row["id"] + ": " + row["text"] + " — " + row["rationale"])
+                shown_warnings.add(row["id"])
         require(state.get("delegation") is not None, "explicit_delegation_required")
         delegation = state["delegation"]
         plan = delegation["authorization"]
@@ -71,7 +80,7 @@ async def run_batch(agent: DesignAgent, *, emit: Callable[[str], None] = print) 
         agent.store.save(state, updated, "batch.step_started", {"delegation_digest": delegation["digest"]})
         emit("Batch step " + str(updated["delegation"]["steps"]) + ": " + state["status"])
         try:
-            await asyncio.wait_for(_step(agent), timeout=remaining)
+            await asyncio.wait_for(_step(agent, reviewed_contracts=reviewed_contracts), timeout=remaining)
         except TimeoutError:
             # Cancellation deliberately leaves an in-flight intent for recovery.
             return batch_report(agent, "deadline_exhausted")
@@ -80,7 +89,7 @@ async def run_batch(agent: DesignAgent, *, emit: Callable[[str], None] = print) 
             return batch_report(agent, "stopped")
 
 
-async def _step(agent: DesignAgent) -> None:
+async def _step(agent: DesignAgent, *, reviewed_contracts: bool = False) -> None:
     state = agent._idle()
     if state["status"] == "discovery":
         if state["spec"]["questions"]:
@@ -91,8 +100,13 @@ async def _step(agent: DesignAgent) -> None:
                 "the explicit batch authorization allows requirement proposals. Authorization: " +
                 str(state["delegation"]["authorization"]["allow_requirement_proposals"]))
         else:
+            if reviewed_contracts:
+                from openrtl.domain.design_readiness import require_ready
+                require_ready(state["spec"])
             agent.approve(content_digest(state["spec"]), delegated=True)
     elif state["status"] == "awaiting_acceptance":
+        if reviewed_contracts:
+            agent.store.measurement(state)
         digest = content_digest({"input": design_input_digest(state), "simulation": state["simulation"],
                                  "review": state["review"]})
         agent.approve(digest, delegated=True)

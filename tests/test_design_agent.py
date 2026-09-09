@@ -137,7 +137,7 @@ class DesignAgentTest(unittest.TestCase):
         self.generate_files()
         self.assertEqual([s for s, _ in self.expert.seen], list(STAGES))
         for stage, pack in self.expert.seen:
-            self.assertEqual(pack["schema"], "openrtl.design-context.v3")
+            self.assertEqual(pack["schema"], "openrtl.design-context.v4")
             if stage in ("reference_model", "dv"):
                 self.assertFalse(any(p.startswith("rtl/") for p in pack["artifacts"]))
         receipts = [e for e in self.store.events() if e["event"] == "operation.received"]
@@ -278,7 +278,7 @@ class DesignAgentTest(unittest.TestCase):
         self.assertEqual(result, 0)
         self.assertEqual(self.store.read()["detail"], "detailed")
         self.assertIsNone(self.store.read()["approved_spec"])
-        self.assertTrue(any("/approve sha256:" in line for line in output))
+        self.assertTrue(any("Readiness review is incomplete" in line for line in output))
 
     def test_unknown_state_and_blob_tampering_rejected(self) -> None:
         state = self.store.read()
