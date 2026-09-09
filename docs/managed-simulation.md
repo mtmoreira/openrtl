@@ -7,6 +7,14 @@ agent-generated RTL. Complete managed onboarding and the real isolated runtime
 acceptance gate are pending. M46 live design qualification and M47 release are
 also pending.
 
+The local M42a slice passed owner-environment validation: 352 repository tests,
+both three-test model suites, 92 focused regressions, strict typing across ten
+files and offline actual-launcher checks. [Its evidence manifest](../evidence/milestones/m42-local-runtime.json)
+binds the reviewed source and retained logs. Runtime process tests and seeded
+selection state are synthetic; no Docker runtime was contacted. M42b keeps the
+managed backend, image distribution and real acceptance gate open while later
+independent local milestones proceed.
+
 The read-only starting point is:
 
 ```sh

@@ -241,8 +241,13 @@ images, preserving unrelated Docker runners and forbidding host fallback.
 Its current local slice adds version-2 identity/resource-bound profiles, private
 selection, an explicit fixed infrastructure self-test, rehashed receipts and
 owned-operation recovery. Unit process doubles do not qualify a real runtime.
-The macOS backend/dependency decision, immutable image distribution and original
-real isolated simulator acceptance remain pending; see [the candidate guide](managed-simulation.md).
+Split at the backend adoption boundary: M42a local selection, evidence and recovery
+code is validated (352 repository tests, both three-test model suites, 92 focused
+tests, ten-file strict typing and offline launcher checks). M42b retains managed
+backend onboarding, the dependency decision, immutable image distribution and
+the original real isolated simulator acceptance gate. M42 as a whole remains
+incomplete; see [the candidate guide](managed-simulation.md) and
+[local evidence](../evidence/milestones/m42-local-runtime.json).
 M43 will complete conversational routing, readiness reviews, shown-review
 approvals and ordinary batch policy inputs. M44 will complete import previews,
 in-chat evolution, independent collateral for RTL-only inputs and usable source
