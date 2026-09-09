@@ -1,5 +1,9 @@
 # Import, explain and revise existing collateral (M38 local checkpoint)
 
+For the normal file-selection, in-chat approval and export flow, use the
+[M44 import/evolution guide](import-evolution.md). The structured commands below
+remain advanced compatibility interfaces.
+
 These commands are development candidates, not the published v0.4.0 toolkit.
 They do not call a provider, launch a container or execute imported Python.
 M38 local validation passed; real provider/container qualification is separate.
@@ -61,7 +65,7 @@ document does not automatically approve its requirements.
 `openrtl baseline --project ... --manifest /absolute/run-manifest.json` prints
 the complete plan and digest without mutation. Review them, then rerun with
 `--approve <printed-digest>`. `/baseline <manifest.json>` also previews the plan
-inside chat; quit before using another writer command. Adoption records inputs
+inside chat; say `approve this baseline` to adopt that displayed review. Adoption records inputs
 only. Resume with explicit simulation permission and `/next` to run a fresh
 isolated simulation. Imported reports or old waveforms cannot substitute for it.
 
@@ -77,8 +81,9 @@ After a complete baseline exists, prepare a request object with exactly:
 
 `openrtl change --project ... --request /absolute/request.json` prints a plan
 bound to the current inputs. `/change-plan <request.json>` previews it in chat.
-Review every writable path, retained test/model and changed requirement. Save
-only the printed `plan` object, then approve it with:
+Review every writable path, retained test/model and changed requirement. In chat,
+say `approve this change` for the current displayed plan. For the advanced CLI,
+save only the printed `plan` object, then approve it with:
 
 ```sh
 openrtl change --project /absolute/session --plan /absolute/reviewed-plan.json \

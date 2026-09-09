@@ -186,6 +186,8 @@ preferences use `setup --noninteractive`.
 - M43–M45: complete conversational review, import/evolution, export and diagnostics.
   The [M43 conversation and batch guide](conversational-review.md) describes the
   current local candidate; provider/runtime and live qualification remain separate.
+  The [M44 import/evolution guide](import-evolution.md) covers local file selection,
+  baseline/completion approvals and export without customer handoff scripts.
 - M46: freeze a candidate and qualify real provider-generated designs, with an
   independent adequacy review and retained meaningful waveforms.
 - M47: clean-user tests, distinct release identity and separately authorized

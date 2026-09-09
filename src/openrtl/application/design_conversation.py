@@ -33,7 +33,7 @@ def route(message: str, state: JsonObject) -> str:
         if request.startswith(("optimize ", "try an optimization")):
             return "propose-optimization"
     if phrase.startswith(("explain", "why ", "how ", "what ", "describe ")) or phrase.endswith("?"):
-        return "discuss" if state["status"] == "discovery" else "explain"
+        return "discuss" if state["status"] == "discovery" and not state.get("imports") else "explain"
     if state["status"] == "discovery":
         return "discuss"
     return "clarify"

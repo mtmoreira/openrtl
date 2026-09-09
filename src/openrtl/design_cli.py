@@ -6,6 +6,7 @@ import argparse
 import asyncio
 from importlib.metadata import PackageNotFoundError, version
 import json
+import shlex
 from pathlib import Path
 import sqlite3
 from typing import Callable
@@ -19,7 +20,7 @@ from openrtl.domain.design_coaching import analysis_input_digest
 
 
 def add_design_commands(subcommands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    for command in ("chat", "resume", "batch", "recover", "status", "doctor", "import", "baseline", "change", "compare", "acceptance"):
+    for command in ("chat", "resume", "batch", "recover", "status", "doctor", "import", "baseline", "change", "compare", "acceptance", "export-design"):
         selected = subcommands.add_parser(command, help="design-agent alpha: " + command)
         selected.add_argument("--project", type=Path, required=command != "doctor")
         if command in ("chat", "resume", "batch", "recover"):
@@ -65,6 +66,10 @@ def add_design_commands(subcommands: argparse._SubParsersAction[argparse.Argumen
             selected.add_argument("--baseline-revision", type=int, required=True)
         if command == "acceptance":
             selected.add_argument("--expected-spec", type=Path)
+        if command == "export-design":
+            selected.add_argument("--destination", required=True, type=Path)
+            selected.add_argument("--approve")
+            selected.add_argument("--sources-only", action="store_true", help="explicitly exclude retained run evidence")
 
 
 def _json_file(path: Path) -> object:
@@ -154,9 +159,13 @@ def coaching_preference(agent: DesignAgent, message: str, emit: Callable[[str], 
 async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input,
                        emit: Callable[[str], None] = print) -> int:
     from openrtl.application.design_conversation import ShownReview, approve_shown, revoke, route, show_review
+    from openrtl.application.design_import_workflow import propose_import_work
+    from openrtl.application.design_local_review import LocalReview, approve_local, review_export, review_import, review_plan
     shown: ShownReview | None = None
+    local_review: LocalReview | None = None
     def present(state: JsonObject) -> None:
-        nonlocal shown
+        nonlocal shown, local_review
+        local_review = None
         if state["proposal"] or state["spec"] is not None and state["status"] in ("discovery", "awaiting_acceptance"):
             shown = show_review(agent, emit)
         else:
@@ -167,6 +176,7 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
     emit("Use /help for advanced commands; /quit saves and exits.")
     emit("Say 'review', 'approve this specification', 'approve this change', 'accept this design', or 'continue'.")
     emit("Say 'revoke provider permission' or 'revoke simulation permission' to disable that capability for this invocation.")
+    emit('Select files with /select "source root" "file.sv" "test.py=dv/test_design.py"; /export "new directory" previews export.')
     present(agent.store.read())
     while True:
         try:
@@ -181,6 +191,32 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
         command, _, argument = message.partition(" ")
         try:
             if coaching_preference(agent, message, emit):
+                continue
+            phrase = message.casefold().strip().rstrip(".! ")
+            if phrase in ("approve this import", "approve this baseline", "approve this completion", "export this design") or (
+                    phrase == "approve this change" and local_review is not None and local_review.kind == "change"):
+                kind = "export" if phrase == "export this design" else phrase.rsplit(" ", 1)[-1]
+                pending_local, local_review = local_review, None
+                shown = None
+                present(approve_local(agent, pending_local, kind))
+                emit(kind.capitalize() + " completed; execution permissions are unchanged.")
+                continue
+            if command in ("/select", "/export", "/export-sources"):
+                shown, local_review = None, None
+                parts = shlex.split(argument)
+                require(bool(parts), "explicit_path_required")
+                if command == "/select":
+                    local_review = review_import(agent, Path(parts[0]), parts[1:], emit)
+                else:
+                    require(len(parts) == 1, "one_export_destination_required")
+                    local_review = review_export(agent, Path(parts[0]), emit, include_evidence=command != "/export-sources")
+                continue
+            if phrase in ("prepare imported baseline", "complete imported design"):
+                shown, local_review = None, None
+                completion = phrase == "complete imported design"
+                proposal = await propose_import_work(agent, completion=completion)
+                emit(proposal["summary"])
+                local_review = review_plan(agent, "completion" if completion else "baseline", proposal["plan"], emit)
                 continue
             if not command.startswith("/"):
                 action = route(message, agent.store.read())
@@ -201,11 +237,15 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
                 emit("Session saved. Resume using the same project directory.")
                 return 0
             elif command == "/help":
+                emit('/select "source root" "file"... /export "new directory"; approve this import; export this design')
+                emit('/export-sources "new directory" explicitly excludes run evidence (for example after a failed run).')
+                emit("prepare imported baseline / complete imported design; approve this baseline / approve this completion")
                 emit("/show /review /spec <JSON path> /approve <digest> /ack-warning <id> /next /build /revise /detail brief|normal|detailed /quit")
                 emit("/import <reviewed-import-request.json> /explain <question> /baseline <manifest.json> /change-plan <request.json>")
                 emit("/propose-change <request> /propose-dv <request> /propose-optimization <request> /approve-change <digest>")
                 emit("/diagnose <question> /compare <baseline-revision> /pace stage|continuous /continue")
             elif command == "/review":
+                local_review = None
                 shown = show_review(agent, emit)
             elif command in ("/approve-specification", "/approve-shown-change", "/approve-acceptance"):
                 kind = {"/approve-specification": "specification", "/approve-shown-change": "change", "/approve-acceptance": "acceptance"}[command]
@@ -214,6 +254,7 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
             elif command in ("/revoke-provider", "/revoke-simulation"):
                 revoke(agent, command.removeprefix("/revoke-"))
                 shown = None
+                local_review = None
                 emit("Capability revoked for this invocation. Saved preferences and later text cannot restore it.")
             elif command == "/show":
                 present(agent.store.read())
@@ -226,13 +267,13 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
                     raise ValueError("local_import_store_required")
                 show(import_design_files(agent.store, Path(request["source_root"]), request["plan"], request["approved_digest"]), emit)
             elif command == "/baseline":
+                shown, local_review = None, None
                 plan = agent.plan_baseline(_json_file(Path(argument)))
-                emit(json.dumps({"plan": plan, "digest": content_digest(plan)}, indent=2, sort_keys=True))
-                emit("Quit, then use the local baseline command with --approve to adopt these exact inputs.")
+                local_review = review_plan(agent, "baseline", plan, emit)
             elif command == "/change-plan":
+                shown, local_review = None, None
                 plan = agent.plan_change(_json_file(Path(argument)))
-                emit(json.dumps({"plan": plan, "digest": content_digest(plan)}, indent=2, sort_keys=True))
-                emit("Save the plan object, quit, then use the local change command with --plan and --approve.")
+                local_review = review_plan(agent, "change", plan, emit)
             elif command == "/approve":
                 present(agent.approve(argument.strip()))
             elif command in ("/propose-change", "/propose-dv", "/propose-optimization"):
@@ -287,9 +328,14 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
         except (ValueError, OSError, sqlite3.Error, KeyError, TypeError) as error:
             # Provider exceptions may contain private payloads. Only standardized state codes are shown.
             shown = None
+            local_review = None
             state = agent.store.read()
             hints = {"show_current_review_before_approval": "Show the current review before approving it.",
                      "shown_review_stale": "The state changed since the review. Review it again before approval.",
+                     "import_selection_changed": "Selected sources changed. Select and review them again.",
+                     "python_role_required_use_source_equals_model_or_dv_target": "Choose the Python role explicitly: file.py=model/file.py or file.py=dv/file.py.",
+                     "export_destination_must_be_new": "Choose a new export directory with an existing parent; existing files are never overwritten.",
+                     "comparison_requires_passing_run": "Retained run evidence is not a verified passing run. Use /export-sources to explicitly exclude it, or resolve the run first.",
                      "readiness_review_required_for_legacy_specification": "Ask to complete the readiness review for this older specification.",
                      "readiness_decisions_unresolved": "Resolve the readiness decisions and questions before approval.",
                      "expert_not_configured": "Provider permission is unavailable. Restart with explicit provider options to enable calls.",
@@ -323,6 +369,17 @@ def run_design_command(arguments: argparse.Namespace) -> int:
         if arguments.command == "status":
             store = DesignSessionStore(arguments.project, read_only=True)
             print(json.dumps(store.read(), indent=2, sort_keys=True))
+            return 0
+        if arguments.command == "export-design":
+            from openrtl.adapters.design_export import export_design, export_material, show_export
+            store = DesignSessionStore(arguments.project, read_only=True)
+            plan, _ = export_material(store, include_evidence=not arguments.sources_only)
+            if arguments.approve:
+                export_design(store, arguments.destination, arguments.approve, include_evidence=not arguments.sources_only)
+                print("Source and evidence export completed. No session or execution authority was transferred.")
+            else:
+                show_export(plan, arguments.destination, print)
+                print("Advanced CLI approval: --approve " + content_digest(plan))
             return 0
         if arguments.command == "acceptance":
             from openrtl.adapters.design_acceptance import acceptance_report

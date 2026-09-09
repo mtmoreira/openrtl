@@ -458,7 +458,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if arguments.command == "runtime":
         from openrtl.runtime_cli import run_runtime_command
         return run_runtime_command(arguments)
-    if arguments.command in ("chat", "resume", "batch", "recover", "status", "doctor", "import", "baseline", "change", "compare", "acceptance"):
+    if arguments.command in ("chat", "resume", "batch", "recover", "status", "doctor", "import", "baseline", "change", "compare", "acceptance", "export-design"):
         from openrtl.design_cli import run_design_command
         return run_design_command(arguments)
     if arguments.command == "experts":

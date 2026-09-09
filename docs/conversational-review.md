@@ -59,6 +59,10 @@ stored specs and their approval hashes are not rewritten. Role context is now
 `openrtl.design-context.v4`, with v2 discovery response schemas. Change-planning
 schemas preserve legacy spec shape when evolving an older baseline.
 
+The [import/evolution guide](import-evolution.md) covers explicit multiple file
+selection, source-anchored explanations in discovery, baseline/completion reviews
+and source/evidence export inside this conversation.
+
 ## Ordinary batch inputs
 
 The normal batch interface creates its internal bounded delegation plan. You

@@ -510,6 +510,7 @@ class DesignAgent:
             response = object_value(result, {"explanation", "references"})
             text(response["explanation"], maximum=16000)
             files = {**self.store.import_contents(started), **self.store.contents(started)}
+            require(not files or bool(response["references"]), "source_explanation_requires_anchors")
             for item in sequence(response["references"]):
                 ref = object_value(item, {"path", "line"})
                 require(ref["path"] in files and type(ref["line"]) is int and

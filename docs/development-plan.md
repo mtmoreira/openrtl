@@ -257,9 +257,11 @@ focused regressions, eleven-file strict typing and eight offline controller lane
 See [the evidence manifest](../evidence/milestones/m43-conversational-review.json).
 M43b retains the original live conversational design acceptance criterion; it
 requires M46 qualification and is not satisfied by the scripted ALU review.
-M44 will complete import previews,
-in-chat evolution, independent collateral for RTL-only inputs and usable source
-export. M45 will add session discovery/portable export, bounded progress,
+M44's local candidate adds explicit file selection/previews, in-chat baseline
+adoption, reviewed independent collateral completion that preserves imported RTL,
+source-anchored explanations, and explicit source/evidence export. See the
+[import/evolution guide](import-evolution.md). Its real unfamiliar-design acceptance
+gate remains pending live M46 qualification. M45 will add session discovery/portable export, bounded progress,
 actionable diagnostics and recovery qualification. Continue in sequential
 milestone worktrees with validated local checkpoints and retained evidence.
 
