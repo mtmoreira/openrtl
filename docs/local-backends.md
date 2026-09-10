@@ -6,7 +6,7 @@ generic local backend contracts and backend-specific configuration. Optional
 without reading or changing runtime state. Backend substitution does not change
 RTL or design-session code.
 
-These commands require the separately identified AgentRig `0.3.1.dev2` local
+These commands require the separately identified AgentRig `0.3.1.dev3` local
 candidate. The public clone-and-run launcher still uses immutable published
 `0.3.0`; existing commands continue to work. With that SDK, the new commands report
 that the candidate is required. Temporary development handoffs are not customer
@@ -43,6 +43,27 @@ the local backend-operation journal without creating a directory, taking a write
 lock, contacting a runtime or restoring authority. An `uncertain` record requires
 fresh authorized instance inspection. This command is diagnostic; it does not
 perform that inspection or change simulation selection/readiness.
+
+`python -m openrtl.cli runtime backend-artifacts --artifact-root PATH
+--manifest-json JSON --json` audits an explicitly supplied private directory of
+reviewed public artifacts. The JSON schema is `agentrig.backend-artifacts.v1`
+with an `artifacts` list; each entry has `id`, `path`, `sha256` (including the
+`sha256:` prefix), `size_bytes`, and `executable`. The root must contain exactly
+the declared files and their parent directories. Data files use mode 0600;
+executables use 0700. No automatic permission repair occurs.
+
+The command reads files for at most a 60-second context deadline and does not
+create runtime state, contact a daemon, download or install. A matching manifest
+is a content audit only; it never clears guest-dependency or runtime readiness
+gates. Archive inventory, semantic Lima configuration and full guest closure
+remain separate prerequisites.
+
+Guest transport preparation must also preserve the existing container's UID
+65534 and read-only `/input` and `/control` mounts. The SDK's private host staging
+files are not automatically readable by that container user. A qualified guest
+copy/access mechanism and actual visibility tests are required; sharing the host
+home, weakening host staging permissions or using root is not an implementation
+of this boundary. The default simulator still uses its existing explicit endpoint.
 
 Existing explicit current-user rootless Docker selection and fixed self-test
 remain the execution path. Backend review cannot overwrite that selection or

@@ -96,3 +96,54 @@ def backend_operation_status(state: Path) -> JsonObject:
         'runtime_contact': False, 'execution_authorized': False, 'ready_for_simulation': False,
         'notice': 'Local journal snapshot only. Reconciliation needs a fresh authorized runtime inspection.',
         'm42b': 'pending-runtime-qualification', 'm46': 'pending', 'm47': 'pending'}
+
+
+def audit_backend_bundle(root: Path, manifest_json: str) -> JsonObject:
+    """Audit explicitly selected public artifact bytes without configuring a runtime."""
+    require(len(manifest_json.encode()) <= 65536, 'runtime_backend_artifacts_invalid')
+    try:
+        from agentrig.capabilities.backend_artifacts import BackendArtifact, BackendArtifactManifest
+        from agentrig.integrations.backend_artifacts import audit_backend_artifacts
+    except ImportError:
+        raise ValueError('runtime_backend_sdk_candidate_required') from None
+    from agentrig.capabilities.local_backend import BackendFailure
+    from agentrig.core import CancellationSource, Deadline, DeadlineExceeded, RunContext, RunId
+    from agentrig.core.clock import SystemClock
+    from agentrig.core.identity import Uuid4IdGenerator
+    from openrtl.onboarding import _open_state
+
+    def unique(pairs: list[tuple[str, object]]) -> dict[str, object]:
+        result: dict[str, object] = {}
+        for key, value in pairs:
+            require(key not in result, 'runtime_backend_artifacts_invalid')
+            result[key] = value
+        return result
+
+    try:
+        value = json.loads(manifest_json, object_pairs_hook=unique)
+        require(isinstance(value, dict) and set(value) == {'schema', 'artifacts'} and
+                value['schema'] == 'agentrig.backend-artifacts.v1' and isinstance(value['artifacts'], list),
+                'runtime_backend_artifacts_invalid')
+        artifacts = []
+        for item in value['artifacts']:
+            require(isinstance(item, dict) and set(item) == {'id', 'path', 'sha256', 'size_bytes', 'executable'},
+                    'runtime_backend_artifacts_invalid')
+            artifacts.append(BackendArtifact(artifact_id=item['id'], path=item['path'], sha256=item['sha256'],
+                             size_bytes=item['size_bytes'], executable=item['executable']))
+        manifest = BackendArtifactManifest(artifacts=tuple(artifacts))
+        directory = root.absolute()
+        descriptor = _open_state(directory, create=False)
+        os.close(descriptor)
+        clock = SystemClock()
+        context = RunContext.create_root(clock=clock, id_generator=Uuid4IdGenerator(RunId),
+                                         cancellation=CancellationSource().token,
+                                         deadline=Deadline.after(60, clock))
+        result = audit_backend_artifacts(directory, manifest, context)
+    except (BackendFailure, DeadlineExceeded, ValueError, TypeError, KeyError, RecursionError, OSError):
+        raise ValueError('runtime_backend_artifacts_invalid') from None
+    return {'schema': 'openrtl.backend-artifact-audit.v1', 'manifest_digest': result.manifest_digest,
+        'file_count': result.file_count, 'total_bytes': result.total_bytes, 'declared_bytes_verified': True,
+        'dependency_closure_qualified': False, 'runtime_contact': False, 'execution_authorized': False,
+        'ready_for_simulation': False, 'installation': False, 'selection_changed': False,
+        'notice': 'Local bytes match the declared manifest. Guest dependencies, transport and runtime readiness remain unverified.',
+        'm42b': 'pending-runtime-qualification', 'm46': 'pending', 'm47': 'pending'}
