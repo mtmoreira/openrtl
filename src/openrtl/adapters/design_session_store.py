@@ -9,13 +9,14 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+import stat
 import time
 from typing import Iterator, cast
 import uuid
 
 from openrtl.domain.design_session import (
     JsonObject, MAX_ARTIFACT_BYTES, SESSION_SCHEMA, LEGACY_SESSION_SCHEMA, PREVIOUS_SESSION_SCHEMA, IMPORT_SESSION_SCHEMA, canonical, initial_state,
-    require, source_path, validate_state, text,
+    require, source_path, validate_state, text, content_digest,
 )
 
 
@@ -36,11 +37,15 @@ class DesignSessionStore:
             require(not self.root.exists(), "new_project_must_be_absent")
             self.root.mkdir(mode=0o700)
         require(self.root.is_dir(), "project_unavailable")
+        require(not (self.root / "INCOMPLETE").exists(), "session_restore_incomplete")
         database = self.root / "session.sqlite3"
         for suffix in ("", "-wal", "-shm", "-journal"):
             selected = Path(str(database) + suffix)
             require(not selected.is_symlink() and (not selected.exists() or selected.is_file()),
                     "session_storage_unrecognized")
+            if selected.exists():
+                info = selected.stat()
+                require(stat.S_ISREG(info.st_mode) and info.st_nlink == 1, "session_storage_unrecognized")
         require(create or database.is_file(), "session_database_missing")
         connection: sqlite3.Connection | None = None
         try:
@@ -123,23 +128,20 @@ class DesignSessionStore:
     def save(self, previous: JsonObject, updated: JsonObject, event: str,
              fields: JsonObject | None = None, *, files: list[JsonObject] | None = None,
              imports: list[JsonObject] | None = None) -> JsonObject:
-        allowed = {"operation_id", "role", "context_digest", "output_digest", "error_code",
-                   "input_tokens", "output_tokens", "elapsed_ms", "artifact_count", "spec_digest",
-                   "provider", "model", "evidence_kind", "run_id", "authority", "warning_id", "delegation_digest"}
+        from openrtl.domain.design_events import EVENTS, FIELDS
         safe_fields = dict(fields or {})
-        require(set(safe_fields).issubset(allowed), "event_fields_not_allowlisted")
+        safe_fields.setdefault("spec_digest", content_digest(updated["spec"]))
+        safe_fields.setdefault("requirements_digest", content_digest(updated["spec"]["requirements"] if updated["spec"] else []))
+        safe_fields.setdefault("artifacts_digest", content_digest(updated["files"]))
+        if previous["active"] is not None:
+            safe_fields.setdefault("operation_id", previous["active"]["id"])
+        require(set(safe_fields).issubset(FIELDS), "event_fields_not_allowlisted")
         require(all(type(v) in (str, int, bool) and len(str(v)) <= 256 for v in safe_fields.values()),
                 "event_field_bounds_invalid")
         for value in safe_fields.values():
             if isinstance(value, str):
                 text(value, maximum=256)
-        require(event in {"spec.proposed", "spec.approved", "spec.revised", "operation.started",
-                          "operation.completed", "operation.received", "operation.failed", "simulation.completed",
-                          "simulation.failed", "review.completed", "project.accepted", "detail.changed",
-                          "session.upgraded", "limits.bound", "delegation.granted", "batch.step_started",
-                          "operation.abandoned", "warning.reviewed", "imports.recorded", "baseline.approved",
-                          "change.approved", "stage.reused", "pace.changed", "change.proposed", "analysis.recorded"},
-                "event_code_unrecognized")
+        require(event in EVENTS, "event_code_unrecognized")
         with self.transaction():
             require(self.read() == previous, "session_concurrent_change")
             current = json.loads(canonical(updated))
@@ -159,6 +161,7 @@ class DesignSessionStore:
                     current["files"][path] = digest
             current["revision"] = previous["revision"] + 1
             validate_state(current)
+            safe_fields["artifacts_digest"] = content_digest(current["files"])
             encoded_event = {"schema": "openrtl.design-event.v1", "sequence": current["revision"],
                              "timestamp_ns": time.time_ns(), "event": event, "fields": safe_fields}
             self.connection.execute("INSERT INTO snapshots VALUES (?, ?)",

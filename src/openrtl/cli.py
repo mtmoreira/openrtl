@@ -101,6 +101,8 @@ def parser() -> argparse.ArgumentParser:
     subcommands = root.add_subparsers(dest="command", required=True)
     from openrtl.design_cli import add_design_commands
     add_design_commands(subcommands)
+    from openrtl.session_cli import add_session_commands
+    add_session_commands(subcommands)
     from openrtl.runtime_cli import add_runtime_command
     add_runtime_command(subcommands)
     subcommands.add_parser("experts", help="list stable expert contracts")
@@ -455,6 +457,9 @@ def parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = parser().parse_args(argv)
+    if arguments.command == "sessions":
+        from openrtl.session_cli import run_sessions
+        return run_sessions(arguments)
     if arguments.command == "runtime":
         from openrtl.runtime_cli import run_runtime_command
         return run_runtime_command(arguments)

@@ -306,7 +306,7 @@ def _forwarded_arguments(argv: Sequence[str]) -> list[str] | None:
         return None
     if rest[0].startswith("--project="):
         return None
-    if rest[0] == "runtime" and offset:
+    if rest[0] in ("runtime", "sessions") and offset:
         # Runtime preferences belong to the selected product state. Batch still
         # discards this front-door option and never reads onboarding state.
         return [rest[0], *argv[:offset], *rest[1:]]

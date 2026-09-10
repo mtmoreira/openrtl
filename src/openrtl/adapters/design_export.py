@@ -87,6 +87,14 @@ def export_design(store: DesignSessionStore, destination: Path, approved_digest:
     require(content_digest(plan) == approved_digest, "export_review_stale")
     target = safe_root(destination)
     require(not target.is_relative_to(store.root) and not store.root.is_relative_to(target), "export_must_be_outside_session")
+    write_export(target, files, "openrtl-export.json", plan)
+    return plan
+
+
+def write_export(destination: Path, files: dict[str, bytes], manifest_name: str, plan: JsonObject) -> None:
+    """Write reviewed material exclusively; leave incomplete output on interruption."""
+    target = safe_root(destination)
+    require(manifest_name not in files and "INCOMPLETE" not in files, "export_reserved_name")
     require(not target.exists() and target.parent.is_dir(), "export_destination_must_be_new")
     # Anchor every write to opened directory descriptors; never follow a swapped parent.
     parent_fd = os.open(target.anchor, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
@@ -115,15 +123,15 @@ def export_design(store: DesignSessionStore, destination: Path, approved_digest:
                 stream.write(data)
                 stream.flush()
                 os.fsync(stream.fileno())
+            os.fsync(directory_fd)
         finally:
             os.close(directory_fd)
     try:
         write("INCOMPLETE", b"Interrupted exports are incomplete. Choose a new destination to retry.\n")
         for path, data in sorted(files.items()):
             write(path, data)
-        write("openrtl-export.json", canonical(plan) + b"\n")
+        write(manifest_name, canonical(plan) + b"\n")
         os.unlink("INCOMPLETE", dir_fd=root_fd)
         os.fsync(root_fd)
     finally:
         os.close(root_fd)
-    return plan

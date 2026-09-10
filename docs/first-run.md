@@ -4,6 +4,9 @@ This is M41 implementation work, not a qualified agent release. M46 live design
 qualification and M47 release remain pending. Local review and deterministic
 setup tests do not prove that a provider designed new RTL.
 
+For local session discovery, portable backup/restore and support diagnostics, see
+[sessions and diagnostics](sessions-diagnostics.md).
+
 From a clone, run:
 
 ```sh

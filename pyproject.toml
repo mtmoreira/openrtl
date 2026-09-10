@@ -45,6 +45,7 @@ source-include = [
   "docs/managed-simulation.md",
   "docs/conversational-review.md",
   "docs/import-evolution.md",
+  "docs/sessions-diagnostics.md",
   "examples/**",
   "tools/__init__.py",
   "tools/fifo_fault_case.py",

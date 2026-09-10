@@ -9,6 +9,7 @@ import json
 import shlex
 from pathlib import Path
 import sqlite3
+import sys
 from typing import Callable
 
 from openrtl.adapters.design_session_store import DesignSessionStore, safe_root
@@ -448,7 +449,9 @@ def run_design_command(arguments: argparse.Namespace) -> int:
         store = DesignSessionStore(arguments.project, create=create)
         if arguments.upgrade_session:
             store.upgrade()
-        agent = DesignAgent(store, expert, simulator, policy, recovery=simulator)
+        def progress(row: JsonObject) -> None:
+            print("Progress " + row["stage"] + ": " + row["phase"] + " (" + str(row["elapsed_ms"]) + " ms)", file=sys.stderr, flush=True)
+        agent = DesignAgent(store, expert, simulator, policy, recovery=simulator, progress=progress)
         if arguments.command == "recover":
             show(asyncio.run(agent.abandon(arguments.abandon_operation)), print)
             return 0
@@ -486,8 +489,9 @@ def run_design_command(arguments: argparse.Namespace) -> int:
     except KeyboardInterrupt:
         print("Interrupted. Recorded operations are not automatically replayed; inspect status before continuing.")
         return 130
-    except (ValueError, OSError, sqlite3.Error, ImportError, KeyError, TypeError):
-        print("OpenRTL design command stopped; check explicit project, approval and pinned runtime configuration. Details withheld.")
+    except (ValueError, OSError, sqlite3.Error, ImportError, KeyError, TypeError) as error:
+        from openrtl.application.design_diagnostics import diagnostic
+        print(json.dumps(diagnostic(error), sort_keys=True))
         return 1
     finally:
         if store is not None:

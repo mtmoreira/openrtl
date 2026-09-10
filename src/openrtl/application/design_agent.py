@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import copy
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Callable, Protocol
 import uuid
 import time
 
@@ -71,9 +71,10 @@ def design_input_digest(state: JsonObject) -> str:
 class DesignAgent:
     def __init__(self, store: SessionStore, expert: DesignExpert | None = None,
                  simulator: DesignSimulator | None = None, policy: DesignPolicy = DesignPolicy(),
-                 recovery: DesignRecovery | None = None) -> None:
+                 recovery: DesignRecovery | None = None, progress: Callable[[JsonObject], None] | None = None) -> None:
         self.store, self.expert, self.simulator, self.policy = store, expert, simulator, policy
         self.recovery = recovery
+        self.progress = progress
 
     def _idle(self) -> JsonObject:
         state = self.store.read()
@@ -361,7 +362,8 @@ class DesignAgent:
         assert self.expert is not None
         clock_start = time.monotonic()
         try:
-            reply = await self.expert.generate(stage, pack, operation)
+            from openrtl.application.design_diagnostics import observed
+            reply = await observed(self.expert.generate(stage, pack, operation), started, self.progress)
             require(isinstance(reply, ExpertReply), "expert_reply_invalid")
             require(len(canonical(reply.output)) <= MAX_CONTEXT_BYTES, "expert_output_exceeds_bound")
             metrics: JsonObject = {"operation_id": operation, "provider": text(reply.provider, maximum=128),
@@ -456,8 +458,10 @@ class DesignAgent:
         updated["active"] = {"id": operation, "kind": "simulation", "stage": "simulation"}
         started = self.store.save(state, updated, "operation.started", {"operation_id": operation})
         assert self.simulator is not None
+        clock_start = time.monotonic()
         try:
-            report = await self.simulator.simulate(files, manifest, design_input_digest(state), operation)
+            from openrtl.application.design_diagnostics import observed
+            report = await observed(self.simulator.simulate(files, manifest, design_input_digest(state), operation), started, self.progress)
             fields = {"schema", "input_digest", "status", "evidence_kind", "run_id",
                       "tests", "model_tests", "artifacts", "error_code", "diagnostics"}
             if report.get("schema") == "openrtl.design-simulation.v2":
@@ -482,6 +486,7 @@ class DesignAgent:
                            status="needs_signoff" if report["status"] == "passed" else "needs_repair")
             return self.store.save(started, updated, "simulation.completed",
                                    {"run_id": operation, "evidence_kind": report["evidence_kind"],
+                                    "elapsed_ms": int((time.monotonic() - clock_start) * 1000),
                                     "output_digest": content_digest(report)})
         except Exception:
             # A daemon may outlive the client. Retain the intent until explicit
