@@ -1,5 +1,9 @@
 # Managed simulation candidate
 
+The optional [local backend review](local-backends.md) adds a replaceable AgentRig
+setup boundary. Lima is planning-only; real VM setup and qualification remain
+pending. The explicit rootless endpoint path below is unchanged.
+
 M42 is under implementation. The current local slice adds selection and a fixed
 self-test for an explicitly reviewed **current-user rootless Docker** endpoint.
 It does not install or qualify a macOS VM, publish simulator images, or qualify
