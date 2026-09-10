@@ -1,6 +1,6 @@
 # Sessions, progress and diagnostics
 
-Use the checked-in `./openrtl` launcher. These local M45 contracts are under
+Use the checked-in `./openrtl` launcher. The local M45 contracts passed owner
 validation; live provider/design acceptance remains a separate M46 gate.
 Temporary owner-shell validation scripts are development collateral, not setup.
 
@@ -108,3 +108,13 @@ appear in local session listing but are not included in support bundles.
 Local tests use synthetic providers, run receipts and projects. They qualify
 storage/recovery/diagnostic contracts only. M41b clean-user/Linux, M42b real managed
 runtime, M43b/M44b live design acceptance, M46 and M47 remain pending.
+
+Implementation `b1ae2278e1b838e6c5548e937e8469e2939c9be0` is bound to the
+[M45 evidence manifest](../evidence/milestones/m45-sessions-diagnostics.json).
+Owner validation passed 435 repository tests, both three-test model suites,
+212 focused tests, twelve-file strict typing and nine controller lanes. The
+actual offline launcher ran eleven session commands; original history, events
+and blobs matched the restored copies, with only the explicit provenance append.
+All 92 launcher source hashes were reverified. One final trailing blank line was
+removed with identical Python AST; passing local focused/typing rechecks and the
+separate managed filesystem failures are retained in the evidence manifest.

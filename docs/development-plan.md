@@ -267,10 +267,15 @@ eight owner validation lanes, including actual offline launcher import/export.
 The [M44a evidence manifest](../evidence/milestones/m44-import-evolution.json)
 records byte preservation, 87 verified launcher source hashes and the separate
 managed filesystem failures. M44b's real unfamiliar-design acceptance gate remains
-pending live M46 qualification. M45's local candidate adds session discovery,
+pending live M46 qualification. M45 adds locally validated session discovery,
 explicit portable export/restore, bounded progress and actionable source-free
 support diagnostics. See [sessions and diagnostics](sessions-diagnostics.md).
-Owner filesystem and actual offline launcher validation remain pending. Continue in sequential
+Owner validation passed 435 repository tests, both model suites, 212 focused
+regressions, twelve-file typing and nine lanes, including eleven actual offline
+launcher session commands. The [M45 evidence manifest](../evidence/milestones/m45-sessions-diagnostics.json)
+binds these results to implementation `b1ae2278e1b838e6c5548e937e8469e2939c9be0`.
+See [the pending acceptance plan](pending-acceptance.md) for the remaining gates.
+Continue in sequential
 milestone worktrees with validated local checkpoints and retained evidence.
 
 M46 live engineering qualification requires separately authorized actual provider
