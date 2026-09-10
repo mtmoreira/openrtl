@@ -6,13 +6,17 @@ import argparse
 import io
 import json
 import sys
+import tempfile
+from pathlib import Path
 import unittest
 from contextlib import redirect_stdout
 from unittest.mock import patch
 
 from agentrig.capabilities.local_backend import LocalBackendCatalog
+from agentrig.capabilities import BackendAction, BackendOperation
+from agentrig.integrations import LocalBackendJournal
 from agentrig.testing import ScriptedLocalBackend
-from openrtl.adapters.backend_setup import backends, review_backend
+from openrtl.adapters.backend_setup import backends, review_backend, backend_operation_status
 from openrtl.runtime_cli import add_runtime_command, run_runtime_command
 
 
@@ -22,6 +26,52 @@ OPERATION = "a" * 32
 
 
 class BackendSetupTests(unittest.TestCase):
+    def test_actual_operation_command_reads_private_journal_without_changes(self) -> None:
+        with tempfile.TemporaryDirectory(prefix='openrtl-backend-status-') as temporary:
+            state = Path(temporary).resolve()
+            directory = state / 'backend-operations'
+            directory.mkdir(mode=0o700)
+            record = BackendOperation(operation_id='a' * 32, backend_id='synthetic', backend_version='1',
+                configuration_digest='sha256:' + '1' * 64, plan_digest='sha256:' + '2' * 64,
+                action=BackendAction.START)
+            with LocalBackendJournal(directory).locked() as journal:
+                journal.create(record)
+            before = {item.name: item.read_bytes() for item in directory.iterdir()}
+            with redirect_stdout(io.StringIO()) as output:
+                code = run_runtime_command(self.arguments(['backend-operation', '--state-dir', str(state), '--json']))
+            self.assertEqual(code, 0, output.getvalue())
+            result = json.loads(output.getvalue())
+            self.assertEqual(result['status'], 'uncertain')
+            self.assertFalse(result['ready_for_simulation'])
+            self.assertEqual(before, {item.name: item.read_bytes() for item in directory.iterdir()})
+
+    def test_absent_operation_status_does_not_create_state(self) -> None:
+        with patch('openrtl.onboarding._open_state', side_effect=FileNotFoundError) as open_state:
+            result = backend_operation_status(Path('/private/fixture'))
+        self.assertEqual(result['status'], 'unconfigured')
+        self.assertFalse(result['execution_authorized'])
+        self.assertEqual(open_state.call_args.kwargs, {'create': False})
+
+    def test_operation_status_is_diagnostic_without_restored_authority(self) -> None:
+        record = BackendOperation(operation_id='a' * 32, backend_id='synthetic', backend_version='1',
+            configuration_digest='sha256:' + '1' * 64, plan_digest='sha256:' + '2' * 64,
+            action=BackendAction.START)
+        with patch('openrtl.onboarding._open_state', return_value=91), \
+                patch('openrtl.adapters.backend_setup.os.close'), \
+                patch('agentrig.integrations.backend_journal.LocalBackendJournal.inspect', return_value=record):
+            result = backend_operation_status(Path('/private/fixture'))
+        self.assertEqual(result['status'], 'uncertain')
+        self.assertFalse(result['ready_for_simulation'])
+        self.assertFalse(result['runtime_contact'])
+        self.assertNotIn('configuration_digest', result)
+
+    def test_operation_cli_preserves_explicit_state_directory(self) -> None:
+        with patch('openrtl.adapters.backend_setup.backend_operation_status', return_value={}) as inspect, \
+                redirect_stdout(io.StringIO()):
+            code = run_runtime_command(self.arguments(['backend-operation', '--state-dir', '/private/fixture']))
+        self.assertEqual(code, 0)
+        inspect.assert_called_once_with(Path('/private/fixture'))
+
     def arguments(self, values: list[str]) -> argparse.Namespace:
         parser = argparse.ArgumentParser()
         add_runtime_command(parser.add_subparsers(dest="command", required=True))

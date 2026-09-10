@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 from openrtl.domain.design_session import JsonObject, require
@@ -64,3 +66,33 @@ def review_backend(backend_id: str, action: str, configuration_json: str, operat
         raise ValueError("runtime_" + error.code) from None
     except (ValueError, TypeError, RecursionError):
         raise ValueError("runtime_backend_configuration_invalid") from None
+
+
+def backend_operation_status(state: Path) -> JsonObject:
+    """Local diagnostic only; no lock, state creation, runtime contact or grant."""
+    from openrtl.onboarding import _open_state
+    directory = state.absolute() / 'backend-operations'
+    try:
+        descriptor = _open_state(directory, create=False)
+    except FileNotFoundError:
+        return {'schema': 'openrtl.backend-operation-status.v1', 'status': 'unconfigured',
+                'runtime_contact': False, 'execution_authorized': False, 'ready_for_simulation': False}
+    os.close(descriptor)
+    try:
+        from agentrig.integrations.backend_journal import LocalBackendJournal
+    except ImportError:
+        raise ValueError('runtime_backend_sdk_candidate_required') from None
+    from agentrig.capabilities.local_backend import BackendFailure
+    try:
+        record = LocalBackendJournal(directory).inspect()
+    except BackendFailure:
+        raise ValueError('runtime_backend_journal_invalid') from None
+    return {'schema': 'openrtl.backend-operation-status.v1',
+        'status': record.status if record else 'empty',
+        'operation_id': record.operation_id if record else None,
+        'backend_id': record.backend_id if record else None,
+        'action': record.action.value if record else None,
+        'observation': record.observation if record else None,
+        'runtime_contact': False, 'execution_authorized': False, 'ready_for_simulation': False,
+        'notice': 'Local journal snapshot only. Reconciliation needs a fresh authorized runtime inspection.',
+        'm42b': 'pending-runtime-qualification', 'm46': 'pending', 'm47': 'pending'}
