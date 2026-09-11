@@ -74,3 +74,26 @@ runs must retain their original runtime identity.
 M42b runtime qualification, M46 real-agent new-RTL qualification and M47 release
 remain pending. Offline tests, the fixed self-test and existing FIFO canary are
 not evidence that an agent designed new RTL.
+
+## Inspect a restricted backend configuration
+
+The optional candidate command `runtime backend-config --backend lima-vz
+--policy-json JSON --json` audits an existing private `configuration.json` and
+`artifacts/guest.raw`. The policy object requires `state_root`,
+`guest_image_sha256` (`sha256:` plus 64 lowercase hex digits) and
+`guest_image_size`. Optional resource fields are `cpus`, `memory_mib`, `disk_gib`
+and `guest_uid`; defaults are 4, 4096, 20 and 1000. The input configuration must
+exactly match AgentRig's `LimaConfiguration` renderer for that policy.
+
+The SDK checks the local image bytes, rejects global Lima overrides and permits
+only its restricted profile: no host mounts, arbitrary scripts, inherited image
+templates or implicit Lima package installation. It allows only the two owned
+Unix-socket forwards. Full guest dependency and license inventory, effective Lima
+settings, service authentication and actual workload isolation remain unverified.
+The audit does not create configuration files or change runtime selection.
+
+Audit dispatch belongs to `adapters/backend_setup.py`; another backend can supply
+its own auditor without changing the RTL engineering workflow. Reports keep
+runtime, dependency and M46/M47 qualification pending. This candidate diagnostic
+is development functionality, not a customer setup requirement; the clone-and-run
+launcher still uses the immutable published SDK until separate release approval.

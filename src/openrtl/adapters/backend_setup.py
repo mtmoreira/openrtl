@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable, Mapping
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -146,4 +147,66 @@ def audit_backend_bundle(root: Path, manifest_json: str) -> JsonObject:
         'dependency_closure_qualified': False, 'runtime_contact': False, 'execution_authorized': False,
         'ready_for_simulation': False, 'installation': False, 'selection_changed': False,
         'notice': 'Local bytes match the declared manifest. Guest dependencies, transport and runtime readiness remain unverified.',
+        'm42b': 'pending-runtime-qualification', 'm46': 'pending', 'm47': 'pending'}
+
+
+def _audit_lima_configuration(policy: JsonObject) -> JsonObject:
+    try:
+        from agentrig.integrations.lima_configuration import LimaConfiguration, audit_lima_configuration
+    except ImportError:
+        raise ValueError('runtime_backend_sdk_candidate_required') from None
+    from agentrig.capabilities import BackendFailure
+    from agentrig.core import CancellationSource, Deadline, DeadlineExceeded, RunContext, RunId
+    from agentrig.core.clock import SystemClock
+    from agentrig.core.identity import Uuid4IdGenerator
+    from openrtl.onboarding import _open_state
+    required = {'state_root', 'guest_image_sha256', 'guest_image_size'}
+    optional = {'cpus', 'memory_mib', 'disk_gib', 'guest_uid'}
+    try:
+        require(required <= set(policy) and not set(policy) - required - optional,
+                'runtime_backend_config_audit_invalid')
+        configuration = LimaConfiguration(state_root=Path(policy['state_root']),
+            guest_image_sha256=policy['guest_image_sha256'], guest_image_size=policy['guest_image_size'],
+            cpus=policy.get('cpus', 4), memory_mib=policy.get('memory_mib', 4096),
+            disk_gib=policy.get('disk_gib', 20), guest_uid=policy.get('guest_uid', 1000))
+        descriptor = _open_state(configuration.state_root, create=False)
+        os.close(descriptor)
+        clock = SystemClock()
+        context = RunContext.create_root(clock=clock, id_generator=Uuid4IdGenerator(RunId),
+            cancellation=CancellationSource().token, deadline=Deadline.after(60, clock))
+        audit = audit_lima_configuration(configuration, context)
+        return {'policy_digest': audit.policy_digest, 'configuration_sha256': audit.configuration_sha256,
+                'image_manifest_digest': audit.image_manifest_digest, 'input_configuration_verified': True,
+                'image_bytes_verified': True}
+    except (BackendFailure, DeadlineExceeded, OSError, TypeError, ValueError, KeyError):
+        raise ValueError('runtime_backend_config_audit_invalid') from None
+
+
+def audit_backend_configuration(backend_id: str, policy_json: str,
+        auditors: Mapping[str, Callable[[JsonObject], JsonObject]] | None = None) -> JsonObject:
+    """Dispatch a read-only audit at the application composition boundary."""
+    require(len(policy_json.encode()) <= 65536, 'runtime_backend_config_audit_invalid')
+    selected = {'lima-vz': _audit_lima_configuration} if auditors is None else dict(auditors)
+    require(backend_id in selected, 'runtime_backend_config_audit_invalid')
+    def unique(pairs: list[tuple[str, object]]) -> dict[str, object]:
+        value: dict[str, object] = {}
+        for key, item in pairs:
+            require(key not in value, 'runtime_backend_config_audit_invalid')
+            value[key] = item
+        return value
+    try:
+        policy = json.loads(policy_json, object_pairs_hook=unique)
+        require(isinstance(policy, dict), 'runtime_backend_config_audit_invalid')
+        result = selected[backend_id](policy)
+        safe: JsonObject = {key: result[key] for key in ('policy_digest', 'configuration_sha256', 'image_manifest_digest',
+            'input_configuration_verified', 'image_bytes_verified') if key in result}
+    except Exception as error:
+        if type(error) is ValueError and str(error) == 'runtime_backend_sdk_candidate_required':
+            raise
+        raise ValueError('runtime_backend_config_audit_invalid') from None
+    return {**safe, 'schema': 'openrtl.backend-configuration-audit.v1', 'backend_id': backend_id,
+        'dependency_closure_qualified': False, 'effective_configuration_verified': False,
+        'execution_authorized': False, 'runtime_contact': False, 'installation': False,
+        'selection_changed': False, 'ready_for_simulation': False,
+        'notice': 'Input configuration and declared image bytes only. Effective VM configuration and guest dependencies still need qualification.',
         'm42b': 'pending-runtime-qualification', 'm46': 'pending', 'm47': 'pending'}

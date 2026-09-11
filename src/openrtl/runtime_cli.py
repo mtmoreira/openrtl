@@ -27,10 +27,14 @@ def add_runtime_command(subcommands: argparse._SubParsersAction[argparse.Argumen
     runtime = subcommands.add_parser("runtime", help="plan, select or explicitly test one isolated runtime")
     runtime.add_argument("--state-dir", type=Path)
     commands = runtime.add_subparsers(dest="runtime_command", required=True)
-    for name in ("plan", "status", "select", "self-test", "recover", "backends", "backend-plan", "backend-operation", "backend-artifacts"):
+    for name in ("plan", "status", "select", "self-test", "recover", "backends", "backend-plan", "backend-operation", "backend-artifacts", "backend-config"):
         command = commands.add_parser(name)
         command.add_argument("--state-dir", type=Path, default=argparse.SUPPRESS)
         command.add_argument("--json", action="store_true")
+        if name == 'backend-config':
+            command.add_argument('--backend', required=True)
+            command.add_argument('--policy-json', required=True,
+                                 help='bounded configuration audit policy; reads explicit local files only')
         if name == 'backend-artifacts':
             command.add_argument('--artifact-root', type=Path, required=True,
                                  help='private directory containing only the declared public artifact files')
@@ -224,6 +228,9 @@ def run_runtime_command(arguments: argparse.Namespace) -> int:
         elif arguments.runtime_command == 'backend-artifacts':
             from openrtl.adapters.backend_setup import audit_backend_bundle
             result = audit_backend_bundle(arguments.artifact_root, arguments.manifest_json)
+        elif arguments.runtime_command == 'backend-config':
+            from openrtl.adapters.backend_setup import audit_backend_configuration
+            result = audit_backend_configuration(arguments.backend, arguments.policy_json)
         else:
             if arguments.runtime_command in ("select", "self-test", "recover"):
                 require(arguments.allow_runtime_contact is True, "runtime_contact_requires_explicit_consent")
@@ -236,7 +243,7 @@ def run_runtime_command(arguments: argparse.Namespace) -> int:
                     result = asyncio.run(action(arguments, state))
         if arguments.json:
             print(json.dumps(result, indent=2, sort_keys=True))
-        elif arguments.runtime_command in ("backends", "backend-plan", "backend-operation", "backend-artifacts"):
+        elif arguments.runtime_command in ("backends", "backend-plan", "backend-operation", "backend-artifacts", "backend-config"):
             print(json.dumps(result, indent=2, sort_keys=True))
         elif arguments.runtime_command == "plan":
             print("Simulation setup: select a reviewed runtime owned by your account and an exact existing image.")
@@ -261,6 +268,7 @@ def run_runtime_command(arguments: argparse.Namespace) -> int:
         return 130
     except (OSError, ValueError, TypeError, KeyError) as error:
         hints = {
+            "runtime_backend_config_audit_invalid": "The explicit backend configuration audit failed. Check the reviewed policy, private files, image pin and absence of overrides. No runtime selection changed.",
             "runtime_backend_artifacts_invalid": "The declared local artifact bundle cannot be verified. Check its exact manifest, hashes and private file permissions; no installation occurred.",
             "runtime_backend_journal_invalid": "The local backend operation record cannot be verified. Preserve it for review; no runtime was contacted.",
             "runtime_backend_sdk_candidate_required": "This optional command needs the reviewed local AgentRig SDK candidate. The published bootstrap and existing runtime commands remain available.",
