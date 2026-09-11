@@ -57,7 +57,7 @@ class BackendConfigurationTests(unittest.TestCase):
 
     def test_actual_private_configuration_audit(self) -> None:
         from agentrig.integrations.lima_configuration import LimaConfiguration
-        with tempfile.TemporaryDirectory(prefix='openrtl-cfg-', dir='/tmp') as directory:
+        with tempfile.TemporaryDirectory(prefix='oc-', dir='/tmp') as directory:
             root = Path(directory).resolve()
             data = b'synthetic image, not bootable'
             pin = 'sha256:' + hashlib.sha256(data).hexdigest()
