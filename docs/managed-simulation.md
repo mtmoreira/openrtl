@@ -1,15 +1,17 @@
 # Managed simulation candidate
 
 The optional [local backend review](local-backends.md) adds a replaceable AgentRig
-setup boundary. Lima is planning-only; real VM setup and qualification remain
-pending. The explicit rootless endpoint path below is unchanged.
+setup boundary. The current Lima implementation has qualified an owned Linux
+arm64 VM, authenticated forwarding and a stopped-by-default rootless Docker
+daemon. Those observations qualify that backend instance only. The explicit
+rootless endpoint path below is unchanged.
 
 M42 is under implementation. The current local slice adds selection and a fixed
-self-test for an explicitly reviewed **current-user rootless Docker** endpoint.
-It does not install or qualify a macOS VM, publish simulator images, or qualify
-agent-generated RTL. Complete managed onboarding and the real isolated runtime
-acceptance gate are pending. M46 live design qualification and M47 release are
-also pending.
+self-test for an explicitly reviewed **current-user rootless Docker** endpoint,
+plus a backend-neutral simulator image acquisition source. It does not publish
+simulator images or qualify agent-generated RTL. Image acquisition, construction,
+inspection and the real isolated runtime acceptance gate are pending. M46 live
+design qualification and M47 release are also pending.
 
 The local M42a slice passed owner-environment validation: 352 repository tests,
 both three-test model suites, 92 focused regressions, strict typing across ten
@@ -73,6 +75,29 @@ use `--allow-simulation --runtime-state /absolute/private/OpenRTL-state` instead
 of hand-written `--simulation-profile` JSON. Version-2 profiles require that
 state route and a current self-test; legacy version-1 explicit profiles remain
 an advanced alpha interface and do not gain new readiness claims.
+
+## Simulator image source
+
+[`simulation/image-source.json`](../simulation/image-source.json) is the exact,
+offline acquisition input for the first Linux arm64 simulator image. It pins the
+Verilator 5.046 base by platform manifest digest and pins cocotb 2.0.1 plus its
+pure-Python `find-libpython` dependency to the URLs, hashes and sizes already in
+`uv.lock`. The contract contains no backend executable, VM, socket, credential or
+lifecycle authority. Lima and any future local backend consume the same resulting
+local image content ID.
+
+Validate the source and lock binding without network or runtime contact:
+
+```sh
+python tools/validate_simulator_image_source.py
+```
+
+The contract permits acquisition only. It forbids container execution, image
+construction and package installation before the acquired bytes and image
+metadata are retained and reviewed. The exact base image has not yet been pulled,
+and neither Python artifact has been downloaded by this milestone. A later built
+image must still be selected by its observed local `sha256:` content ID and pass
+the fixed self-test; this source digest cannot substitute for either proof.
 
 ## Interruption and recovery
 
