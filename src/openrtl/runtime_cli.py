@@ -27,7 +27,9 @@ def add_runtime_command(subcommands: argparse._SubParsersAction[argparse.Argumen
     runtime = subcommands.add_parser("runtime", help="plan, select or explicitly test one isolated runtime")
     runtime.add_argument("--state-dir", type=Path)
     commands = runtime.add_subparsers(dest="runtime_command", required=True)
-    for name in ("plan", "status", "select", "self-test", "recover", "backends", "backend-plan", "backend-operation", "backend-artifacts", "backend-config"):
+    for name in ("plan", "status", "select", "self-test", "recover", "backends", "backend-plan",
+                 "backend-operation", "backend-artifacts", "backend-config", "managed-config",
+                 "managed-plan", "managed-apply"):
         command = commands.add_parser(name)
         command.add_argument("--state-dir", type=Path, default=argparse.SUPPRESS)
         command.add_argument("--json", action="store_true")
@@ -35,6 +37,24 @@ def add_runtime_command(subcommands: argparse._SubParsersAction[argparse.Argumen
             command.add_argument('--backend', required=True)
             command.add_argument('--policy-json', required=True,
                                  help='bounded configuration audit policy; reads explicit local files only')
+        if name == "managed-config":
+            command.add_argument("--backend", required=True, choices=("lima-vz-managed",))
+            command.add_argument("--executable", type=Path, required=True)
+            command.add_argument("--state-root", type=Path, required=True)
+            command.add_argument("--instance-id", required=True)
+        if name in ("managed-plan", "managed-apply"):
+            command.add_argument("--backend", required=True)
+            command.add_argument("--action", required=True, choices=("inspect", "prepare", "start", "stop"))
+            command.add_argument("--config-json", required=True)
+            command.add_argument("--operation-id", required=True)
+        if name == "managed-apply":
+            command.add_argument("--plan-digest", required=True)
+            command.add_argument("--reconcile", action="store_true")
+            command.add_argument("--timeout-seconds", type=int, default=240)
+            command.add_argument("--allow-local-write", action="store_true")
+            command.add_argument("--allow-runtime-contact", action="store_true")
+            command.add_argument("--allow-runtime-start", action="store_true")
+            command.add_argument("--allow-private-key-creation", action="store_true")
         if name == 'backend-artifacts':
             command.add_argument('--artifact-root', type=Path, required=True,
                                  help='private directory containing only the declared public artifact files')
@@ -62,10 +82,10 @@ def add_runtime_command(subcommands: argparse._SubParsersAction[argparse.Argumen
 def plan() -> JsonObject:
     return {"schema": "openrtl.runtime-plan.v1", "host": sys.platform,
             "existing_runtime": "Explicit current-user rootless Docker only; no daemon discovery or contact by default",
-            "managed_runtime": "Optional replaceable backend planning in SDK candidate; Lima VM and image qualification remain pending",
-            "image": "Exact local image content ID and architecture; no automatic pulls or published image claim",
+            "managed_runtime": "Optional replaceable lifecycle control in SDK candidate; exact effects and live acceptance remain explicit",
+            "image": "One owned arm64 image passed the fixed local self-test; use an exact observed local content ID, with no automatic pull or published-image claim",
             "resources": dict(RESOURCE_DEFAULTS),
-            "next_step": "Select a separately reviewed owned runtime and image, then authorize its fixed self-test",
+            "next_step": "Select a reviewed owned endpoint and exact image, then explicitly run or reverify its fixed self-test",
             "effects": {"daemon_contact": False, "installation": False, "provider_calls": False},
             "m42_complete": False, "m46": "pending", "m47": "pending"}
 
@@ -231,6 +251,43 @@ def run_runtime_command(arguments: argparse.Namespace) -> int:
         elif arguments.runtime_command == 'backend-config':
             from openrtl.adapters.backend_setup import audit_backend_configuration
             result = audit_backend_configuration(arguments.backend, arguments.policy_json)
+        elif arguments.runtime_command == "managed-config":
+            from openrtl.adapters.lima_managed import audit_lima_artifact_closure
+            require(arguments.backend == "lima-vz-managed", "runtime_backend_unavailable")
+            closure = audit_lima_artifact_closure(arguments.executable, arguments.state_root)
+            result = {
+                "schema": "openrtl.managed-backend-configuration.v1",
+                "backend": arguments.backend,
+                "configuration": closure.configuration(arguments.instance_id),
+                "artifact_closure_sha256": closure.artifact_closure_sha256,
+                "runtime_contact": False,
+                "execution_authorized": False,
+                "ready_for_simulation": False,
+                "m46": "pending",
+                "m47": "pending",
+            }
+        elif arguments.runtime_command == "managed-plan":
+            from openrtl.adapters.managed_backend import plan_managed_backend
+            result = plan_managed_backend(
+                arguments.backend, arguments.action, arguments.config_json,
+                arguments.operation_id, arguments.state_dir or default_state_dir(),
+            )
+        elif arguments.runtime_command == "managed-apply":
+            from openrtl.adapters.managed_backend import apply_managed_backend
+            grants = frozenset(
+                effect for effect, allowed in (
+                    ("local_write", arguments.allow_local_write),
+                    ("runtime_contact", arguments.allow_runtime_contact),
+                    ("runtime_start", arguments.allow_runtime_start),
+                    ("private_key_creation", arguments.allow_private_key_creation),
+                ) if allowed
+            )
+            result = asyncio.run(apply_managed_backend(
+                arguments.backend, arguments.action, arguments.config_json,
+                arguments.operation_id, arguments.plan_digest, grants,
+                arguments.state_dir or default_state_dir(), reconcile=arguments.reconcile,
+                timeout_seconds=arguments.timeout_seconds,
+            ))
         else:
             if arguments.runtime_command in ("select", "self-test", "recover"):
                 require(arguments.allow_runtime_contact is True, "runtime_contact_requires_explicit_consent")
@@ -243,13 +300,14 @@ def run_runtime_command(arguments: argparse.Namespace) -> int:
                     result = asyncio.run(action(arguments, state))
         if arguments.json:
             print(json.dumps(result, indent=2, sort_keys=True))
-        elif arguments.runtime_command in ("backends", "backend-plan", "backend-operation", "backend-artifacts", "backend-config"):
+        elif arguments.runtime_command in ("backends", "backend-plan", "backend-operation", "backend-artifacts",
+                                            "backend-config", "managed-config", "managed-plan", "managed-apply"):
             print(json.dumps(result, indent=2, sort_keys=True))
         elif arguments.runtime_command == "plan":
             print("Simulation setup: select a reviewed runtime owned by your account and an exact existing image.")
-            print("This candidate can inspect current-user rootless Docker. Managed macOS VM setup is still pending.")
+            print("This candidate can inspect current-user rootless Docker and explicitly control a registered managed backend.")
             print("Default limits: 2 CPUs, 2048 MiB memory, 128 processes and 256 MiB output.")
-            print("No daemon was contacted. Downloads, installation and the fixed self-test need separate consent.")
+            print("No daemon was contacted. Downloads, installation, lifecycle effects and each fixed self-test remain explicit.")
         elif arguments.runtime_command == "status":
             print("Runtime: " + str(result["status"]))
             print("Fixed self-test evidence: " + ("verified locally" if result["local_selftest_verified"] else "not verified"))
@@ -273,6 +331,9 @@ def run_runtime_command(arguments: argparse.Namespace) -> int:
             "runtime_backend_journal_invalid": "The local backend operation record cannot be verified. Preserve it for review; no runtime was contacted.",
             "runtime_backend_sdk_candidate_required": "This optional command needs the reviewed local AgentRig SDK candidate. The published bootstrap and existing runtime commands remain available.",
             "runtime_backend_configuration_invalid": "Review the backend's exact configuration, action, pins and resource bounds. No state or runtime was changed.",
+            "runtime_backend_plan_changed": "The managed backend plan differs from the reviewed digest. Generate and review a fresh plan; no runtime action was taken.",
+            "runtime_backend_authority_required": "Grant exactly the effects listed by the reviewed managed backend plan. Saved state never restores authority.",
+            "runtime_backend_execution_failed": "The managed backend action failed with a bounded diagnostic. Inspect the retained operation before any recovery.",
             "runtime_backend_unavailable": "Select an explicitly registered backend; no fallback or discovery is performed.",
             "runtime_contact_requires_explicit_consent": "Review the selected endpoint and effects, then explicitly allow runtime contact.",
             "runtime_ownership_unqualified": "Use a reviewed current-user rootless runtime. Shared Docker Desktop or an unqualified VM is not selected automatically.",

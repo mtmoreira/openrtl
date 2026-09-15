@@ -6,7 +6,7 @@ generic local backend contracts and backend-specific configuration. Optional
 without reading or changing runtime state. Backend substitution does not change
 RTL or design-session code.
 
-These commands require the separately identified AgentRig `0.3.1.dev3` local
+These commands require the separately identified AgentRig `0.3.1.dev12` local
 candidate. The public clone-and-run launcher still uses immutable published
 `0.3.0`; existing commands continue to work. With that SDK, the new commands report
 that the candidate is required. Temporary development handoffs are not customer
@@ -28,15 +28,53 @@ or operation invalidate the digest. Unknown backends and duplicate/oversized
 configuration fail closed. Configurations are explicit review data, not logs;
 never supply secrets in them.
 
-The default Lima backend is **planning only**. Guest artifacts, lifecycle activation,
-private staging and forwarding, resource isolation and real recovery qualification
-remain pending. It advertises no
-execution capability. Hashes or synthetic receipts cannot remove these blockers.
+The default `lima-vz` backend remains **planning only**. A distinct
+`lima-vz-managed` lifecycle adapter is available through the managed commands
+below. Keeping the review descriptor separate prevents a saved review from
+silently becoming execution authority.
 
-The SDK also contains a separate, unregistered lifecycle driver candidate with
-bounded command execution and durable operation recovery. Its actual artifact
-verifier, approved guest bundle, staging and transport qualification remain
-pending; the default review backend cannot activate that driver.
+The SDK lifecycle driver has bounded command execution and durable operation
+recovery. OpenRTL composes it through a replaceable application registry and an
+adapter-specific artifact verifier. Another local backend can implement the same
+plan/apply/reconcile seam without changing RTL, design sessions, runtime profiles
+or simulator evidence.
+
+## Managed lifecycle control
+
+`runtime managed-config` audits an existing private Lima state root and emits
+the exact configuration consumed by the managed lifecycle planner. It hashes the
+owned `limactl`, restricted `configuration.json` and `artifacts/guest.raw`; it
+does not start Lima, install anything, read instance key material or contact a
+provider. The stable closure permits only Lima's private generated `_config`
+entries (`networks.yaml`, `user` and `user.pub`) and rejects every other global
+entry. The configuration is review data and may contain private local paths, so
+store it only in owner-private state when it must be retained.
+
+```sh
+./openrtl runtime managed-config --backend lima-vz-managed \
+  --executable /absolute/path/to/limactl --state-root /absolute/private/state \
+  --instance-id 0123456789abcdef0123456789abcdef --json
+```
+
+`runtime managed-plan` is pure: it accepts the emitted `configuration` object as
+`--config-json`, an action and a fresh 32-character lowercase hexadecimal
+operation ID. It returns the exact plan digest and required effects without
+reading or changing runtime state.
+
+`runtime managed-apply` recomputes that plan and requires the reviewed digest
+plus exactly its effect flags. Inspect and stop require
+`--allow-local-write --allow-runtime-contact`; prepare also requires
+`--allow-private-key-creation`; start requires all three plus
+`--allow-runtime-start`. Extra grants fail just like missing grants. The command
+records uncertainty before invoking Lima and never retries an ambiguous action.
+Use the same operation and configuration with action `inspect`, a freshly
+reviewed inspect digest and `--reconcile` to settle only an uncertain record by
+observation. Saved journals and plans never restore authority.
+
+Lifecycle success reports the owned VM state only. It does not select the Docker
+socket, validate guest service transport, mark the simulator ready or authorize
+a design run. Those checks stay in the existing runtime selection and fixed
+self-test path.
 
 `python -m openrtl.cli runtime backend-operation --state-dir PATH --json` reads
 the local backend-operation journal without creating a directory, taking a writer
@@ -71,9 +109,14 @@ bypass active-operation and stale-evidence checks. A future managed backend must
 provide a verified transport and pass those checks before selection. Historical
 runs must retain their original runtime identity.
 
-M42b runtime qualification, M46 real-agent new-RTL qualification and M47 release
-remain pending. Offline tests, the fixed self-test and existing FIFO canary are
-not evidence that an agent designed new RTL.
+The owned macOS Lima/rootless Docker instance and exact arm64 simulator image
+have passed the fixed isolated Verilator/cocotb self-test. The tracked
+`m42b-runtime-live-qualification.json` attestation records that scope and the
+invalid earlier receipt. Managed lifecycle execution through this checked-in
+command and guest-service retirement still need their own live evidence. M46
+real-agent new-RTL qualification and M47 release remain pending. The fixed
+self-test and existing FIFO canary are not evidence that an agent designed new
+RTL.
 
 ## Inspect a restricted backend configuration
 

@@ -6,20 +6,24 @@ arm64 VM, authenticated forwarding and a stopped-by-default rootless Docker
 daemon. Those observations qualify that backend instance only. The explicit
 rootless endpoint path below is unchanged.
 
-M42 is under implementation. The current local slice adds selection and a fixed
-self-test for an explicitly reviewed **current-user rootless Docker** endpoint,
-plus a backend-neutral simulator image acquisition source. It does not publish
-simulator images or qualify agent-generated RTL. Image acquisition, construction,
-inspection and the real isolated runtime acceptance gate are pending. M46 live
-design qualification and M47 release are also pending.
+M42a adds selection and a fixed self-test for an explicitly reviewed
+**current-user rootless Docker** endpoint. M42b has now qualified one owned Lima
+2.2.0/rootless Docker instance and the exact local arm64 simulator image
+`sha256:500f6522989b4ec75b5122d66c1adc74a3b04183548936cface7641fab33e6cf`.
+Verilator 5.046 and cocotb 2.0.1 passed the deterministic isolated fixture under
+the reviewed CPU, memory, PID, capability, mount and network limits. This does
+not publish the image or qualify agent-generated RTL. M46 live design
+qualification and M47 release remain pending.
 
 The local M42a slice passed owner-environment validation: 352 repository tests,
 both three-test model suites, 92 focused regressions, strict typing across ten
 files and offline actual-launcher checks. [Its evidence manifest](../evidence/milestones/m42-local-runtime.json)
 binds the reviewed source and retained logs. Runtime process tests and seeded
-selection state are synthetic; no Docker runtime was contacted. M42b keeps the
-managed backend, image distribution and real acceptance gate open while later
-independent local milestones proceed.
+selection state are synthetic; no Docker runtime was contacted in that earlier
+slice. The tracked M42b live attestation now binds the retained valid receipt and
+keeps the earlier false-positive JUnit receipt visibly invalid. Checked-in
+managed lifecycle control and guest-service retirement still require their own
+live acceptance before M42b closes.
 
 The read-only starting point is:
 
@@ -37,9 +41,9 @@ for this separate selection and evidence state.
 
 ## Existing-runtime evaluation
 
-Until the managed backend and image distribution are qualified, the following
-is an advanced evaluation interface, not the promised complete customer setup.
-Use only an already approved owned rootless endpoint and reviewed existing image:
+The following explicit endpoint interface remains available for advanced
+evaluation. Use only an already approved owned rootless endpoint and reviewed
+existing image:
 
 ```sh
 ./openrtl runtime select --docker /absolute/docker --socket /absolute/private/docker.sock \
@@ -94,10 +98,10 @@ python tools/validate_simulator_image_source.py
 
 The contract permits acquisition only. It forbids container execution, image
 construction and package installation before the acquired bytes and image
-metadata are retained and reviewed. The exact base image has not yet been pulled,
-and neither Python artifact has been downloaded by this milestone. A later built
-image must still be selected by its observed local `sha256:` content ID and pass
-the fixed self-test; this source digest cannot substitute for either proof.
+metadata are retained and reviewed. The exact source was acquired and audited,
+then used to construct the retained local image named above. That image passed
+the fixed self-test. The source digest still cannot substitute for the observed
+local content ID or passing runtime receipt, and no registry image is published.
 
 ## Interruption and recovery
 
@@ -121,6 +125,7 @@ image provenance without changing global Docker contexts, sockets, SSH settings
 or the `agents` account's always-on runner. Backend dependencies, private runtime
 installation/downloads, runtime control and image acquisition remain separate
 approval boundaries. Native Windows and broader host/platform claims are pending.
-
-The required real self-test has not been run by this local implementation. Unit
-tests use clearly labeled process doubles and cannot close that acceptance gate.
+The checked-in managed control command remains modular, requires exact
+per-invocation effects, and has not yet been accepted as the customer default.
+Guest-service retirement and live recovery through that command remain to be
+qualified.
