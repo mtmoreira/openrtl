@@ -1,0 +1,210 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "m42b.selftest.qualification",
+      "availability": "retained-local-owner-workspace",
+      "evidence_lane": "macos-lima-rootless-docker-arm64-live",
+      "kind": "qualification-receipt",
+      "locator": "build/retained-evidence/m42b-derived-image-isolated-selftest-success-v4/qualification.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m42b-derived-image-isolated-selftest-v4",
+      "review_state": "verified",
+      "sha256": "sha256:42d304c924581223b8841851795af919b64f83e9dc633d38ad75e3f346bb6082",
+      "size_bytes": 2621,
+      "validation_outcome": "passed"
+    },
+    {
+      "artifact_id": "m42b.selftest.junit",
+      "availability": "retained-local-owner-workspace",
+      "evidence_lane": "macos-lima-rootless-docker-arm64-live",
+      "kind": "simulator-test-result",
+      "locator": "build/retained-evidence/m42b-derived-image-isolated-selftest-success-v4/results.xml",
+      "media_type": "application/xml",
+      "producer": "openrtl-m42b-derived-image-isolated-selftest-v4",
+      "review_state": "verified",
+      "sha256": "sha256:e266aa307734416d3b8d2891b8d728284ac56ff0576921c2bb8aee12b07679a6",
+      "size_bytes": 367,
+      "validation_outcome": "passed"
+    },
+    {
+      "artifact_id": "m42b.selftest.output-manifest",
+      "availability": "retained-local-owner-workspace",
+      "evidence_lane": "macos-lima-rootless-docker-arm64-live",
+      "kind": "execution-output-manifest",
+      "locator": "build/retained-evidence/m42b-derived-image-isolated-selftest-success-v4/output-manifest.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m42b-derived-image-isolated-selftest-v4",
+      "review_state": "verified",
+      "sha256": "sha256:671026e4265e6fca33e0c442a4910dbe15da1019b5fa54f2a05fc5c99dd2e8bc",
+      "size_bytes": 7067,
+      "validation_outcome": "passed"
+    },
+    {
+      "artifact_id": "m42b.selftest.container-create",
+      "availability": "retained-local-owner-workspace",
+      "evidence_lane": "macos-lima-rootless-docker-arm64-live",
+      "kind": "container-observation",
+      "locator": "build/retained-evidence/m42b-derived-image-isolated-selftest-success-v4/container-create.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m42b-derived-image-isolated-selftest-v4",
+      "review_state": "verified",
+      "sha256": "sha256:4e6bbd12b84d4202acb1bd86cd377d006c2dc7e5572c4a64ce99ced5b6e16cd8",
+      "size_bytes": 9891,
+      "validation_outcome": "passed"
+    },
+    {
+      "artifact_id": "m42b.selftest.container-final",
+      "availability": "retained-local-owner-workspace",
+      "evidence_lane": "macos-lima-rootless-docker-arm64-live",
+      "kind": "container-observation",
+      "locator": "build/retained-evidence/m42b-derived-image-isolated-selftest-success-v4/container-final.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m42b-derived-image-isolated-selftest-v4",
+      "review_state": "verified",
+      "sha256": "sha256:c3e3b57a8bc9b6cf00a998e3756c90aac0cb62550c158ac920ac45a7eac62061",
+      "size_bytes": 10356,
+      "validation_outcome": "passed"
+    },
+    {
+      "artifact_id": "m42b.selftest.execution-report",
+      "availability": "retained-local-owner-workspace",
+      "evidence_lane": "macos-lima-rootless-docker-arm64-live",
+      "kind": "owner-execution-report",
+      "locator": "build/retained-evidence/m42b-derived-image-isolated-selftest-success-v4/openrtl-m42b-derived-image-isolated-selftest-v4.retry-7.report.txt",
+      "media_type": "text/plain",
+      "producer": "openrtl-m42b-derived-image-isolated-selftest-v4",
+      "review_state": "verified",
+      "sha256": "sha256:0656783b517b37e7a065d6d5cf1532a2bc46455a40bb8548d00a580a0701d1b4",
+      "size_bytes": 5887,
+      "validation_outcome": "passed"
+    },
+    {
+      "artifact_id": "m42b.selftest.revalidation-report",
+      "availability": "retained-local-owner-workspace",
+      "evidence_lane": "macos-lima-rootless-docker-arm64-live",
+      "kind": "managed-revalidation-report",
+      "locator": "build/retained-evidence/m42b-derived-image-isolated-selftest-success-v4/openrtl-m42b-derived-image-isolated-selftest-v4.retry-8.report.txt",
+      "media_type": "text/plain",
+      "producer": "openrtl-m42b-derived-image-isolated-selftest-v4",
+      "review_state": "verified",
+      "sha256": "sha256:4fd9eb77beddbc885e75da98e36ff7d7ea0c2ec3bd5d32c9cbd40e0c371831fd",
+      "size_bytes": 755,
+      "validation_outcome": "passed"
+    },
+    {
+      "artifact_id": "m42b.selftest.verification",
+      "availability": "retained-local-owner-workspace",
+      "evidence_lane": "macos-lima-rootless-docker-arm64-live",
+      "kind": "independent-verification",
+      "locator": "build/retained-evidence/m42b-derived-image-isolated-selftest-success-v4/verification.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m42b-derived-image-isolated-selftest-v4",
+      "review_state": "verified",
+      "sha256": "sha256:96c7f203cbbf91eb97f006a3a569cfcf9d98415a7be4e85e45fa9ce5e2abadd5",
+      "size_bytes": 1389,
+      "validation_outcome": "passed"
+    },
+    {
+      "artifact_id": "m42b.selftest.retained-manifest",
+      "availability": "retained-local-owner-workspace",
+      "evidence_lane": "macos-lima-rootless-docker-arm64-live",
+      "kind": "retained-evidence-manifest",
+      "locator": "build/retained-evidence/m42b-derived-image-isolated-selftest-success-v4/manifest.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m42b-derived-image-isolated-selftest-v4",
+      "review_state": "verified",
+      "sha256": "sha256:72b05904564666135f551f9f99a6e3adb8269133e60d60f50a43f0634e15985c",
+      "size_bytes": 2269,
+      "validation_outcome": "passed"
+    },
+    {
+      "artifact_id": "m42b.selftest.false-positive-v3",
+      "availability": "retained-local-owner-workspace",
+      "evidence_lane": "macos-lima-rootless-docker-arm64-live",
+      "kind": "negative-evidence-manifest",
+      "locator": "build/retained-evidence/m42b-derived-image-isolated-selftest-false-positive-v3/manifest.json",
+      "media_type": "application/json",
+      "producer": "openrtl-m42b-derived-image-isolated-selftest-v4",
+      "review_state": "verified",
+      "sha256": "sha256:ee05ed41c54921e07a5f0c272344bddf2b2517c2c1d9825ec3618fdf7bcf2ed0",
+      "size_bytes": 1883,
+      "validation_outcome": "retained-invalid"
+    }
+  ],
+  "authorization_boundary": {
+    "agents_runner_contact": false,
+    "container_execution": true,
+    "credential_values_handled": false,
+    "downloads": false,
+    "image_build": false,
+    "image_pull": false,
+    "installation": false,
+    "local_runtime_contact": true,
+    "network": false,
+    "production_authorized": false,
+    "provider_calls": false,
+    "publication": false,
+    "simulator_execution": true
+  },
+  "base_commit": "3d84daedd71cf6af31db3462b35d3fe6b7b7506b",
+  "implementation_slice_complete": true,
+  "locator_roots": {
+    "repository": ".",
+    "retained": "build/retained-evidence"
+  },
+  "milestone_complete": false,
+  "milestone_id": "M42b-runtime-live-qualification",
+  "pending": [
+    "M42b production lifecycle composition",
+    "M42b retirement recovery",
+    "M46 real-agent new-RTL qualification",
+    "M47 release and publication"
+  ],
+  "qualification_lane": "macos-lima-rootless-docker-arm64-live",
+  "qualification_limits": [
+    "Deterministic authored infrastructure fixture only; no real agent designed new RTL.",
+    "Qualifies the observed retained local instance and image; it does not publish an image or SDK.",
+    "Production managed lifecycle composition and retirement recovery remain pending.",
+    "M46 live provider qualification and M47 release remain pending."
+  ],
+  "qualification_scope": "Owned Lima 2.2.0 VM, authenticated current-user rootless Docker transport, exact retained arm64 simulator image and deterministic isolated Verilator/cocotb self-test.",
+  "qualified_agentrig_commit": "069711dd53aa3ee64d06afe530b59d4a2d740a8a",
+  "qualified_commit": "3d84daedd71cf6af31db3462b35d3fe6b7b7506b",
+  "review_state": "verified",
+  "schema": "openrtl.milestone-evidence.v1",
+  "validation": {
+    "cleanup": {
+      "docker_client_config_removed": true,
+      "forward_sockets_present": false,
+      "guest_workspace_removed": true,
+      "lima_instance_running": false,
+      "owned_container_removed": true,
+      "rootless_service_active": false
+    },
+    "cocotb": "2.0.1",
+    "image_id": "sha256:500f6522989b4ec75b5122d66c1adc74a3b04183548936cface7641fab33e6cf",
+    "image_reference": "openrtl/simulator:m42b-verilator-5.046-cocotb-2.0.1",
+    "invalid_v3_retained": true,
+    "isolation": {
+      "capabilities_dropped": [
+        "ALL"
+      ],
+      "cpus": 2,
+      "host_mounts": [],
+      "memory_bytes": 1073741824,
+      "network": "none",
+      "no_new_privileges": true,
+      "pids_limit": 256,
+      "read_only_rootfs": true
+    },
+    "junit": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 1
+    },
+    "platform": "linux/arm64",
+    "valid_receipt_sha256": "sha256:42d304c924581223b8841851795af919b64f83e9dc633d38ad75e3f346bb6082",
+    "verilator": "5.046"
+  }
+}
