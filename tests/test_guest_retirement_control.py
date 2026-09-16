@@ -29,6 +29,7 @@ from openrtl.adapters.guest_retirement import (
     guest_retirement_status,
     lima_retirement_registration,
     plan_guest_retirement,
+    retirement_registry,
 )
 from openrtl.adapters.lima_managed import (
     audit_lima_artifact_closure,
@@ -233,7 +234,7 @@ class GuestRetirementControlTests(unittest.TestCase):
             self.assertEqual((result["status"], result["reconciled"]), ("reconciled", True))
             self.assertEqual(self.adapter.calls.count("retire"), 1)
 
-    def test_default_lima_plan_is_reviewable_but_effects_fail_before_journal(self) -> None:
+    def test_default_lima_plan_is_pure_and_concrete_registration_is_available(self) -> None:
         endpoint = GuestWorkspaceEndpoint(
             root=Path("/private/fixture/transport"),
             instance_id="c" * 32,
@@ -270,21 +271,22 @@ class GuestRetirementControlTests(unittest.TestCase):
                 },
             }
         )
-        plan = plan_guest_retirement("lima-vz-managed", "retire", configuration, OPERATION)
         with patch(
+            "agentrig.integrations.bounded_process.run_bounded_process",
+            side_effect=AssertionError("pure planning must not contact Lima"),
+        ), patch(
             "openrtl.adapters.guest_retirement._open_state",
-            side_effect=AssertionError("blocked registration must not create state"),
+            side_effect=AssertionError("pure planning must not create state"),
         ):
-            with self.assertRaisesRegex(ValueError, "runtime_retirement_backend_blocked"):
-                apply_guest_retirement(
-                    "lima-vz-managed",
-                    "retire",
-                    configuration,
-                    OPERATION,
-                    str(plan["plan_digest"]),
-                    frozenset(plan["required_effects"]),
-                    Path("/private/control"),
-                )
+            plan = plan_guest_retirement(
+                "lima-vz-managed", "retire", configuration, OPERATION
+            )
+            definition = retirement_registry()["lima-vz-managed"]
+        self.assertEqual(
+            plan["required_effects"],
+            ["guest_socket_remove", "local_write", "runtime_contact"],
+        )
+        self.assertIsNotNone(definition.create)
 
     def test_lima_registration_binds_audited_closure_and_injected_generation_ports(self) -> None:
         with tempfile.TemporaryDirectory(prefix="olr-", dir="/tmp") as temporary:

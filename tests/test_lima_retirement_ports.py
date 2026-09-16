@@ -9,6 +9,7 @@ from pathlib import Path
 import socket
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from agentrig.capabilities import BackendFailure
 from agentrig.core import RunContext
@@ -186,6 +187,27 @@ class LimaRetirementPortsTests(unittest.TestCase):
                 for specification in self.specifications
             )
         )
+
+    def test_default_registry_executes_qualified_lima_ports(self) -> None:
+        with patch(
+            "agentrig.integrations.bounded_process.run_bounded_process", self.execute
+        ):
+            plan = plan_guest_retirement(
+                "lima-vz-managed", "retire", self.configuration, OPERATION
+            )
+            result = apply_guest_retirement(
+                "lima-vz-managed",
+                "retire",
+                self.configuration,
+                OPERATION,
+                str(plan["plan_digest"]),
+                frozenset(plan["required_effects"]),
+                self.control,
+            )
+        self.assertEqual(result["status"], "completed")
+        self.assertFalse((self.endpoint.root / "workspace.sock").exists())
+        self.assertTrue((self.endpoint.root / ".service.lock").is_file())
+        self.assertGreaterEqual(len(self.specifications), 3)
 
     def test_lima_removed_forward_requires_inspection_recovery_without_fake_unlink(self) -> None:
         os.unlink(self.endpoint.root / "workspace.sock")

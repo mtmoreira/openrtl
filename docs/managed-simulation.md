@@ -23,9 +23,9 @@ selection state are synthetic; no Docker runtime was contacted in that earlier
 slice. The tracked M42b live attestation now binds the retained valid receipt and
 keeps the earlier false-positive JUnit receipt visibly invalid. Checked-in
 managed lifecycle inspection has passed. The backend-neutral guest-retirement
-consumer now composes AgentRig's durable retirement journal and Lima generation
-binding, but the concrete authenticated fence/removal/observation ports and live
-recovery still require acceptance before M42b closes.
+consumer composes AgentRig's durable retirement journal and Lima generation
+binding. The concrete authenticated fence/removal/observation ports and the
+already-absent-forward inspect recovery have passed against the owned instance.
 
 The read-only starting point is:
 
@@ -127,15 +127,16 @@ image provenance without changing global Docker contexts, sockets, SSH settings
 or the `agents` account's always-on runner. Backend dependencies, private runtime
 installation/downloads, runtime control and image acquisition remain separate
 approval boundaries. Native Windows and broader host/platform claims are pending.
-The checked-in managed control and retirement commands remain modular, require
-exact per-invocation effects, and have not yet been accepted as the customer
-default. The default Lima retirement registration is review-only until all live
-ports are injected and qualified. Guest-service retirement and recovery through
-those ports remain pending.
+The checked-in managed control and retirement commands remain modular and require
+exact per-invocation effects. The qualified Lima CLI ports are the default for
+the `lima-vz-managed` retirement backend; selecting them performs no runtime
+action, and callers can replace the complete registration mapping. Customer
+clone/run acceptance remains separate from this development integration.
 
-The explicit Lima CLI port candidate shares an exclusive application fence with
+The default Lima CLI port implementation shares an exclusive application fence with
 managed lifecycle calls, re-audits the immutable local closure around every
 bounded observation and retains the transport workspace and service lock. It
 does not equate Lima's automatic forward removal during VM stop with an OpenRTL
-unlink: that state is recovered by a fresh inspect-only operation. The candidate
-is not in the default registry and does not alter clone/run setup.
+unlink: that state is recovered by a fresh inspect-only operation. Default
+selection does not alter clone/run setup or prevent injection of another
+registration mapping.

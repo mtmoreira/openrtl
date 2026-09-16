@@ -417,7 +417,7 @@ class LimaCliRetirementPorts:
 def lima_cli_retirement_registration(
     execute: LimaRetirementProcess | None = None,
 ) -> RetirementBackendDefinition:
-    """Build an explicit Lima CLI registration; the default registry stays blocked."""
+    """Build the default Lima CLI registration with an injectable process seam."""
     from agentrig.integrations.bounded_process import run_bounded_process
     from openrtl.adapters.guest_retirement import RetirementBackendDefinition
 

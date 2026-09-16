@@ -100,16 +100,15 @@ persists uncertainty before effects and rejects replay. A lost reply must be
 settled with the same operation and endpoint through a newly reviewed inspect
 plan and fresh backend observation.
 
-The default Lima registration is intentionally review-only until the application
-injects all three authenticated live ports: a generation fence that proves the
-VM and forwarding stopped and clients drained, an exact socket retirer, and an
-observer that proves the same generation is retired while its lock and workspace
-remain. `lima_retirement_registration` provides this seam; partial registration
-fails closed. Alternate local backends can provide the same pure validator and
-adapter factory without changing the retirement consumer.
+The default `lima-vz-managed` registration uses the qualified Lima CLI ports: a
+generation fence that proves the VM is stopped and clients are drained, an exact
+socket retirer, and an observer that proves the same generation is retired while
+its lock and workspace remain. Selecting the registration performs no runtime
+action; planning remains pure, and application still requires the exact reviewed
+digest and action-scoped effects. `lima_retirement_registration` remains the
+explicit three-port composition seam and rejects partial registration.
 
-`lima_cli_retirement_registration` is the explicit Lima 2.2.0 candidate for
-those ports; it is not selected by the default registry. It re-audits the exact
+`lima_cli_retirement_registration` re-audits the exact
 executable, configuration and guest-image closure around bounded,
 environment-allowlisted `limactl list` observations. Managed lifecycle calls and
 retirement share an application-owned exclusive fence. The retirement context
@@ -123,7 +122,13 @@ missing socket therefore cannot be relabeled as an OpenRTL removal. A retire
 attempt against that already-absent endpoint remains uncertain; a separately
 approved `inspect` action may reconcile it only after fresh stopped-instance,
 socket-absence, service-lock and workspace observations. The result records
-reconciliation and no unlink effect. This path still needs live qualification.
+reconciliation and no unlink effect. That exact path passed live qualification
+against the owned Lima 2.2.0 instance.
+
+Callers can replace the complete registration mapping, and the CLI registration's
+bounded-process seam is injectable for another local backend implementation or
+host integration. The backend-neutral coordinator has no Lima-specific fallback
+or discovery path.
 
 `runtime retirement-status --state-dir PATH --json` reads only the local
 retirement journal. Completed and reconciled records are historical evidence,
@@ -167,11 +172,11 @@ The owned macOS Lima/rootless Docker instance and exact arm64 simulator image
 have passed the fixed isolated Verilator/cocotb self-test. The tracked
 `m42b-runtime-live-qualification.json` attestation records that scope and the
 invalid earlier receipt. Managed lifecycle inspection through the checked-in
-command has now passed. The modular guest-retirement consumer is source-validated.
-Its explicit Lima CLI ports remain a source candidate until live retirement and
-recovery evidence is accepted. M46 real-agent new-RTL qualification and M47
-release remain pending. The fixed self-test and existing FIFO canary are not
-evidence that an agent designed new RTL.
+command has now passed. The concrete Lima CLI ports have also passed owned live
+retirement and inspect-only recovery qualification and are the default retirement
+registration. Alternate registrations remain injectable. M46 real-agent new-RTL
+qualification and M47 release remain pending. The fixed self-test and existing
+FIFO canary are not evidence that an agent designed new RTL.
 
 ## Inspect a restricted backend configuration
 

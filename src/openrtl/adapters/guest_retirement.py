@@ -87,7 +87,10 @@ def lima_retirement_registration(
 
 
 def retirement_registry() -> Mapping[str, RetirementBackendDefinition]:
-    return {"lima-vz-managed": lima_retirement_registration()}
+    """Return built-in backends; callers may replace the whole mapping."""
+    from openrtl.adapters.lima_retirement_ports import lima_cli_retirement_registration
+
+    return {"lima-vz-managed": lima_cli_retirement_registration()}
 
 
 def _endpoint(value: object) -> GuestWorkspaceEndpoint:
