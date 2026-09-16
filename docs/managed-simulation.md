@@ -22,8 +22,10 @@ binds the reviewed source and retained logs. Runtime process tests and seeded
 selection state are synthetic; no Docker runtime was contacted in that earlier
 slice. The tracked M42b live attestation now binds the retained valid receipt and
 keeps the earlier false-positive JUnit receipt visibly invalid. Checked-in
-managed lifecycle control and guest-service retirement still require their own
-live acceptance before M42b closes.
+managed lifecycle inspection has passed. The backend-neutral guest-retirement
+consumer now composes AgentRig's durable retirement journal and Lima generation
+binding, but the concrete authenticated fence/removal/observation ports and live
+recovery still require acceptance before M42b closes.
 
 The read-only starting point is:
 
@@ -125,7 +127,8 @@ image provenance without changing global Docker contexts, sockets, SSH settings
 or the `agents` account's always-on runner. Backend dependencies, private runtime
 installation/downloads, runtime control and image acquisition remain separate
 approval boundaries. Native Windows and broader host/platform claims are pending.
-The checked-in managed control command remains modular, requires exact
-per-invocation effects, and has not yet been accepted as the customer default.
-Guest-service retirement and live recovery through that command remain to be
-qualified.
+The checked-in managed control and retirement commands remain modular, require
+exact per-invocation effects, and have not yet been accepted as the customer
+default. The default Lima retirement registration is review-only until all live
+ports are injected and qualified. Guest-service retirement and recovery through
+those ports remain pending.

@@ -29,7 +29,8 @@ def add_runtime_command(subcommands: argparse._SubParsersAction[argparse.Argumen
     commands = runtime.add_subparsers(dest="runtime_command", required=True)
     for name in ("plan", "status", "select", "self-test", "recover", "backends", "backend-plan",
                  "backend-operation", "backend-artifacts", "backend-config", "managed-config",
-                 "managed-plan", "managed-apply"):
+                 "managed-plan", "managed-apply", "retirement-plan", "retirement-apply",
+                 "retirement-status"):
         command = commands.add_parser(name)
         command.add_argument("--state-dir", type=Path, default=argparse.SUPPRESS)
         command.add_argument("--json", action="store_true")
@@ -55,6 +56,17 @@ def add_runtime_command(subcommands: argparse._SubParsersAction[argparse.Argumen
             command.add_argument("--allow-runtime-contact", action="store_true")
             command.add_argument("--allow-runtime-start", action="store_true")
             command.add_argument("--allow-private-key-creation", action="store_true")
+        if name in ("retirement-plan", "retirement-apply"):
+            command.add_argument("--backend", required=True)
+            command.add_argument("--action", required=True, choices=("retire", "inspect"))
+            command.add_argument("--config-json", required=True)
+            command.add_argument("--operation-id", required=True)
+        if name == "retirement-apply":
+            command.add_argument("--plan-digest", required=True)
+            command.add_argument("--timeout-seconds", type=int, default=120)
+            command.add_argument("--allow-local-write", action="store_true")
+            command.add_argument("--allow-runtime-contact", action="store_true")
+            command.add_argument("--allow-guest-socket-remove", action="store_true")
         if name == 'backend-artifacts':
             command.add_argument('--artifact-root', type=Path, required=True,
                                  help='private directory containing only the declared public artifact files')
@@ -82,7 +94,7 @@ def add_runtime_command(subcommands: argparse._SubParsersAction[argparse.Argumen
 def plan() -> JsonObject:
     return {"schema": "openrtl.runtime-plan.v1", "host": sys.platform,
             "existing_runtime": "Explicit current-user rootless Docker only; no daemon discovery or contact by default",
-            "managed_runtime": "Optional replaceable lifecycle control in SDK candidate; exact effects and live acceptance remain explicit",
+            "managed_runtime": "Optional replaceable lifecycle and retirement control in SDK candidate; exact effects and live ports remain explicit",
             "image": "One owned arm64 image passed the fixed local self-test; use an exact observed local content ID, with no automatic pull or published-image claim",
             "resources": dict(RESOURCE_DEFAULTS),
             "next_step": "Select a reviewed owned endpoint and exact image, then explicitly run or reverify its fixed self-test",
@@ -288,6 +300,36 @@ def run_runtime_command(arguments: argparse.Namespace) -> int:
                 arguments.state_dir or default_state_dir(), reconcile=arguments.reconcile,
                 timeout_seconds=arguments.timeout_seconds,
             ))
+        elif arguments.runtime_command == "retirement-plan":
+            from openrtl.adapters.guest_retirement import plan_guest_retirement
+            result = plan_guest_retirement(
+                arguments.backend,
+                arguments.action,
+                arguments.config_json,
+                arguments.operation_id,
+            )
+        elif arguments.runtime_command == "retirement-apply":
+            from openrtl.adapters.guest_retirement import apply_guest_retirement
+            grants = frozenset(
+                effect for effect, allowed in (
+                    ("local_write", arguments.allow_local_write),
+                    ("runtime_contact", arguments.allow_runtime_contact),
+                    ("guest_socket_remove", arguments.allow_guest_socket_remove),
+                ) if allowed
+            )
+            result = apply_guest_retirement(
+                arguments.backend,
+                arguments.action,
+                arguments.config_json,
+                arguments.operation_id,
+                arguments.plan_digest,
+                grants,
+                arguments.state_dir or default_state_dir(),
+                timeout_seconds=arguments.timeout_seconds,
+            )
+        elif arguments.runtime_command == "retirement-status":
+            from openrtl.adapters.guest_retirement import guest_retirement_status
+            result = guest_retirement_status(arguments.state_dir or default_state_dir())
         else:
             if arguments.runtime_command in ("select", "self-test", "recover"):
                 require(arguments.allow_runtime_contact is True, "runtime_contact_requires_explicit_consent")
@@ -301,7 +343,8 @@ def run_runtime_command(arguments: argparse.Namespace) -> int:
         if arguments.json:
             print(json.dumps(result, indent=2, sort_keys=True))
         elif arguments.runtime_command in ("backends", "backend-plan", "backend-operation", "backend-artifacts",
-                                            "backend-config", "managed-config", "managed-plan", "managed-apply"):
+                                            "backend-config", "managed-config", "managed-plan", "managed-apply",
+                                            "retirement-plan", "retirement-apply", "retirement-status"):
             print(json.dumps(result, indent=2, sort_keys=True))
         elif arguments.runtime_command == "plan":
             print("Simulation setup: select a reviewed runtime owned by your account and an exact existing image.")
@@ -335,6 +378,16 @@ def run_runtime_command(arguments: argparse.Namespace) -> int:
             "runtime_backend_authority_required": "Grant exactly the effects listed by the reviewed managed backend plan. Saved state never restores authority.",
             "runtime_backend_execution_failed": "The managed backend action failed with a bounded diagnostic. Inspect the retained operation before any recovery.",
             "runtime_backend_unavailable": "Select an explicitly registered backend; no fallback or discovery is performed.",
+            "runtime_retirement_backend_unavailable": "Select an explicitly registered retirement backend; no fallback or discovery is performed.",
+            "runtime_retirement_configuration_invalid": "Review the exact endpoint identity, backend generation binding and operation ID. No state or runtime was changed.",
+            "runtime_retirement_plan_changed": "The retirement plan differs from the reviewed digest. Generate and review a fresh plan; no runtime action was taken.",
+            "runtime_retirement_authority_required": "Grant exactly the effects listed by the retirement plan. Recovery inspection cannot authorize socket removal.",
+            "runtime_retirement_backend_blocked": "This backend has no authenticated generation fence and retirement ports registered. No journal or runtime action was created.",
+            "runtime_retirement_reconciliation_required": "The retirement journal is uncertain. Use the same endpoint and operation with a fresh inspect plan; never replay retirement.",
+            "runtime_retirement_journal_invalid": "The retirement journal cannot be verified. Preserve it for review; no runtime action was taken.",
+            "runtime_retirement_journal_busy": "Another retirement operation owns the journal. Wait for it to finish; do not remove its lock.",
+            "runtime_retirement_operation_reused": "This retirement operation is already settled. Saved results confer no new authority.",
+            "runtime_retirement_execution_failed": "The retirement adapter failed with a bounded diagnostic. Preserve the uncertain journal and reconcile by fresh observation only.",
             "runtime_contact_requires_explicit_consent": "Review the selected endpoint and effects, then explicitly allow runtime contact.",
             "runtime_ownership_unqualified": "Use a reviewed current-user rootless runtime. Shared Docker Desktop or an unqualified VM is not selected automatically.",
             "runtime_socket_not_current_user": "Select your own private socket; do not change another account's runner or global Docker context.",

@@ -14,6 +14,13 @@ from openrtl.domain.design_session import JsonObject, require
 
 if TYPE_CHECKING:
     from agentrig.capabilities.local_backend import BackendPlan
+    from agentrig.integrations.guest_retirement import GuestServiceRetirementAdapter
+    from agentrig.integrations.guest_workspace import GuestWorkspaceEndpoint
+    from agentrig.integrations.lima_retirement import (
+        LimaGenerationFence,
+        LimaRetirementObserver,
+        LimaSocketRetirer,
+    )
     from openrtl.adapters.managed_backend import ManagedLifecycleBackend
 
 
@@ -342,4 +349,139 @@ def lima_managed_backend(state: Path) -> ManagedLifecycleBackend:
             journal=LocalBackendJournal(state.absolute() / "backend-operations"),
             verify_artifacts=LimaArtifactVerifier(),
         ),
+    )
+
+
+def validate_lima_retirement_configuration(
+    value: JsonObject, endpoint: GuestWorkspaceEndpoint
+) -> JsonObject:
+    """Validate retirement binding syntax without reading state or contacting Lima."""
+    try:
+        require(
+            set(value)
+            == {"managed_configuration", "lifecycle_operation_id", "generation_digest"}
+            and type(value["managed_configuration"]) is dict,
+            "runtime_retirement_configuration_invalid",
+        )
+        managed = cast(JsonObject, value["managed_configuration"])
+        require(
+            set(managed)
+            == {
+                "executable",
+                "executable_sha256",
+                "state_root",
+                "configuration_file",
+                "configuration_sha256",
+                "artifact_closure_sha256",
+                "instance_id",
+            },
+            "runtime_retirement_configuration_invalid",
+        )
+        instance_id = _instance_id(managed["instance_id"])
+        state_root_value = managed["state_root"]
+        executable_value = managed["executable"]
+        configuration_value = managed["configuration_file"]
+        require(
+            isinstance(state_root_value, str)
+            and isinstance(executable_value, str)
+            and isinstance(configuration_value, str),
+            "runtime_retirement_configuration_invalid",
+        )
+        state_root = Path(cast(str, state_root_value))
+        executable = Path(cast(str, executable_value))
+        configuration = Path(cast(str, configuration_value))
+        require(
+            state_root.is_absolute()
+            and state_root != Path(state_root.anchor)
+            and ".." not in state_root.parts
+            and executable.is_absolute()
+            and executable != Path(executable.anchor)
+            and ".." not in executable.parts
+            and configuration == state_root / "configuration.json"
+            and endpoint.root == state_root / "transport"
+            and endpoint.instance_id == instance_id,
+            "runtime_retirement_configuration_invalid",
+        )
+        for key in (
+            "executable_sha256",
+            "configuration_sha256",
+            "artifact_closure_sha256",
+            "generation_digest",
+        ):
+            selected = managed[key] if key in managed else value[key]
+            require(
+                isinstance(selected, str)
+                and len(selected) == 71
+                and selected.startswith("sha256:")
+                and all(character in "0123456789abcdef" for character in selected[7:]),
+                "runtime_retirement_configuration_invalid",
+            )
+        operation_id = value["lifecycle_operation_id"]
+        require(
+            isinstance(operation_id, str)
+            and len(operation_id) == 32
+            and all(character in "0123456789abcdef" for character in operation_id),
+            "runtime_retirement_configuration_invalid",
+        )
+        return {
+            "managed_configuration": dict(managed),
+            "lifecycle_operation_id": operation_id,
+            "generation_digest": value["generation_digest"],
+        }
+    except (KeyError, TypeError, ValueError):
+        raise ValueError("runtime_retirement_configuration_invalid") from None
+
+
+def bind_lima_retirement_adapter(
+    configuration: JsonObject,
+    endpoint: GuestWorkspaceEndpoint,
+    state: Path,
+    *,
+    fence_generation: LimaGenerationFence,
+    retire_socket: LimaSocketRetirer,
+    observe_retired: LimaRetirementObserver,
+) -> GuestServiceRetirementAdapter:
+    """Bind audited Lima artifacts and a fresh generation to injected live ports."""
+    from agentrig.capabilities.local_backend import BackendAction, BackendRequest
+    from agentrig.integrations.backend_journal import LocalBackendJournal
+    from agentrig.integrations.lima_lifecycle import LimaLifecycleBackend
+    from agentrig.integrations.lima_retirement import (
+        LimaGuestServiceRetirementAdapter,
+        bind_lima_guest_service_generation,
+    )
+
+    validated = validate_lima_retirement_configuration(configuration, endpoint)
+    managed = cast(JsonObject, validated["managed_configuration"])
+    closure = audit_lima_artifact_closure(
+        Path(cast(str, managed["executable"])),
+        Path(cast(str, managed["state_root"])),
+    )
+    require(
+        managed == closure.configuration(cast(str, managed["instance_id"])),
+        "runtime_backend_artifacts_invalid",
+    )
+    backend = LimaLifecycleBackend(
+        journal=LocalBackendJournal(
+            state.absolute() / "guest-retirements" / "lifecycle-binding"
+        ),
+        verify_artifacts=LimaArtifactVerifier(),
+    )
+    plan = backend.plan(
+        BackendRequest(
+            action=BackendAction.INSPECT,
+            operation_id=cast(str, validated["lifecycle_operation_id"]),
+            configuration=managed,
+        )
+    )
+    generation = bind_lima_guest_service_generation(
+        backend,
+        plan,
+        endpoint,
+        cast(str, validated["generation_digest"]),
+    )
+    return LimaGuestServiceRetirementAdapter(
+        generation=generation,
+        fence_generation=fence_generation,
+        retire_socket=retire_socket,
+        observe_retired=observe_retired,
     )

@@ -76,6 +76,43 @@ socket, validate guest service transport, mark the simulator ready or authorize
 a design run. Those checks stay in the existing runtime selection and fixed
 self-test path.
 
+## Guest-service retirement composition
+
+`runtime retirement-plan` reviews retirement independently from VM lifecycle.
+Its bounded configuration contains a freshly observed `endpoint` identity
+(`root`, instance ID, device, inode and owner UID) plus backend-specific
+generation data. For `lima-vz-managed`, that data binds the exact managed
+configuration, a reviewed lifecycle inspection operation and a fresh generation
+digest. The plan is pure and binds all of those values, the retirement operation
+ID and the action in one digest.
+
+```sh
+./openrtl runtime retirement-plan --backend lima-vz-managed \
+  --action retire --operation-id 0123456789abcdef0123456789abcdef \
+  --config-json "$REVIEWED_RETIREMENT_CONFIGURATION" --json
+```
+
+The backend-neutral consumer accepts injected backend registrations. Retirement
+requires exactly `local_write`, `runtime_contact` and `guest_socket_remove`.
+Observation-only recovery uses action `inspect` and requires only `local_write`
+and `runtime_contact`; that approval can never remove a socket. The coordinator
+persists uncertainty before effects and rejects replay. A lost reply must be
+settled with the same operation and endpoint through a newly reviewed inspect
+plan and fresh backend observation.
+
+The default Lima registration is intentionally review-only until the application
+injects all three authenticated live ports: a generation fence that proves the
+VM and forwarding stopped and clients drained, an exact socket retirer, and an
+observer that proves the same generation is retired while its lock and workspace
+remain. `lima_retirement_registration` provides this seam; partial registration
+fails closed. Alternate local backends can provide the same pure validator and
+adapter factory without changing the retirement consumer.
+
+`runtime retirement-status --state-dir PATH --json` reads only the local
+retirement journal. Completed and reconciled records are historical evidence,
+not authority. They do not mark a runtime ready, start or stop a backend, select
+a simulator, or authorize a design run.
+
 `python -m openrtl.cli runtime backend-operation --state-dir PATH --json` reads
 the local backend-operation journal without creating a directory, taking a writer
 lock, contacting a runtime or restoring authority. An `uncertain` record requires
@@ -112,11 +149,12 @@ runs must retain their original runtime identity.
 The owned macOS Lima/rootless Docker instance and exact arm64 simulator image
 have passed the fixed isolated Verilator/cocotb self-test. The tracked
 `m42b-runtime-live-qualification.json` attestation records that scope and the
-invalid earlier receipt. Managed lifecycle execution through this checked-in
-command and guest-service retirement still need their own live evidence. M46
-real-agent new-RTL qualification and M47 release remain pending. The fixed
-self-test and existing FIFO canary are not evidence that an agent designed new
-RTL.
+invalid earlier receipt. Managed lifecycle inspection through the checked-in
+command has now passed. The modular guest-retirement consumer is source-validated,
+while its authenticated Lima ports and live retirement/recovery still need their
+own evidence. M46 real-agent new-RTL qualification and M47 release remain
+pending. The fixed self-test and existing FIFO canary are not evidence that an
+agent designed new RTL.
 
 ## Inspect a restricted backend configuration
 
