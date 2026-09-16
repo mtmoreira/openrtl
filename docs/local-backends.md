@@ -108,6 +108,23 @@ remain. `lima_retirement_registration` provides this seam; partial registration
 fails closed. Alternate local backends can provide the same pure validator and
 adapter factory without changing the retirement consumer.
 
+`lima_cli_retirement_registration` is the explicit Lima 2.2.0 candidate for
+those ports; it is not selected by the default registry. It re-audits the exact
+executable, configuration and guest-image closure around bounded,
+environment-allowlisted `limactl list` observations. Managed lifecycle calls and
+retirement share an application-owned exclusive fence. The retirement context
+also requires the exact prior forward identity, a stopped `vz`/`aarch64`
+instance, a private retained `.service.lock`, and an unchanged private transport
+directory. The guarded AgentRig retirement port performs the only accepted
+unlink.
+
+Lima normally removes its host `guestSocket` forward while stopping the VM. A
+missing socket therefore cannot be relabeled as an OpenRTL removal. A retire
+attempt against that already-absent endpoint remains uncertain; a separately
+approved `inspect` action may reconcile it only after fresh stopped-instance,
+socket-absence, service-lock and workspace observations. The result records
+reconciliation and no unlink effect. This path still needs live qualification.
+
 `runtime retirement-status --state-dir PATH --json` reads only the local
 retirement journal. Completed and reconciled records are historical evidence,
 not authority. They do not mark a runtime ready, start or stop a backend, select
@@ -150,11 +167,11 @@ The owned macOS Lima/rootless Docker instance and exact arm64 simulator image
 have passed the fixed isolated Verilator/cocotb self-test. The tracked
 `m42b-runtime-live-qualification.json` attestation records that scope and the
 invalid earlier receipt. Managed lifecycle inspection through the checked-in
-command has now passed. The modular guest-retirement consumer is source-validated,
-while its authenticated Lima ports and live retirement/recovery still need their
-own evidence. M46 real-agent new-RTL qualification and M47 release remain
-pending. The fixed self-test and existing FIFO canary are not evidence that an
-agent designed new RTL.
+command has now passed. The modular guest-retirement consumer is source-validated.
+Its explicit Lima CLI ports remain a source candidate until live retirement and
+recovery evidence is accepted. M46 real-agent new-RTL qualification and M47
+release remain pending. The fixed self-test and existing FIFO canary are not
+evidence that an agent designed new RTL.
 
 ## Inspect a restricted backend configuration
 

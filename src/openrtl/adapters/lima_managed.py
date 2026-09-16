@@ -359,7 +359,12 @@ def validate_lima_retirement_configuration(
     try:
         require(
             set(value)
-            == {"managed_configuration", "lifecycle_operation_id", "generation_digest"}
+            == {
+                "managed_configuration",
+                "lifecycle_operation_id",
+                "generation_digest",
+                "service_lock",
+            }
             and type(value["managed_configuration"]) is dict,
             "runtime_retirement_configuration_invalid",
         )
@@ -423,13 +428,55 @@ def validate_lima_retirement_configuration(
             and all(character in "0123456789abcdef" for character in operation_id),
             "runtime_retirement_configuration_invalid",
         )
+        service_lock_value = value["service_lock"]
+        require(
+            type(service_lock_value) is dict
+            and set(service_lock_value) == {"device", "inode", "uid"},
+            "runtime_retirement_configuration_invalid",
+        )
+        service_lock = cast(JsonObject, service_lock_value)
+        require(
+            all(type(service_lock[key]) is int and cast(int, service_lock[key]) >= 0
+                for key in ("device", "inode", "uid")),
+            "runtime_retirement_configuration_invalid",
+        )
+        require(
+            value["generation_digest"]
+            == lima_retirement_generation_digest(managed, endpoint, service_lock),
+            "runtime_retirement_configuration_invalid",
+        )
         return {
             "managed_configuration": dict(managed),
             "lifecycle_operation_id": operation_id,
             "generation_digest": value["generation_digest"],
+            "service_lock": dict(service_lock),
         }
     except (KeyError, TypeError, ValueError):
         raise ValueError("runtime_retirement_configuration_invalid") from None
+
+
+def lima_retirement_generation_digest(
+    managed_configuration: JsonObject,
+    endpoint: GuestWorkspaceEndpoint,
+    service_lock: JsonObject,
+) -> str:
+    """Bind observed forward and service-lock identities to the Lima closure."""
+    from agentrig.capabilities.local_backend import backend_digest
+
+    return backend_digest(
+        {
+            "schema": "openrtl.lima-retirement-generation.v1",
+            "managed_configuration": managed_configuration,
+            "endpoint": {
+                "root": str(endpoint.root),
+                "instance_id": endpoint.instance_id,
+                "device": endpoint.device,
+                "inode": endpoint.inode,
+                "uid": endpoint.uid,
+            },
+            "service_lock": service_lock,
+        }
+    )
 
 
 def bind_lima_retirement_adapter(

@@ -372,6 +372,7 @@ def run_runtime_command(arguments: argparse.Namespace) -> int:
             "runtime_backend_config_audit_invalid": "The explicit backend configuration audit failed. Check the reviewed policy, private files, image pin and absence of overrides. No runtime selection changed.",
             "runtime_backend_artifacts_invalid": "The declared local artifact bundle cannot be verified. Check its exact manifest, hashes and private file permissions; no installation occurred.",
             "runtime_backend_journal_invalid": "The local backend operation record cannot be verified. Preserve it for review; no runtime was contacted.",
+            "runtime_backend_journal_busy": "Another managed lifecycle or retirement operation owns the backend fence. Wait for it to finish; do not remove its lock.",
             "runtime_backend_sdk_candidate_required": "This optional command needs the reviewed local AgentRig SDK candidate. The published bootstrap and existing runtime commands remain available.",
             "runtime_backend_configuration_invalid": "Review the backend's exact configuration, action, pins and resource bounds. No state or runtime was changed.",
             "runtime_backend_plan_changed": "The managed backend plan differs from the reviewed digest. Generate and review a fresh plan; no runtime action was taken.",

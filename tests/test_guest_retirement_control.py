@@ -30,7 +30,10 @@ from openrtl.adapters.guest_retirement import (
     lima_retirement_registration,
     plan_guest_retirement,
 )
-from openrtl.adapters.lima_managed import audit_lima_artifact_closure
+from openrtl.adapters.lima_managed import (
+    audit_lima_artifact_closure,
+    lima_retirement_generation_digest,
+)
 from openrtl.domain.design_session import JsonObject
 from openrtl.runtime_cli import add_runtime_command, run_runtime_command
 
@@ -231,27 +234,39 @@ class GuestRetirementControlTests(unittest.TestCase):
             self.assertEqual(self.adapter.calls.count("retire"), 1)
 
     def test_default_lima_plan_is_reviewable_but_effects_fail_before_journal(self) -> None:
+        endpoint = GuestWorkspaceEndpoint(
+            root=Path("/private/fixture/transport"),
+            instance_id="c" * 32,
+            device=4,
+            inode=5,
+            uid=os.getuid(),
+        )
+        managed: JsonObject = {
+            "executable": "/private/bin/limactl",
+            "executable_sha256": "sha256:" + "1" * 64,
+            "state_root": "/private/fixture",
+            "configuration_file": "/private/fixture/configuration.json",
+            "configuration_sha256": "sha256:" + "2" * 64,
+            "artifact_closure_sha256": "sha256:" + "3" * 64,
+            "instance_id": "c" * 32,
+        }
+        service_lock: JsonObject = {"device": 6, "inode": 7, "uid": os.getuid()}
         configuration = json.dumps(
             {
                 "endpoint": {
-                    "root": "/private/fixture/transport",
-                    "instance_id": "c" * 32,
-                    "device": 4,
-                    "inode": 5,
-                    "uid": os.getuid(),
+                    "root": str(endpoint.root),
+                    "instance_id": endpoint.instance_id,
+                    "device": endpoint.device,
+                    "inode": endpoint.inode,
+                    "uid": endpoint.uid,
                 },
                 "backend_configuration": {
-                    "managed_configuration": {
-                        "executable": "/private/bin/limactl",
-                        "executable_sha256": "sha256:" + "1" * 64,
-                        "state_root": "/private/fixture",
-                        "configuration_file": "/private/fixture/configuration.json",
-                        "configuration_sha256": "sha256:" + "2" * 64,
-                        "artifact_closure_sha256": "sha256:" + "3" * 64,
-                        "instance_id": "c" * 32,
-                    },
+                    "managed_configuration": managed,
                     "lifecycle_operation_id": "d" * 32,
-                    "generation_digest": "sha256:" + "4" * 64,
+                    "service_lock": service_lock,
+                    "generation_digest": lima_retirement_generation_digest(
+                        managed, endpoint, service_lock
+                    ),
                 },
             }
         )
@@ -293,20 +308,36 @@ class GuestRetirementControlTests(unittest.TestCase):
             (root / "artifacts/guest.raw").chmod(0o600)
             (root / "transport").mkdir(mode=0o700)
             closure = audit_lima_artifact_closure(executable, root)
-            endpoint = {
+            endpoint: JsonObject = {
                 "root": str(root / "transport"),
                 "instance_id": "c" * 32,
                 "device": (root / "transport").stat().st_dev,
                 "inode": (root / "transport").stat().st_ino,
                 "uid": os.getuid(),
             }
+            endpoint_value = GuestWorkspaceEndpoint(
+                root=Path(str(endpoint["root"])),
+                instance_id=str(endpoint["instance_id"]),
+                device=int(endpoint["device"]),
+                inode=int(endpoint["inode"]),
+                uid=int(endpoint["uid"]),
+            )
+            managed = closure.configuration("c" * 32)
+            service_lock: JsonObject = {
+                "device": endpoint_value.device,
+                "inode": endpoint_value.inode,
+                "uid": endpoint_value.uid,
+            }
             configuration = json.dumps(
                 {
                     "endpoint": endpoint,
                     "backend_configuration": {
-                        "managed_configuration": closure.configuration("c" * 32),
+                        "managed_configuration": managed,
                         "lifecycle_operation_id": "d" * 32,
-                        "generation_digest": "sha256:" + "4" * 64,
+                        "service_lock": service_lock,
+                        "generation_digest": lima_retirement_generation_digest(
+                            managed, endpoint_value, service_lock
+                        ),
                     },
                 }
             )

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import os
-from collections.abc import Callable, Mapping
+import stat
+from collections.abc import Callable, Iterator, Mapping
+from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, cast
 
@@ -46,6 +48,8 @@ _PUBLIC_ERRORS = {
     "runtime_backend_authority_required",
     "runtime_backend_configuration_invalid",
     "runtime_backend_execution_failed",
+    "runtime_backend_journal_busy",
+    "runtime_backend_journal_invalid",
     "runtime_backend_plan_changed",
     "runtime_backend_sdk_candidate_required",
     "runtime_backend_unavailable",
@@ -169,6 +173,54 @@ def _context(timeout_seconds: int) -> RunContext:
     )
 
 
+@contextmanager
+def managed_backend_fence(state: Path, context: RunContext) -> Iterator[None]:
+    """Exclude cooperating lifecycle changes while retirement observes a generation."""
+    import fcntl
+
+    from agentrig.capabilities import BackendFailure
+    from agentrig.core import DeadlineExceeded, RunCancelled
+
+    directory: int | None = None
+    lock: int | None = None
+    try:
+        context.cancellation.raise_if_cancelled()
+        if context.deadline is not None:
+            context.deadline.raise_if_expired(context.clock)
+        directory = _open_state(state.absolute() / "backend-fence", create=True)
+        lock = os.open(
+            "operation.lock",
+            os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK,
+            0o600,
+            dir_fd=directory,
+        )
+        info = os.fstat(lock)
+        if (
+            not stat.S_ISREG(info.st_mode)
+            or stat.S_IMODE(info.st_mode) != 0o600
+            or info.st_uid != os.getuid()
+            or info.st_nlink != 1
+        ):
+            raise BackendFailure("backend_journal_invalid")
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise BackendFailure("backend_journal_busy") from None
+        yield None
+        context.cancellation.raise_if_cancelled()
+        if context.deadline is not None:
+            context.deadline.raise_if_expired(context.clock)
+    except (BackendFailure, DeadlineExceeded, RunCancelled):
+        raise
+    except Exception:
+        raise BackendFailure("backend_journal_invalid") from None
+    finally:
+        if lock is not None:
+            os.close(lock)
+        if directory is not None:
+            os.close(directory)
+
+
 async def apply_managed_backend(
     backend_id: str,
     action: str,
@@ -204,11 +256,12 @@ async def apply_managed_backend(
             effects=effects,
         )
         selected_context = _context(timeout_seconds) if context is None else context
-        result = (
-            await backend.reconcile(plan, authority, selected_context)
-            if reconcile
-            else await backend.apply(plan, authority, selected_context)
-        )
+        with managed_backend_fence(state, selected_context):
+            result = (
+                await backend.reconcile(plan, authority, selected_context)
+                if reconcile
+                else await backend.apply(plan, authority, selected_context)
+            )
         return {
             "schema": "openrtl.managed-backend-result.v1",
             "backend": backend_id,

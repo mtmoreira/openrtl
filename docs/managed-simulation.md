@@ -132,3 +132,10 @@ exact per-invocation effects, and have not yet been accepted as the customer
 default. The default Lima retirement registration is review-only until all live
 ports are injected and qualified. Guest-service retirement and recovery through
 those ports remain pending.
+
+The explicit Lima CLI port candidate shares an exclusive application fence with
+managed lifecycle calls, re-audits the immutable local closure around every
+bounded observation and retains the transport workspace and service lock. It
+does not equate Lima's automatic forward removal during VM stop with an OpenRTL
+unlink: that state is recovered by a fresh inspect-only operation. The candidate
+is not in the default registry and does not alter clone/run setup.
