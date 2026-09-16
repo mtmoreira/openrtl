@@ -288,6 +288,63 @@ class GuestRetirementControlTests(unittest.TestCase):
         )
         self.assertIsNotNone(definition.create)
 
+    def test_missing_candidate_sdk_fails_before_state_and_preserves_injected_ports(self) -> None:
+        with patch.dict("sys.modules", {"agentrig.capabilities.local_backend": None}), patch(
+            "openrtl.adapters.guest_retirement._open_state",
+            side_effect=AssertionError("missing SDK must not create state"),
+        ):
+            with self.assertRaisesRegex(
+                ValueError, "runtime_retirement_sdk_candidate_required"
+            ):
+                plan_guest_retirement(
+                    "lima-vz-managed", "retire", self.configuration, OPERATION
+                )
+            with self.assertRaisesRegex(
+                ValueError, "runtime_retirement_sdk_candidate_required"
+            ):
+                apply_guest_retirement(
+                    "lima-vz-managed",
+                    "retire",
+                    self.configuration,
+                    OPERATION,
+                    "sha256:" + "0" * 64,
+                    frozenset(),
+                    Path("/private/control"),
+                )
+
+        with patch.dict("sys.modules", {"agentrig.integrations.bounded_process": None}):
+            with self.assertRaisesRegex(
+                ValueError, "runtime_retirement_sdk_candidate_required"
+            ):
+                plan_guest_retirement(
+                    "lima-vz-managed", "retire", self.configuration, OPERATION
+                )
+            injected = plan_guest_retirement(
+                "alternative", "retire", self.configuration, OPERATION,
+                self.registrations,
+            )
+        self.assertFalse(injected["runtime_contact"])
+        self.assertEqual(self.factories, 0)
+
+    def test_missing_candidate_sdk_has_bounded_cli_diagnostic(self) -> None:
+        with patch.dict("sys.modules", {"agentrig.capabilities.local_backend": None}):
+            output = io.StringIO()
+            with redirect_stdout(output):
+                code = run_runtime_command(
+                    self.arguments(
+                        [
+                            "retirement-plan",
+                            "--backend", "lima-vz-managed",
+                            "--action", "retire",
+                            "--config-json", self.configuration,
+                            "--operation-id", OPERATION,
+                            "--json",
+                        ]
+                    )
+                )
+        self.assertEqual(code, 2)
+        self.assertIn("runtime_retirement_sdk_candidate_required", output.getvalue())
+
     def test_lima_registration_binds_audited_closure_and_injected_generation_ports(self) -> None:
         with tempfile.TemporaryDirectory(prefix="olr-", dir="/tmp") as temporary:
             root = Path(temporary).resolve()

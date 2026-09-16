@@ -380,6 +380,7 @@ def run_runtime_command(arguments: argparse.Namespace) -> int:
             "runtime_backend_execution_failed": "The managed backend action failed with a bounded diagnostic. Inspect the retained operation before any recovery.",
             "runtime_backend_unavailable": "Select an explicitly registered backend; no fallback or discovery is performed.",
             "runtime_retirement_backend_unavailable": "Select an explicitly registered retirement backend; no fallback or discovery is performed.",
+            "runtime_retirement_sdk_candidate_required": "This optional retirement command needs the reviewed local AgentRig SDK candidate. The pinned public launcher remains available without managed retirement.",
             "runtime_retirement_configuration_invalid": "Review the exact endpoint identity, backend generation binding and operation ID. No state or runtime was changed.",
             "runtime_retirement_plan_changed": "The retirement plan differs from the reviewed digest. Generate and review a fresh plan; no runtime action was taken.",
             "runtime_retirement_authority_required": "Grant exactly the effects listed by the retirement plan. Recovery inspection cannot authorize socket removal.",

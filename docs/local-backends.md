@@ -117,6 +117,13 @@ instance, a private retained `.service.lock`, and an unchanged private transport
 directory. The guarded AgentRig retirement port performs the only accepted
 unlink.
 
+The pinned public AgentRig 0.3.0 wheel does not contain these optional backend
+contracts. With that customer bootstrap dependency, retirement planning and
+application stop with `runtime_retirement_sdk_candidate_required` before journal
+or runtime effects. The reviewed local AgentRig candidate supplies the ports for
+development; selecting a new production SDK remains a separate approval and
+distribution gate. No development handoff script is part of customer setup.
+
 Lima normally removes its host `guestSocket` forward while stopping the VM. A
 missing socket therefore cannot be relabeled as an OpenRTL removal. A retire
 attempt against that already-absent endpoint remains uncertain; a separately

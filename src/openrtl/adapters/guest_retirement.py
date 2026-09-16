@@ -88,15 +88,21 @@ def lima_retirement_registration(
 
 def retirement_registry() -> Mapping[str, RetirementBackendDefinition]:
     """Return built-in backends; callers may replace the whole mapping."""
-    from openrtl.adapters.lima_retirement_ports import lima_cli_retirement_registration
+    try:
+        from openrtl.adapters.lima_retirement_ports import lima_cli_retirement_registration
 
-    return {"lima-vz-managed": lima_cli_retirement_registration()}
+        return {"lima-vz-managed": lima_cli_retirement_registration()}
+    except ImportError:
+        raise ValueError("runtime_retirement_sdk_candidate_required") from None
 
 
 def _endpoint(value: object) -> GuestWorkspaceEndpoint:
     try:
         from agentrig.integrations.guest_workspace import GuestWorkspaceEndpoint
+    except ImportError:
+        raise ValueError("runtime_retirement_sdk_candidate_required") from None
 
+    try:
         require(
             type(value) is dict
             and set(value) == {"root", "instance_id", "device", "inode", "uid"},
@@ -123,7 +129,10 @@ def _configuration(
 ) -> tuple[RetirementBackendDefinition, GuestWorkspaceEndpoint, JsonObject, JsonObject]:
     try:
         from agentrig.capabilities.local_backend import backend_identifier
+    except ImportError:
+        raise ValueError("runtime_retirement_sdk_candidate_required") from None
 
+    try:
         backend_identifier(backend_id)
         selected = retirement_registry() if registrations is None else registrations
         require(backend_id in selected, "runtime_retirement_backend_unavailable")
@@ -154,6 +163,7 @@ def _configuration(
         if code in {
             "runtime_retirement_backend_unavailable",
             "runtime_retirement_configuration_invalid",
+            "runtime_retirement_sdk_candidate_required",
         }:
             raise
         raise ValueError("runtime_retirement_configuration_invalid") from None
@@ -184,7 +194,10 @@ def plan_guest_retirement(
     try:
         from agentrig.capabilities.local_backend import backend_digest
         from agentrig.integrations.guest_retirement import guest_retirement_operation_digest
+    except ImportError:
+        raise ValueError("runtime_retirement_sdk_candidate_required") from None
 
+    try:
         selected_action = _action(action)
         definition, endpoint, _, canonical = _configuration(
             backend_id, configuration_json, registrations
@@ -257,7 +270,10 @@ def apply_guest_retirement(
             JournaledGuestServiceRetirement,
             guest_retirement_operation_digest,
         )
+    except ImportError:
+        raise ValueError("runtime_retirement_sdk_candidate_required") from None
 
+    try:
         selected_action = _action(action)
         plan = plan_guest_retirement(
             backend_id, action, configuration_json, operation_id, registrations
