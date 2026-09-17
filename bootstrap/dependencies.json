@@ -1,16 +1,16 @@
 {
   "schema": "openrtl.bootstrap-dependencies.v1",
   "agentrig": {
-    "filename": "agentrig-0.3.0-py3-none-any.whl",
-    "sha256": "0f501f1cd107d47cdf6eec2e6117374cb95284faf221ebe2db643b21fe947495",
-    "size_bytes": 169862,
-    "url": "https://github.com/mtmoreira/agentrig/releases/download/v0.3.0/agentrig-0.3.0-py3-none-any.whl"
+    "filename": "agentrig-0.3.1.dev12-py3-none-any.whl",
+    "sha256": "de39b9143a3b4f94daa0b270e5da1a8900521b1b9cc5d02bd9c2afe12f8c257d",
+    "size_bytes": 219328,
+    "url": "https://github.com/mtmoreira/agentrig/releases/download/v0.3.1.dev12/agentrig-0.3.1.dev12-py3-none-any.whl"
   },
   "provenance": {
     "repository": "https://github.com/mtmoreira/agentrig.git",
-    "source_commit": "31b2ecae0605f0d6b63b5f060c929ca567ae16f2",
-    "lane": "retained-agentrig-0.3.0-release-evidence",
-    "public_download_reverified": false,
+    "source_commit": "069711dd53aa3ee64d06afe530b59d4a2d740a8a",
+    "lane": "published-agentrig-0.3.1.dev12-prerelease",
+    "public_download_reverified": true,
     "fresh_user_qualification": "pending"
   }
 }

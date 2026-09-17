@@ -15,8 +15,8 @@ if TYPE_CHECKING:
 
 
 def backend_catalog() -> LocalBackendCatalog:
-    # AgentRig 0.3.0 remains the immutable public bootstrap dependency. New
-    # contracts are an optional source-candidate feature until SDK publication.
+    # The public bootstrap wheel supplies these optional contracts. If an older
+    # or incomplete SDK is selected, backend composition fails before effects.
     try:
         from agentrig.capabilities.local_backend import LocalBackendCatalog
         from agentrig.integrations.local_backends import ExistingRootlessDockerBackend, LimaBackend

@@ -26,7 +26,7 @@ runtime targets fail closed. Native Windows is not qualified.
 
 When the pinned application dependency is missing, the launcher explains the
 download and asks permission. Declining leaves setup stopped. The dependency is
-AgentRig 0.3.0, read from the exact public wheel and hash in
+AgentRig 0.3.1.dev12, read from the exact public prerelease wheel and hash in
 `bootstrap/dependencies.json`; the launcher never resolves an editable sibling
 checkout or silently accepts an unrelated installed AgentRig. The pure wheel is
 loaded from a private cache without pip, build backends or installation hooks.

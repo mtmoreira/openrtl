@@ -118,7 +118,7 @@ def verify(wheel: Path, output: Path) -> dict[str, object]:
         run("offline_local_specification_review", ["--allow-install", "--offline", "--wheelhouse", str(wheels),
             "chat", "--project", str(project)], text="/spec " + str(spec_path) + "\n/show\n/quit\n")
         doctor = json.loads(run("cached_doctor", ["--offline", "doctor", "--json", "--require-local"]))
-        if doctor["local_review_ready"] is not True or doctor["packages"]["agentrig"] != "0.3.0":
+        if doctor["local_review_ready"] is not True or doctor["packages"]["agentrig"] != "0.3.1.dev12":
             raise ValueError("pinned_zip_metadata_unavailable")
         if doctor["provider_authorized"] is not False or doctor["simulation_ready"] is not False:
             raise ValueError("unexpected_runtime_authority")

@@ -6,11 +6,10 @@ generic local backend contracts and backend-specific configuration. Optional
 without reading or changing runtime state. Backend substitution does not change
 RTL or design-session code.
 
-These commands require the separately identified AgentRig `0.3.1.dev12` local
-candidate. The public clone-and-run launcher still uses immutable published
-`0.3.0`; existing commands continue to work. With that SDK, the new commands report
-that the candidate is required. Temporary development handoffs are not customer
-setup prerequisites. Nothing is installed or downloaded by backend review.
+These commands require the exact published AgentRig `0.3.1.dev12` prerelease.
+The clone-and-run launcher pins its public wheel by hash; temporary development
+handoffs are not customer setup prerequisites. Nothing is installed or
+downloaded by backend review.
 
 In a development environment containing the reviewed source candidate:
 
@@ -117,12 +116,11 @@ instance, a private retained `.service.lock`, and an unchanged private transport
 directory. The guarded AgentRig retirement port performs the only accepted
 unlink.
 
-The pinned public AgentRig 0.3.0 wheel does not contain these optional backend
-contracts. With that customer bootstrap dependency, retirement planning and
-application stop with `runtime_retirement_sdk_candidate_required` before journal
-or runtime effects. The reviewed local AgentRig candidate supplies the ports for
-development; selecting a new production SDK remains a separate approval and
-distribution gate. No development handoff script is part of customer setup.
+The pinned public AgentRig 0.3.1.dev12 wheel contains these optional backend
+contracts. Retirement planning still fails closed when the selected backend or
+required capability is unavailable, before journal or runtime effects. The
+customer launcher obtains the exact published wheel with explicit consent; no
+development handoff script is part of customer setup.
 
 Lima normally removes its host `guestSocket` forward while stopping the VM. A
 missing socket therefore cannot be relabeled as an OpenRTL removal. A retire

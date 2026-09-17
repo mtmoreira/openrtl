@@ -48,8 +48,8 @@ It does not invoke a provider or modify either repository.
 
 ## V1 toolchain
 
-The 0.4.0 toolkit includes the skid-buffer and composed package examples.
-Installed candidate acceptance runs the extracted examples with the
+The earlier 0.4.0 candidate includes the skid-buffer and composed package examples.
+Its installed acceptance ran the extracted examples with the
 wheel: `python tools/verify_release_install.py --examples-root .
 --expected-version 0.4.0 --expected-agentrig-version 0.3.0 --with-verilator`
 (enter the command on one line). It retains FIFO repair, skid-buffer diagnosis,
@@ -106,9 +106,9 @@ No new published version is implied.
 
 ### Provider-free checks
 
-The historical developer uv environment still selects an exact AgentRig 0.3.0
-checkout at the sibling path in `tool.uv.sources`. This is separate from the
-clone launcher's immutable public wheel cache. In that development environment,
+The developer uv environment selects an exact AgentRig 0.3.1.dev12 checkout at
+the sibling path in `tool.uv.sources`. This is separate from the clone
+launcher's immutable public wheel cache. In that development environment,
 run the provider-free validation lane:
 
 ```sh

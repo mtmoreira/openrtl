@@ -22,7 +22,7 @@ import uuid
 
 SETUP_SCHEMA = "openrtl.setup.v1"
 DEFAULT_MODEL = "gpt-5.4-nano-2026-03-17"
-AGENTRIG_VERSION = "0.3.0"
+AGENTRIG_VERSION = "0.3.1.dev12"
 OPENAI_SDK_VERSION = "2.47.0"
 CONFIG_NAME = "setup.json"
 MAX_CONFIG_BYTES = 16384
