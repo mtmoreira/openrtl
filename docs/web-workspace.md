@@ -115,3 +115,26 @@ This code and its synthetic tests do not establish that a particular owned
 Lima VM, selected Docker daemon, and packaged Verilator/cocotb image work
 together. That live workload visibility and fresh-design qualification remain
 pending, as do M46 and M47.
+
+The recorded waveform panel lists passing and failed simulation reports from
+saved project history. It opens a trace only when the run ID, retained artifact
+path, byte count and SHA-256 still match; it never accepts a browser-provided
+filesystem path. Missing, changed, oversized and unsupported traces remain
+unavailable with an explicit reason. Signal search returns at most 128 names;
+window queries return at most eight signals and a bounded number of transitions
+per signal. A truncated row has no inferred values beyond its last returned
+transition. Zoom or pan to inspect a smaller interval. The browser renders
+scalar levels and vector change markers, preserves X/Z values, offers binary,
+hexadecimal and unsigned-decimal cursor values, and shows two cursor times and
+their difference in femtoseconds. A failed run opens its full trace without
+claiming an exact failure-time anchor that the runner did not record.
+
+**Save selection in this browser** explicitly stores only the run ID, trace
+digest, selected signal names and time interval in that browser's local
+storage. Reload restores it only if the retained trace digest still matches.
+**Attach run and interval to conversation** sends that bounded, exact run
+selection with the next question. OpenRTL rechecks the run and trace before
+constructing the expert's context; it does not persist the raw question or
+waveform excerpt. The current viewer uses a bounded VCD adapter. It does not
+claim FST support, a live viewer performance target, or a precise failure
+source/time link without corresponding evidence.

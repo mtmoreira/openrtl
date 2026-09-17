@@ -199,8 +199,12 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
             try:
                 self._headers()
                 action()
-            except (ValueError, TypeError, KeyError, json.JSONDecodeError):
-                self._json(409, {"error": "invalid_or_stale_request"})
+            except (ValueError, TypeError, KeyError, json.JSONDecodeError) as error:
+                allowed = {"waveform_trace_missing", "waveform_trace_changed", "waveform_trace_unsupported",
+                           "waveform_browser_limit", "waveform_trace_metadata_invalid", "waveform_run_unknown",
+                           "waveform_trace_identity_stale", "waveform_response_limit"}
+                code = str(error) if type(error) is ValueError and str(error) in allowed else "invalid_or_stale_request"
+                self._json(409, {"error": code})
             except Exception:
                 self._json(503, {"error": "workspace_unavailable"})
 
@@ -235,6 +239,17 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
                 if parsed.path == "/api/simulation/plan":
                     require(not parsed.query, "web_query_invalid")
                     self._json(200, runtime.call(lambda workspace: workspace.simulation_plan()))
+                    return
+                if parsed.path == "/api/runs":
+                    require(not parsed.query, "web_query_invalid")
+                    self._json(200, runtime.call(lambda workspace: workspace.workbench.waveforms.runs()))
+                    return
+                if parsed.path == "/api/waveform/catalog":
+                    query = parse_qs(parsed.query, strict_parsing=True, keep_blank_values=True)
+                    require(set(query) in ({"run_id"}, {"run_id", "search"}) and
+                            all(len(value) == 1 for value in query.values()), "web_query_invalid")
+                    self._json(200, runtime.call(lambda workspace: workspace.workbench.waveforms.catalog(
+                        query["run_id"][0], query.get("search", [""])[0])))
                     return
                 if parsed.path == "/api/workbench":
                     query = parse_qs(parsed.query, strict_parsing=True)
@@ -288,6 +303,12 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
                 if parsed.path == "/api/simulation/recover":
                     body = self._body({"operation_id"})
                     self._json(200, runtime.recover_simulation(body["operation_id"]))
+                    return
+                if parsed.path == "/api/waveform/query":
+                    body = self._body({"run_id", "trace_digest", "signals", "start_fs", "end_fs", "limit"})
+                    self._json(200, runtime.call(lambda workspace: workspace.workbench.waveforms.query(
+                        body["run_id"], body["trace_digest"], body["signals"],
+                        body["start_fs"], body["end_fs"], body["limit"])))
                     return
                 if parsed.path == "/api/project":
                     self._body(set())

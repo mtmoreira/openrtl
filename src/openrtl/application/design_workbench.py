@@ -6,12 +6,14 @@ import difflib
 from typing import Any
 
 from openrtl.application.design_agent import design_input_digest
+from openrtl.application.design_waveforms import DesignWaveforms
 from openrtl.domain.design_session import JsonObject, content_digest, require, source_path
 
 
 class DesignWorkbench:
     def __init__(self, store: Any) -> None:
         self.store = store
+        self.waveforms = DesignWaveforms(store)
         self._elaborated: JsonObject | None = None
 
     def use_elaborated_index(self, index: JsonObject) -> None:
@@ -119,6 +121,8 @@ class DesignWorkbench:
                 "content": "".join(lines)}
 
     def attachment(self, value: object) -> JsonObject:
+        if isinstance(value, dict) and value.get("kind") == "waveform":
+            return self.waveforms.attachment(value)
         require(isinstance(value, dict) and set(value) == {"revision", "path", "digest", "start_line", "end_line"},
                 "workbench_attachment_invalid")
         row: JsonObject = value

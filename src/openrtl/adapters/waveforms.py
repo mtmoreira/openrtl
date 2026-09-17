@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from bisect import bisect_left, bisect_right
 from dataclasses import dataclass
 
 from openrtl.domain._validation import nonempty
@@ -50,7 +51,9 @@ class VcdIndex:
         self.end_time_fs = end_time_fs
 
     @classmethod
-    def parse(cls, content: str) -> VcdIndex:
+    def parse(cls, content: str, *, max_transitions: int = _MAX_TRANSITIONS) -> VcdIndex:
+        if type(max_transitions) is not int or not 1 <= max_transitions <= _MAX_TRANSITIONS:
+            raise ValueError("VCD transition bound is invalid")
         symbols: dict[str, list[str]] = {}
         transitions: dict[str, list[SignalTransition]] = {}
         scope: list[str] = []
@@ -103,7 +106,7 @@ class VcdIndex:
                             SignalTransition(timestamp, parts[0][1:].lower())
                         )
                         transition_count += 1
-            if transition_count > _MAX_TRANSITIONS:
+            if transition_count > max_transitions:
                 raise ValueError("VCD transition count exceeds its bound")
         if pending_timescale:
             raise ValueError("VCD timescale is unterminated")
@@ -130,24 +133,22 @@ class VcdIndex:
             raise ValueError("waveform transition interval is invalid")
         if limit is not None and (isinstance(limit, bool) or limit < 1):
             raise ValueError("waveform transition limit must be positive")
-        selected = tuple(
-            value
-            for value in self._signals[signal]
-            if value.timestamp_fs >= start_fs and (end_fs is None or value.timestamp_fs <= end_fs)
-        )
-        return selected if limit is None else selected[:limit]
+        rows = self._signals[signal]
+        key = lambda value: value.timestamp_fs
+        first = bisect_left(rows, start_fs, key=key)
+        last = len(rows) if end_fs is None else bisect_right(rows, end_fs, key=key)
+        if limit is not None:
+            last = min(last, first + limit)
+        return rows[first:last]
 
     def value_at(self, signal: str, timestamp_fs: int) -> str | None:
         if signal not in self._signals:
             raise KeyError(f"unknown waveform signal: {signal}")
         if timestamp_fs < 0:
             raise ValueError("waveform timestamp must not be negative")
-        value: str | None = None
-        for transition in self._signals[signal]:
-            if transition.timestamp_fs > timestamp_fs:
-                break
-            value = transition.value
-        return value
+        rows = self._signals[signal]
+        index = bisect_right(rows, timestamp_fs, key=lambda value: value.timestamp_fs) - 1
+        return rows[index].value if index >= 0 else None
 
     def value_before(self, signal: str, timestamp_fs: int) -> str | None:
         """Return the last value strictly before a timestamp."""
@@ -156,12 +157,9 @@ class VcdIndex:
             raise KeyError(f"unknown waveform signal: {signal}")
         if timestamp_fs < 0:
             raise ValueError("waveform timestamp must not be negative")
-        value: str | None = None
-        for transition in self._signals[signal]:
-            if transition.timestamp_fs >= timestamp_fs:
-                break
-            value = transition.value
-        return value
+        rows = self._signals[signal]
+        index = bisect_left(rows, timestamp_fs, key=lambda value: value.timestamp_fs) - 1
+        return rows[index].value if index >= 0 else None
 
     def focus(self, trace_uri: str, signals: tuple[str, ...], start_fs: int, end_fs: int) -> WaveformFocus:
         for signal in signals:

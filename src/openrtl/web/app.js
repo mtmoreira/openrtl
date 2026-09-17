@@ -7,6 +7,10 @@ const elements = Object.fromEntries([
   "source-identity", "source-content", "attach-source-button", "diff-source-button",
   "proposal-content", "change-review-button",
   "simulation-review-button", "simulation-plan", "simulation-run-button", "simulation-recover-button", "simulation-result",
+  "waveform-run-list", "waveform-status", "waveform-search", "waveform-signal-list",
+  "waveform-start", "waveform-end", "waveform-radix", "waveform-load", "waveform-zoom-in",
+  "waveform-zoom-out", "waveform-pan-left", "waveform-pan-right", "waveform-chart",
+  "waveform-cursor-a", "waveform-cursor-b", "waveform-values", "waveform-save", "waveform-attach",
   "review-card", "review-button", "approve-button", "activity-list",
   "conversation-list", "chat-form", "chat-input", "chat-kind", "composer-status"
 ].map(id => [id, document.getElementById(id)]));
@@ -20,6 +24,12 @@ let selectedAttachment = null;
 let shownRevision = null;
 let latestRevision = null;
 let simulationPlan = null;
+let waveProjectId = null;
+let waveRunsRevision = null;
+let selectedRun = null;
+let waveCatalog = null;
+let waveSignals = [];
+let waveWindow = null;
 
 function node(tag, text, className) {
   const item = document.createElement(tag);
@@ -181,8 +191,242 @@ async function loadWorkbench(revision) {
   catch (error) { notice("That engineering revision is unavailable."); }
 }
 
+const svgNamespace = "http://www.w3.org/2000/svg";
+function svgNode(tag, attributes, label) {
+  const item = document.createElementNS(svgNamespace, tag);
+  for (const [key, value] of Object.entries(attributes)) item.setAttribute(key, String(value));
+  if (label !== undefined) item.textContent = label;
+  return item;
+}
+function waveControls(enabled) {
+  for (const id of ["waveform-search", "waveform-start", "waveform-end", "waveform-radix",
+                    "waveform-load", "waveform-zoom-in", "waveform-zoom-out", "waveform-pan-left",
+                    "waveform-pan-right", "waveform-cursor-a", "waveform-cursor-b", "waveform-save",
+                    "waveform-attach"]) elements[id].disabled = !enabled;
+}
+function waveSelectionKey() { return "openrtl.waveform-selection.v1." + waveProjectId; }
+function selectedWaveRun() { return selectedRun?.run_id || null; }
+function waveStatus(value) { elements["waveform-status"].textContent = value; }
+function waveError(error) {
+  const messages = {
+    waveform_trace_missing: "This run has no retained VCD trace.",
+    waveform_trace_changed: "The retained trace changed after the run; it cannot be displayed.",
+    waveform_trace_unsupported: "This retained VCD uses a form the viewer cannot inspect.",
+    waveform_browser_limit: "This trace exceeds the bounded viewer limit.",
+    waveform_trace_metadata_invalid: "This run has invalid trace metadata.",
+    waveform_run_unknown: "This recorded run is no longer available.",
+    waveform_trace_identity_stale: "The selected trace identity changed. Reopen the run.",
+    waveform_response_limit: "This window exceeds the response limit. Narrow the interval."
+  };
+  return messages[error.message] || "The waveform request was rejected. Refresh the run and try again.";
+}
+
+async function loadRuns(revision) {
+  try {
+    const response = await api("/api/runs");
+    if (state?.revision !== revision) return;
+    waveRunsRevision = revision;
+    if (selectedRun) selectedRun = response.runs.find(run => run.run_id === selectedRun.run_id) || null;
+    empty(elements["waveform-run-list"]);
+    if (!response.runs.length) {
+      elements["waveform-run-list"].append(node("div", "No recorded runs yet.", "muted"));
+      return;
+    }
+    for (const run of response.runs) {
+      const button = node("button", "r" + run.revision + " · " + run.status +
+        " · " + (run.current_input ? "current input" : "historical input") +
+        " · trace " + run.trace_status);
+      button.type = "button";
+      button.disabled = run.trace_status !== "available";
+      button.setAttribute("aria-pressed", run.run_id === selectedWaveRun() ? "true" : "false");
+      button.addEventListener("click", () => openWaveRun(run));
+      elements["waveform-run-list"].append(button);
+    }
+    if (!selectedRun) {
+      let saved = null;
+      try { saved = JSON.parse(localStorage.getItem(waveSelectionKey()) || "null"); } catch (error) { /* browser storage unavailable */ }
+      const match = response.runs.find(run => run.run_id === saved?.run_id && run.trace_status === "available");
+      if (match) await openWaveRun(match, saved);
+    }
+  } catch (error) { waveStatus("Run history is unavailable. The saved project was not changed."); }
+}
+
+async function loadWaveCatalog(search = "") {
+  if (!selectedRun) return;
+  try {
+    const catalog = await api("/api/waveform/catalog?" + new URLSearchParams({
+      run_id: selectedRun.run_id, search}));
+    if (catalog.run_id !== selectedWaveRun()) return;
+    waveCatalog = catalog;
+    empty(elements["waveform-signal-list"]);
+    for (const name of catalog.signal_names) {
+      const button = node("button", name);
+      button.type = "button";
+      button.setAttribute("aria-pressed", waveSignals.includes(name) ? "true" : "false");
+      button.addEventListener("click", () => {
+        if (waveSignals.includes(name)) waveSignals = waveSignals.filter(value => value !== name);
+        else if (waveSignals.length < 8) waveSignals.push(name);
+        else { waveStatus("Select at most eight signals."); return; }
+        button.setAttribute("aria-pressed", waveSignals.includes(name) ? "true" : "false");
+        waveStatus(waveSignals.length + " signals selected. Load a bounded time window to inspect them.");
+      });
+      elements["waveform-signal-list"].append(button);
+    }
+    if (!catalog.signal_names.length) elements["waveform-signal-list"].append(node("div", "No matching signals.", "muted"));
+    if (catalog.truncated) elements["waveform-signal-list"].append(node("div", "Search narrowed to the first 128 matches.", "muted"));
+  } catch (error) { waveStatus(waveError(error)); }
+}
+
+async function openWaveRun(run, saved = null) {
+  selectedRun = run;
+  waveCatalog = null;
+  waveSignals = [];
+  waveWindow = null;
+  empty(elements["waveform-chart"]);
+  empty(elements["waveform-values"]);
+  elements["waveform-search"].value = "";
+  await loadWaveCatalog();
+  if (!waveCatalog || waveCatalog.run_id !== run.run_id) return;
+  elements["waveform-start"].value = "0";
+  elements["waveform-end"].value = String(waveCatalog.end_fs);
+  elements["waveform-cursor-a"].value = "0";
+  elements["waveform-cursor-b"].value = String(waveCatalog.end_fs);
+  waveControls(true);
+  waveStatus("Run " + run.run_id + " · r" + run.revision + " · " + run.status +
+    (run.current_input ? " · current input" : " · historical input") +
+    (run.status === "failed" ? ". No exact failure time anchor was recorded; choose an interval." : "."));
+  if (saved?.trace_digest === waveCatalog.trace_digest && Array.isArray(saved.signals) &&
+      saved.signals.length <= 8 && saved.signals.every(name => typeof name === "string")) {
+    waveSignals = saved.signals;
+    elements["waveform-start"].value = String(saved.start_fs);
+    elements["waveform-end"].value = String(saved.end_fs);
+    await loadWaveCatalog();
+    await loadWaveWindow();
+  }
+  for (const button of elements["waveform-run-list"].querySelectorAll("button")) {
+    button.setAttribute("aria-pressed", button.textContent.includes("r" + run.revision + " ·") ? "true" : "false");
+  }
+}
+
+function safeWaveTime(value) {
+  const number = Number(value);
+  if (!Number.isSafeInteger(number) || number < 0) throw new Error("Invalid waveform time");
+  return number;
+}
+async function loadWaveWindow() {
+  if (!selectedRun || !waveCatalog || !waveSignals.length) {
+    waveStatus("Select one to eight signals first."); return;
+  }
+  try {
+    const start = safeWaveTime(elements["waveform-start"].value);
+    const end = safeWaveTime(elements["waveform-end"].value);
+    const result = await post("/api/waveform/query", {run_id: selectedRun.run_id,
+      trace_digest: waveCatalog.trace_digest, signals: waveSignals,
+      start_fs: start, end_fs: end, limit: Math.floor(128 / waveSignals.length)});
+    if (result.run_id !== selectedWaveRun()) return;
+    waveWindow = result;
+    elements["waveform-cursor-a"].value = String(start);
+    elements["waveform-cursor-b"].value = String(end);
+    drawWaveWindow();
+    waveStatus("Showing " + result.selected_signals.length + " signals from " + start + " to " + end +
+      " fs." + (result.selected_signals.some(row => row.truncated) ?
+      " At least one signal is truncated; zoom in for its later values." : ""));
+  } catch (error) { waveStatus(waveError(error)); }
+}
+
+function waveValueAt(row, timestamp) {
+  let value = row.value_at_start;
+  for (const transition of row.transitions) {
+    if (transition.timestamp_fs > timestamp) break;
+    value = transition.value;
+  }
+  if (row.truncated && timestamp > row.transitions.at(-1)?.timestamp_fs) return "window truncated";
+  return value === null ? "not sampled" : value;
+}
+function waveRadix(value) {
+  if (!/^[01]+$/.test(value)) return value;
+  if (elements["waveform-radix"].value === "bin") return "0b" + value;
+  const number = BigInt("0b" + value);
+  return elements["waveform-radix"].value === "hex" ? "0x" + number.toString(16) : number.toString(10);
+}
+function renderWaveValues() {
+  if (!waveWindow) return;
+  let a, b;
+  try {
+    a = safeWaveTime(elements["waveform-cursor-a"].value);
+    b = safeWaveTime(elements["waveform-cursor-b"].value);
+    if (a < waveWindow.start_fs || b > waveWindow.end_fs || b < a) throw new Error("cursor outside window");
+  } catch (error) { elements["waveform-values"].textContent = "Cursors must lie in the displayed window, with B at or after A."; return; }
+  empty(elements["waveform-values"]);
+  elements["waveform-values"].append(node("div", "A " + a + " fs · B " + b + " fs · Δ " + (b - a) + " fs"));
+  for (const row of waveWindow.selected_signals) {
+    elements["waveform-values"].append(node("div", row.name + ": A " + waveRadix(waveValueAt(row, a)) +
+      " · B " + waveRadix(waveValueAt(row, b)), "nav-item"));
+  }
+}
+function drawWaveWindow() {
+  if (!waveWindow) return;
+  empty(elements["waveform-chart"]);
+  const width = 760, left = 150, right = 745, lane = 58;
+  const height = 28 + waveWindow.selected_signals.length * lane;
+  const svg = svgNode("svg", {viewBox: `0 0 ${width} ${height}`, role: "presentation"});
+  const span = Math.max(1, waveWindow.end_fs - waveWindow.start_fs);
+  const x = time => left + (time - waveWindow.start_fs) / span * (right - left);
+  for (const [index, row] of waveWindow.selected_signals.entries()) {
+    const y = 26 + index * lane;
+    svg.append(svgNode("text", {x: 9, y: y + 15}, row.name.length > 21 ? row.name.slice(0, 19) + "…" : row.name));
+    svg.append(svgNode("line", {x1: left, y1: y + 16, x2: right, y2: y + 16, class: "grid"}));
+    let previousTime = waveWindow.start_fs;
+    let previousValue = row.value_at_start;
+    for (const transition of row.transitions) {
+      const yy = previousValue === "1" ? y + 4 : previousValue === "0" ? y + 26 : y + 16;
+      const kind = previousValue === "1" ? "wave-high" : previousValue === "0" ? "wave-low" : "wave-unknown";
+      svg.append(svgNode("line", {x1: x(previousTime), y1: yy, x2: x(transition.timestamp_fs), y2: yy, class: kind}));
+      svg.append(svgNode("line", {x1: x(transition.timestamp_fs), y1: y + 4,
+        x2: x(transition.timestamp_fs), y2: y + 27, class: "grid"}));
+      previousTime = transition.timestamp_fs;
+      previousValue = transition.value;
+    }
+    if (!row.truncated) {
+      const yy = previousValue === "1" ? y + 4 : previousValue === "0" ? y + 26 : y + 16;
+      svg.append(svgNode("line", {x1: x(previousTime), y1: yy, x2: right, y2: yy,
+        class: previousValue === "1" ? "wave-high" : previousValue === "0" ? "wave-low" : "wave-unknown"}));
+    }
+  }
+  for (const [id, name] of [["waveform-cursor-a", "cursor-a"], ["waveform-cursor-b", "cursor-b"]]) {
+    const time = Number(elements[id].value);
+    if (Number.isSafeInteger(time) && time >= waveWindow.start_fs && time <= waveWindow.end_fs)
+      svg.append(svgNode("line", {x1: x(time), y1: 0, x2: x(time), y2: height, class: name}));
+  }
+  svg.addEventListener("click", event => {
+    const bounds = svg.getBoundingClientRect();
+    const position = (event.clientX - bounds.left) / bounds.width * width;
+    const time = Math.round(waveWindow.start_fs + Math.max(0, Math.min(1,
+      (position - left) / (right - left))) * (waveWindow.end_fs - waveWindow.start_fs));
+    elements[event.shiftKey ? "waveform-cursor-b" : "waveform-cursor-a"].value = String(time);
+    drawWaveWindow();
+  });
+  elements["waveform-chart"].append(svg);
+  renderWaveValues();
+}
+
+function moveWaveWindow(action) {
+  if (!waveCatalog || !waveWindow) return;
+  const start = waveWindow.start_fs, end = waveWindow.end_fs;
+  const span = Math.max(1, end - start), half = Math.max(1, Math.round(span / 2));
+  let nextStart = start, nextEnd = end;
+  if (action === "in") { nextStart = start + Math.floor(span / 4); nextEnd = end - Math.floor(span / 4); }
+  if (action === "out") { nextStart = Math.max(0, start - half); nextEnd = Math.min(waveCatalog.end_fs, end + half); }
+  if (action === "left") { nextStart = Math.max(0, start - half); nextEnd = Math.min(waveCatalog.end_fs, nextStart + span); }
+  if (action === "right") { nextEnd = Math.min(waveCatalog.end_fs, end + half); nextStart = Math.max(0, nextEnd - span); }
+  elements["waveform-start"].value = String(nextStart);
+  elements["waveform-end"].value = String(nextEnd);
+  loadWaveWindow();
+}
+
 function renderSnapshot(snapshot) {
   state = snapshot.state;
+  waveProjectId = snapshot.project_id;
   cursor = snapshot.next_cursor;
   elements["revision-label"].textContent = "Revision " + state.revision;
   elements["status-label"].textContent = state.active ? "Operation active" : state.status.replaceAll("_", " ");
@@ -225,6 +469,7 @@ function renderSnapshot(snapshot) {
   if (shownRevision === null || (shownRevision === latestRevision && latestRevision !== state.revision))
     loadWorkbench(state.revision);
   latestRevision = state.revision;
+  if (waveRunsRevision !== state.revision) loadRuns(state.revision);
   empty(elements["evidence-list"]);
   elements["evidence-list"].append(node("div", state.simulation ?
     state.simulation.status + " · " + state.simulation.evidence_kind : "No simulation yet.", "muted"));
@@ -321,6 +566,40 @@ elements["simulation-recover-button"].addEventListener("click", async () => {
   } catch (error) {
     notice("Recovery is unavailable while this process still owns the operation, or runtime identity changed. Reopen the workspace and inspect the saved operation before retrying.");
   }
+});
+
+let waveSearchTimer = null;
+elements["waveform-search"].addEventListener("input", () => {
+  clearTimeout(waveSearchTimer);
+  waveSearchTimer = setTimeout(() => loadWaveCatalog(elements["waveform-search"].value), 250);
+});
+elements["waveform-load"].addEventListener("click", loadWaveWindow);
+for (const [id, action] of [["waveform-zoom-in", "in"], ["waveform-zoom-out", "out"],
+                           ["waveform-pan-left", "left"], ["waveform-pan-right", "right"]]) {
+  elements[id].addEventListener("click", () => moveWaveWindow(action));
+}
+for (const id of ["waveform-cursor-a", "waveform-cursor-b"]) {
+  elements[id].addEventListener("change", () => { drawWaveWindow(); });
+}
+elements["waveform-radix"].addEventListener("change", renderWaveValues);
+elements["waveform-save"].addEventListener("click", () => {
+  if (!waveWindow || !waveProjectId) { waveStatus("Load a waveform window before saving it."); return; }
+  const selection = {run_id: waveWindow.run_id, trace_digest: waveWindow.trace_digest,
+    signals: waveWindow.selected_signals.map(row => row.name),
+    start_fs: waveWindow.start_fs, end_fs: waveWindow.end_fs};
+  try {
+    localStorage.setItem(waveSelectionKey(), JSON.stringify(selection));
+    waveStatus("This exact run and signal selection was saved in this browser.");
+  } catch (error) { waveStatus("Browser storage is unavailable; this selection was not saved."); }
+});
+elements["waveform-attach"].addEventListener("click", () => {
+  if (!waveWindow) { waveStatus("Load a waveform window before attaching it."); return; }
+  if (state?.status === "discovery") { waveStatus("Finish the discovery review before attaching run evidence to a question."); return; }
+  selectedAttachment = {kind: "waveform", run_id: waveWindow.run_id,
+    trace_digest: waveWindow.trace_digest,
+    signals: waveWindow.selected_signals.map(row => row.name),
+    start_fs: waveWindow.start_fs, end_fs: waveWindow.end_fs};
+  notice("Attached run " + waveWindow.run_id + " and its exact recorded interval to the next question.");
 });
 
 elements["attach-source-button"].addEventListener("click", () => {

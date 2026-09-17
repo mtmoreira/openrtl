@@ -10,7 +10,7 @@ import uuid
 from openrtl.application.design_agent import DesignAgent, design_input_digest
 from openrtl.application.design_conversation import ShownReview, approve_shown, review_payload
 from openrtl.application.design_workbench import DesignWorkbench
-from openrtl.domain.design_session import JsonObject, STAGES, content_digest, require, text
+from openrtl.domain.design_session import JsonObject, STAGES, canonical, content_digest, require, text
 
 
 class DesignWorkspace:
@@ -256,12 +256,18 @@ class DesignWorkspace:
             self.agent.store.save(state, updated, "workspace.active", {"client_operation_id": identifier})
             context = message
             if attachment is not None:
-                source = self.workbench.source(attachment["revision"], attachment["path"], attachment["digest"])
-                lines = source["content"].splitlines()[attachment["start_line"] - 1:attachment["end_line"]]
-                context += ("\nSelected source: " + attachment["path"] + " at revision " +
-                            str(attachment["revision"]) + " digest " + attachment["digest"] +
-                            " lines " + str(attachment["start_line"]) + "-" + str(attachment["end_line"]) +
-                            "\n" + "\n".join(lines))
+                if attachment.get("kind") == "waveform":
+                    window = self.workbench.waveforms.query(
+                        attachment["run_id"], attachment["trace_digest"], attachment["signals"],
+                        attachment["start_fs"], attachment["end_fs"], limit=32)
+                    context += "\nSelected recorded waveform (bounded): " + canonical(window).decode("utf-8")
+                else:
+                    source = self.workbench.source(attachment["revision"], attachment["path"], attachment["digest"])
+                    lines = source["content"].splitlines()[attachment["start_line"] - 1:attachment["end_line"]]
+                    context += ("\nSelected source: " + attachment["path"] + " at revision " +
+                                str(attachment["revision"]) + " digest " + attachment["digest"] +
+                                " lines " + str(attachment["start_line"]) + "-" + str(attachment["end_line"]) +
+                                "\n" + "\n".join(lines))
                 require(len(context.encode("utf-8")) <= 32000, "workbench_question_too_large")
             if kind == "change":
                 result = await self.agent.propose_improvement(context, intent=intent)
