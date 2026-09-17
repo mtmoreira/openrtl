@@ -110,6 +110,11 @@ def parser() -> argparse.ArgumentParser:
     ui.add_argument("--credential-env", default="OPENAI_API_KEY")
     ui.add_argument("--max-calls", type=int, default=40)
     ui.add_argument("--max-repairs", type=int, default=2)
+    ui.add_argument("--allow-simulation", action="store_true")
+    ui.add_argument("--runtime-state", type=Path)
+    ui.add_argument("--lima-executable", type=Path)
+    ui.add_argument("--lima-state-root", type=Path)
+    ui.add_argument("--lima-instance")
     from openrtl.session_cli import add_session_commands
     add_session_commands(subcommands)
     from openrtl.runtime_cli import add_runtime_command
@@ -472,15 +477,30 @@ def main(argv: Sequence[str] | None = None) -> int:
         from openrtl.domain.design_session import require
         require(not arguments.allow_provider or arguments.model is not None,
                 "explicit_model_required")
+        selection = (arguments.runtime_state, arguments.lima_executable,
+                     arguments.lima_state_root, arguments.lima_instance)
+        require(arguments.allow_simulation == all(value is not None for value in selection) and
+                (arguments.allow_simulation or all(value is None for value in selection)),
+                "simulation_runtime_and_guest_transport_required_together")
         def expert_factory() -> Any:
             if not arguments.allow_provider:
                 return None
             from openrtl.adapters.design_generation import openai_design_expert
             return openai_design_expert(authorized=True, model=arguments.model,
                                         credential_environment=arguments.credential_env)
+        def simulator_factory() -> Any:
+            if not arguments.allow_simulation:
+                return None
+            from openrtl.adapters.design_simulation import IsolatedDesignSimulator
+            from openrtl.adapters.workload_transport import LimaWorkloadTransport
+            from openrtl.runtime_cli import ready_profile
+            transport = LimaWorkloadTransport(arguments.lima_executable,
+                                              arguments.lima_state_root, arguments.lima_instance)
+            profile = ready_profile(arguments.runtime_state)
+            return IsolatedDesignSimulator(arguments.project, profile, workload_transport=transport)
         try:
             serve(arguments.project, create=arguments.create, port=arguments.port,
-                  expert_factory=expert_factory,
+                  expert_factory=expert_factory, simulator_factory=simulator_factory,
                   policy=DesignPolicy(arguments.max_calls, arguments.max_repairs))
         except KeyboardInterrupt:
             return 0

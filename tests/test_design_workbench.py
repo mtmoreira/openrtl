@@ -14,7 +14,7 @@ from openrtl.application.design_agent import DesignAgent
 from openrtl.application.design_workbench import DesignWorkbench
 from openrtl.application.design_workspace import DesignWorkspace
 from openrtl.domain.design_session import STAGES, content_digest
-from tests.test_design_agent import FakeExpert, manifest, specification
+from tests.test_design_agent import FakeExpert, FakeSimulator, manifest, specification
 
 
 class DesignWorkbenchTest(unittest.TestCase):
@@ -103,6 +103,33 @@ class DesignWorkbenchTest(unittest.TestCase):
                    "definition": {**index["instances"][0]["definition"], "digest": "bad"}}]}
         with self.assertRaisesRegex(ValueError, "source_stale"):
             self.workbench.use_elaborated_index(changed)
+
+    def test_simulation_submission_is_reviewed_and_idempotent(self) -> None:
+        async def scenario() -> None:
+            simulator = FakeSimulator()
+            self.agent.simulator = simulator
+            workspace = DesignWorkspace(self.agent)
+            plan = workspace.simulation_plan()
+            self.assertEqual(plan["top"], "wire_top")
+            self.assertEqual(plan["expected_tests"], ["transfer"])
+            with self.assertRaisesRegex(ValueError, "plan_stale"):
+                await workspace.submit_simulation(client_operation_id=uuid.uuid4().hex,
+                                                  expected_revision=plan["revision"], plan_digest="bad")
+            identifier = uuid.uuid4().hex
+            queued = await workspace.submit_simulation(client_operation_id=identifier,
+                                                       expected_revision=plan["revision"],
+                                                       plan_digest=plan["plan_digest"])
+            self.assertEqual(queued["phase"], "queued")
+            await workspace._tasks[identifier]
+            self.assertEqual(workspace.operation(identifier)["phase"], "completed")
+            self.assertEqual(len(simulator.calls), 1)
+            self.assertEqual(self.store.read()["simulation"]["status"], "passed")
+            retry = await workspace.submit_simulation(client_operation_id=identifier,
+                                                      expected_revision=plan["revision"],
+                                                      plan_digest=plan["plan_digest"])
+            self.assertEqual(retry["phase"], "completed")
+            self.assertEqual(len(simulator.calls), 1)
+        asyncio.run(scenario())
 
 
 if __name__ == "__main__":

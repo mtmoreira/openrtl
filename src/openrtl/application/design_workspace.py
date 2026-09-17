@@ -26,6 +26,16 @@ class DesignWorkspace:
         self.workbench = DesignWorkbench(agent.store)
         self._tasks: dict[str, asyncio.Task[None]] = {}
         self._replies: dict[str, str] = {}
+        self._progress: JsonObject | None = None
+
+    def _on_progress(self, value: JsonObject) -> None:
+        if (isinstance(value, dict) and value.get("schema") == "openrtl.design-progress.v1" and
+                value.get("stage") == "simulation" and
+                value.get("phase") in ("started", "waiting", "returned_for_validation") and
+                type(value.get("elapsed_ms")) is int):
+            self._progress = {"stage": "simulation", "phase": value["phase"],
+                              "elapsed_ms": value["elapsed_ms"],
+                              "operation_id": value["operation_id"]}
 
     def reconcile_interrupted(self) -> None:
         """Record truthful outcomes for operations left by a previous process."""
@@ -44,6 +54,7 @@ class DesignWorkspace:
                 "design_input_digest": design_input_digest(state),
                 "capabilities": {"provider": self.agent.expert is not None,
                                  "simulation": self.agent.simulator is not None},
+                "progress": self._progress,
                 "events": events, "next_cursor": events[-1]["sequence"] if events else cursor,
                 "more_events": bool(events and events[-1]["sequence"] < state["revision"])}
 
@@ -134,6 +145,96 @@ class DesignWorkspace:
         self._tasks[client_operation_id] = task
         task.add_done_callback(lambda done: self._reconcile_cancelled_task(client_operation_id, done))
         return self.operation(client_operation_id)
+
+    def simulation_plan(self) -> JsonObject:
+        state = self.agent.store.read()
+        require(state["status"] == "building" and state["stage"] == len(STAGES) and
+                state["manifest"] is not None, "workspace_simulation_not_ready")
+        require(self.agent.simulator is not None, "isolated_simulator_not_configured")
+        profile = getattr(self.agent.simulator, "profile", None)
+        transport = getattr(self.agent.simulator, "workload_transport", None)
+        public_runtime = ({"profile_digest": content_digest(profile),
+                           "verilator_version": profile["verilator_version"],
+                           "timeout_seconds": profile["timeout_seconds"],
+                           "resources": profile.get("resources"),
+                           "transport_digest": content_digest(transport.identity) if transport else None,
+                           "backend": transport.identity["schema"] if transport else "host-bind"}
+                          if isinstance(profile, dict) else {"profile_digest": None,
+                                                               "verilator_version": None,
+                                                               "timeout_seconds": None,
+                                                               "resources": None,
+                                                               "transport_digest": None,
+                                                               "backend": "test-double"})
+        plan = {"schema": "openrtl.web-simulation-plan.v1", "revision": state["revision"],
+                "input_digest": design_input_digest(state), "top": state["manifest"]["top"],
+                "sources": state["manifest"]["sources"],
+                "test_modules": state["manifest"]["test_modules"],
+                "expected_tests": state["manifest"]["expected_tests"],
+                "seed": state["manifest"]["seed"], "parameters": {}, "runtime": public_runtime}
+        return {**plan, "plan_digest": content_digest(plan)}
+
+    async def submit_simulation(self, *, client_operation_id: str,
+                                expected_revision: int, plan_digest: str) -> JsonObject:
+        require(uuid.UUID(hex=client_operation_id).hex == client_operation_id,
+                "client_operation_id_invalid")
+        require(type(expected_revision) is int and expected_revision >= 0,
+                "expected_revision_invalid")
+        require(isinstance(plan_digest, str), "simulation_plan_digest_invalid")
+        request_digest = content_digest({"action": "simulate", "plan_digest": plan_digest})
+        state = self.agent.store.read()
+        existing = state["workspace_operations"].get(client_operation_id)
+        if existing is not None:
+            require(existing["request_digest"] == request_digest, "client_operation_id_conflict")
+            return self.operation(client_operation_id)
+        require(state["revision"] == expected_revision, "workspace_revision_stale")
+        require(state["active"] is None, "interrupted_operation_requires_reconciliation")
+        require(not any(row["phase"] in ("queued", "active", "cancellation_requested")
+                        for row in state["workspace_operations"].values()),
+                "workspace_writer_busy_or_unreconciled")
+        require(len(state["workspace_operations"]) < 128, "workspace_operation_limit")
+        require(self.simulation_plan()["plan_digest"] == plan_digest, "simulation_plan_stale")
+        updated = copy.deepcopy(state)
+        updated["workspace_operations"][client_operation_id] = {
+            "request_digest": request_digest, "phase": "queued",
+            "result_revision": None, "error_code": None,
+        }
+        self.agent.store.save(state, updated, "workspace.requested",
+                              {"client_operation_id": client_operation_id,
+                               "request_digest": request_digest})
+        task = asyncio.create_task(self._run_simulation(client_operation_id))
+        self._tasks[client_operation_id] = task
+        task.add_done_callback(lambda done: self._reconcile_cancelled_task(client_operation_id, done))
+        return self.operation(client_operation_id)
+
+    async def _run_simulation(self, identifier: str) -> None:
+        try:
+            state = self.agent.store.read()
+            row = state["workspace_operations"][identifier]
+            if row["phase"] == "cancellation_requested":
+                self._finish(identifier, "reconciliation_needed", "operation_cancelled_uncertain")
+                return
+            if row["phase"] != "queued":
+                return
+            updated = copy.deepcopy(state)
+            updated["workspace_operations"][identifier]["phase"] = "active"
+            self.agent.store.save(state, updated, "workspace.active", {"client_operation_id": identifier})
+            previous_progress = self.agent.progress
+            self.agent.progress = self._on_progress
+            try:
+                await self.agent.advance()
+            finally:
+                self.agent.progress = previous_progress
+            self._finish(identifier, "completed", None)
+        except asyncio.CancelledError:
+            self._finish(identifier, "reconciliation_needed", "operation_cancelled_uncertain")
+        except Exception:
+            # The simulator may have lost contact after creating a container.
+            # Keep the workspace blocked until its recorded runtime is reconciled.
+            uncertain = self.agent.store.read()["active"] is not None
+            self._finish(identifier, "reconciliation_needed" if uncertain else "failed",
+                         "simulation_reconciliation_required" if uncertain else "operation_failed")
+        finally:
+            self._tasks.pop(identifier, None)
 
     def _reconcile_cancelled_task(self, identifier: str, done: asyncio.Task[None]) -> None:
         if done.cancelled():
@@ -240,6 +341,13 @@ class DesignWorkspace:
             self.request_cancellation(identifier)
         if tasks:
             await asyncio.wait(tasks, timeout=2)
+
+    async def abandon_interrupted_simulation(self, operation_id: str) -> JsonObject:
+        state = self.agent.store.read()
+        require(state["active"] is not None and state["active"]["kind"] == "simulation" and
+                state["active"]["id"] == operation_id, "recovery_operation_mismatch")
+        require(not self._tasks, "workspace_writer_busy_or_unreconciled")
+        return await self.agent.abandon(operation_id)
 
     def review(self, kind: str) -> JsonObject:
         state = self.agent.store.read()

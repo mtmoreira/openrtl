@@ -6,6 +6,7 @@ const elements = Object.fromEntries([
   "file-list", "planned-list", "elaborated-list", "link-list", "history-list",
   "source-identity", "source-content", "attach-source-button", "diff-source-button",
   "proposal-content", "change-review-button",
+  "simulation-review-button", "simulation-plan", "simulation-run-button", "simulation-recover-button", "simulation-result",
   "review-card", "review-button", "approve-button", "activity-list",
   "conversation-list", "chat-form", "chat-input", "chat-kind", "composer-status"
 ].map(id => [id, document.getElementById(id)]));
@@ -18,6 +19,7 @@ let selectedSource = null;
 let selectedAttachment = null;
 let shownRevision = null;
 let latestRevision = null;
+let simulationPlan = null;
 
 function node(tag, text, className) {
   const item = document.createElement(tag);
@@ -77,8 +79,8 @@ function renderOperations(rows) {
         try {
           const result = await post("/api/operations/" + id + "/cancel", {});
           notice("Cancellation outcome: " + result.phase.replaceAll("_", " ") +
-            (result.phase === "cancelled" ? ". No provider dispatch began." :
-              ". Uncertain provider work requires reconciliation before retry."));
+            (result.phase === "cancelled" ? ". Execution had not started." :
+              ". The external operation may still need reconciliation before retry."));
           refresh();
         } catch (error) { notice("Cancellation request was not accepted. Refresh operation state."); }
       });
@@ -194,6 +196,32 @@ function renderSnapshot(snapshot) {
   renderMemory(state.engineering_memory || []);
   renderOperations(state.workspace_operations || {});
   renderSpecification(state.spec);
+  if (simulationPlan && simulationPlan.revision !== state.revision) {
+    simulationPlan = null;
+    elements["simulation-run-button"].hidden = true;
+    elements["simulation-plan"].textContent = "Project revision changed. Review the run configuration again.";
+  }
+  elements["simulation-review-button"].disabled = !snapshot.capabilities.simulation ||
+    state.status !== "building" || state.stage !== 6 || !!state.active;
+  elements["simulation-recover-button"].hidden = !snapshot.capabilities.simulation ||
+    !state.active || state.active.kind !== "simulation";
+  empty(elements["simulation-result"]);
+  if (state.simulation) {
+    const current = state.simulation.input_digest === snapshot.design_input_digest;
+    elements["simulation-result"].append(node("div", "Run " + state.simulation.run_id + " · " +
+      state.simulation.status + (current ? " · current input" : " · historical input"), "nav-item"));
+    elements["simulation-result"].append(node("div", "Evidence: " + state.simulation.evidence_kind +
+      " · tests: " + state.simulation.tests.join(", ") +
+      " · model tests: " + state.simulation.model_tests, "muted"));
+    if (state.simulation.diagnostics) elements["simulation-result"].append(
+      node("pre", state.simulation.diagnostics, "review-line"));
+  } else {
+    elements["simulation-result"].append(node("div", state.last_error || "No run evidence yet.", "muted"));
+  }
+  if (snapshot.progress && state.active && snapshot.progress.operation_id === state.active.id) {
+    elements["simulation-result"].append(node("div", "Simulation " + snapshot.progress.phase +
+      " · " + snapshot.progress.elapsed_ms + " ms", "muted"));
+  }
   if (shownRevision === null || (shownRevision === latestRevision && latestRevision !== state.revision))
     loadWorkbench(state.revision);
   latestRevision = state.revision;
@@ -262,6 +290,38 @@ async function showReview(kind) {
 }
 elements["review-button"].addEventListener("click", () => showReview("specification"));
 elements["change-review-button"].addEventListener("click", () => showReview("change"));
+
+elements["simulation-review-button"].addEventListener("click", async () => {
+  try {
+    simulationPlan = await api("/api/simulation/plan");
+    elements["simulation-plan"].textContent = JSON.stringify(simulationPlan, null, 2);
+    elements["simulation-run-button"].hidden = false;
+  } catch (error) { notice("Simulation is unavailable. Review the baseline and explicitly selected runtime."); }
+});
+
+elements["simulation-run-button"].addEventListener("click", async () => {
+  if (!simulationPlan || !state) return;
+  try {
+    const job = await post("/api/simulations", {client_operation_id: crypto.randomUUID().replaceAll("-", ""),
+      expected_revision: simulationPlan.revision, plan_digest: simulationPlan.plan_digest});
+    pending.add(job.id);
+    simulationPlan = null;
+    elements["simulation-run-button"].hidden = true;
+    notice("Simulation submitted for the displayed source and runtime configuration.");
+    refresh();
+  } catch (error) { notice("Simulation was not accepted. Review the current revision and runtime again."); }
+});
+
+elements["simulation-recover-button"].addEventListener("click", async () => {
+  if (!state?.active || state.active.kind !== "simulation") return;
+  try {
+    await post("/api/simulation/recover", {operation_id: state.active.id});
+    notice("The exact owned runtime was reconciled. Interrupted output was not accepted as evidence.");
+    refresh();
+  } catch (error) {
+    notice("Recovery is unavailable while this process still owns the operation, or runtime identity changed. Reopen the workspace and inspect the saved operation before retrying.");
+  }
+});
 
 elements["attach-source-button"].addEventListener("click", () => {
   if (!selectedSource) return;

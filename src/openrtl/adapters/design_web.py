@@ -15,7 +15,7 @@ from typing import Any, Callable, cast
 from urllib.parse import parse_qs, urlsplit
 
 from openrtl.adapters.design_session_store import DesignSessionStore, safe_root
-from openrtl.application.design_agent import DesignAgent, DesignExpert, DesignPolicy
+from openrtl.application.design_agent import DesignAgent, DesignExpert, DesignPolicy, DesignRecovery, DesignSimulator
 from openrtl.application.design_workspace import DesignWorkspace
 from openrtl.domain.design_session import JsonObject, SESSION_SCHEMA, canonical, require
 
@@ -24,9 +24,11 @@ class WorkspaceRuntime:
     """Own SQLite and agent tasks on one loop, independent of request threads."""
 
     def __init__(self, project: Path, *, create: bool, expert_factory: Callable[[], DesignExpert | None],
-                 policy: DesignPolicy) -> None:
+                 policy: DesignPolicy,
+                 simulator_factory: Callable[[], DesignSimulator | None] | None = None) -> None:
         self.project = safe_root(project)
         self.expert_factory = expert_factory
+        self.simulator_factory = simulator_factory or (lambda: None)
         self.policy = policy
         self.loop = asyncio.new_event_loop()
         self.ready = threading.Event()
@@ -50,7 +52,10 @@ class WorkspaceRuntime:
     def _activate_project(self) -> None:
         require(self.store is not None and self.workspace is None, "project_activation_invalid")
         expert = self.expert_factory()
-        self.workspace = DesignWorkspace(DesignAgent(self.store, expert, policy=self.policy))
+        simulator = self.simulator_factory()
+        recovery = cast(DesignRecovery | None, simulator if hasattr(simulator, "abandon") else None)
+        self.workspace = DesignWorkspace(DesignAgent(self.store, expert, simulator,
+                                                     policy=self.policy, recovery=recovery))
         self.workspace.reconcile_interrupted()
 
     def _run(self, create: bool) -> None:
@@ -115,6 +120,20 @@ class WorkspaceRuntime:
             return await self.workspace.submit_question(message, client_operation_id=identifier,
                                                         expected_revision=revision, attachment=attachment,
                                                         kind=kind, intent=intent)
+        return self._await(invoke())
+
+    def simulate(self, identifier: str, revision: int, plan_digest: str) -> JsonObject:
+        async def invoke() -> JsonObject:
+            require(self.workspace is not None, "project_not_created")
+            return await self.workspace.submit_simulation(client_operation_id=identifier,
+                                                          expected_revision=revision,
+                                                          plan_digest=plan_digest)
+        return self._await(invoke())
+
+    def recover_simulation(self, operation_id: str) -> JsonObject:
+        async def invoke() -> JsonObject:
+            require(self.workspace is not None, "project_not_created")
+            return await self.workspace.abandon_interrupted_simulation(operation_id)
         return self._await(invoke())
 
     def _await(self, operation: Coroutine[Any, Any, JsonObject]) -> JsonObject:
@@ -213,6 +232,10 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
                     require(set(query) == {"kind"} and len(query["kind"]) == 1, "web_query_invalid")
                     self._json(200, runtime.call(lambda workspace: workspace.review(query["kind"][0])))
                     return
+                if parsed.path == "/api/simulation/plan":
+                    require(not parsed.query, "web_query_invalid")
+                    self._json(200, runtime.call(lambda workspace: workspace.simulation_plan()))
+                    return
                 if parsed.path == "/api/workbench":
                     query = parse_qs(parsed.query, strict_parsing=True)
                     require(set(query) == {"revision"} and len(query["revision"]) == 1, "web_query_invalid")
@@ -257,6 +280,15 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
                                                      body["expected_revision"], body["attachment"],
                                                      body["kind"], body["intent"]))
                     return
+                if parsed.path == "/api/simulations":
+                    body = self._body({"client_operation_id", "expected_revision", "plan_digest"})
+                    self._json(202, runtime.simulate(body["client_operation_id"],
+                                                     body["expected_revision"], body["plan_digest"]))
+                    return
+                if parsed.path == "/api/simulation/recover":
+                    body = self._body({"operation_id"})
+                    self._json(200, runtime.recover_simulation(body["operation_id"]))
+                    return
                 if parsed.path == "/api/project":
                     self._body(set())
                     self._json(201, runtime.create_project())
@@ -282,9 +314,11 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
 
 
 def serve(project: Path, *, create: bool, port: int, expert_factory: Callable[[], DesignExpert | None],
-          policy: DesignPolicy) -> None:
+          policy: DesignPolicy,
+          simulator_factory: Callable[[], DesignSimulator | None] | None = None) -> None:
     require(type(port) is int and 0 <= port <= 65535, "web_port_invalid")
-    runtime = WorkspaceRuntime(project, create=create, expert_factory=expert_factory, policy=policy)
+    runtime = WorkspaceRuntime(project, create=create, expert_factory=expert_factory, policy=policy,
+                               simulator_factory=simulator_factory)
     try:
         server = ThreadingHTTPServer(("127.0.0.1", port), handler(runtime))
         try:

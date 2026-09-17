@@ -11,10 +11,14 @@ from pathlib import Path
 import re
 import stat
 import xml.etree.ElementTree as ET
+from typing import TYPE_CHECKING
 
 from openrtl.adapters.design_session_store import safe_root
 from openrtl.domain.design_session import JsonObject, canonical, content_digest, object_value, require, source_path
 from openrtl.domain.simulation_runtime import PROFILE_SCHEMA, resource_arguments, validate_profile
+
+if TYPE_CHECKING:
+    from openrtl.adapters.workload_transport import WorkloadTransport
 
 
 def parse_test_results(data: bytes, expected: list[str]) -> list[str]:
@@ -34,8 +38,10 @@ def parse_test_results(data: bytes, expected: list[str]) -> list[str]:
 
 
 class IsolatedDesignSimulator:
-    def __init__(self, project: Path, profile: object) -> None:
+    def __init__(self, project: Path, profile: object,
+                 workload_transport: WorkloadTransport | None = None) -> None:
         self.project = safe_root(project)
+        self.workload_transport = workload_transport
         if isinstance(profile, dict) and profile.get("schema") == PROFILE_SCHEMA:
             from openrtl.adapters.runtime_selection import verify_local_identity
             self.profile = validate_profile(profile)
@@ -117,6 +123,9 @@ class IsolatedDesignSimulator:
         intent = {"schema": "openrtl.design-runtime-intent.v1", "operation_id": operation_id,
                   "container_name": container_name, "profile_digest": content_digest(self.profile),
                   "input_digest": input_digest}
+        if self.workload_transport is not None:
+            intent["probe_name"] = container_name + "-probe"
+            intent["transport_digest"] = content_digest(self.workload_transport.identity)
         # Record ownership before any daemon call, including a lost create response.
         with (run / "intent.json").open("xb") as stream:
             stream.write(canonical(intent))
@@ -125,18 +134,26 @@ class IsolatedDesignSimulator:
         if self.profile.get("schema") == PROFILE_SCHEMA:
             from openrtl.adapters.runtime_selection import inspect_selection
             await inspect_selection(self.profile, config, self._process, authorized=True)
+        mount_inputs, mount_control = str(inputs), str(control)
+        if self.workload_transport is not None:
+            mount_inputs, mount_control = await self.workload_transport.stage(operation_id, inputs, control)
+            require(all("," not in value for value in (mount_inputs, mount_control)),
+                    "container_mount_path_invalid")
+            await self._probe_workload(prefix, config, operation_id, mount_inputs, mount_control,
+                                       inputs, control)
         # A literal local image ID and --pull=never prohibit implicit downloads.
         argv = prefix + ["create", "--name", container_name, "--label", "openrtl.operation=" + operation_id,
                          "--pull=never", "--network=none", "--read-only",
                          "--cap-drop=ALL", "--security-opt=no-new-privileges", "--user=65534:65534",
                          *resource_arguments(self.profile),
                          "--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=64m,mode=1777",
-                         "--mount", "type=bind,src=" + str(inputs) + ",dst=/input,readonly",
-                         "--mount", "type=bind,src=" + str(control) + ",dst=/control,readonly",
+                         "--mount", "type=bind,src=" + mount_inputs + ",dst=/input,readonly",
+                         "--mount", "type=bind,src=" + mount_control + ",dst=/control,readonly",
                          "--workdir=/output", "--env=HOME=/tmp", "--env=PYTHONNOUSERSITE=1",
                          "--entrypoint", self.profile["python_executable"], self.profile["image_id"],
                          "-I", "/control/run.py"]
-        require("," not in str(run), "container_mount_path_invalid")
+        require(all("," not in value for value in (str(run), mount_inputs, mount_control)),
+                "container_mount_path_invalid")
         code, created = await self._process(argv, config, 30, 8192)
         container = created.decode("ascii", errors="replace").strip()
         require(code == 0 and re.fullmatch(r"[a-f0-9]{64}", container) is not None, "container_creation_failed")
@@ -189,20 +206,67 @@ class IsolatedDesignSimulator:
         finally:
             removed, _ = await self._process(prefix + ["rm", "--force", container], config, 30, 8192)
             require(removed == 0, "owned_container_cleanup_requires_reconciliation")
+            if self.workload_transport is not None:
+                await self.workload_transport.release(operation_id)
+
+    async def _probe_workload(self, prefix: list[str], config: Path, operation_id: str,
+                              inputs_path: str, control_path: str, inputs: Path, control: Path) -> None:
+        """Prove the selected Docker daemon mounts the copied bytes for UID 65534."""
+        expected: dict[str, str] = {}
+        for directory in (inputs, control):
+            for path in directory.rglob("*"):
+                if path.is_file():
+                    relative = "/" + directory.name + "/" + path.relative_to(directory).as_posix()
+                    expected[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+        require(len(expected) <= 256 and len(canonical(expected)) <= 64 * 1024,
+                "workload_probe_manifest_bound")
+        script = ("import hashlib,json,pathlib,sys\n"
+                  "wanted=json.loads(sys.argv[1])\n"
+                  "for name,digest in wanted.items():\n"
+                  " p=pathlib.Path(name)\n"
+                  " assert p.is_file() and hashlib.sha256(p.read_bytes()).hexdigest()==digest\n"
+                  "print('workload-visible')\n")
+        name = "openrtl-design-" + operation_id + "-probe"
+        create = prefix + ["create", "--name", name, "--label", "openrtl.operation=" + operation_id,
+                           "--pull=never", "--network=none", "--read-only", "--cap-drop=ALL",
+                           "--security-opt=no-new-privileges", "--user=65534:65534",
+                           *resource_arguments(self.profile),
+                           "--mount", "type=bind,src=" + inputs_path + ",dst=/input,readonly",
+                           "--mount", "type=bind,src=" + control_path + ",dst=/control,readonly",
+                           "--entrypoint", self.profile["python_executable"], self.profile["image_id"],
+                           "-I", "-c", script, canonical(expected).decode("utf-8")]
+        code, raw = await self._process(create, config, 30, 8192)
+        container = raw.decode("ascii", errors="replace").strip()
+        require(code == 0 and re.fullmatch(r"[a-f0-9]{64}", container) is not None,
+                "workload_probe_creation_failed")
+        try:
+            code, output = await self._process(prefix + ["start", "--attach", container], config, 60, 8192)
+            require(code == 0 and output.strip() == b"workload-visible",
+                    "guest_workload_visibility_failed")
+        finally:
+            removed, _ = await self._process(prefix + ["rm", "--force", container], config, 30, 8192)
+            require(removed == 0, "owned_probe_cleanup_requires_reconciliation")
 
     async def abandon(self, operation_id: str, input_digest: str) -> None:
         """Explicit cleanup of one recorded runtime; never accept partial outputs."""
+        transport = getattr(self, "workload_transport", None)
         require(re.fullmatch(r"[a-f0-9]{32}", operation_id) is not None, "simulation_operation_invalid")
         run = safe_root(self.project / "runs" / operation_id)
         intent_path = safe_root(run / "intent.json")
         require(intent_path.is_file() and intent_path.stat().st_size <= 4096,
                 "runtime_intent_missing_manual_reconciliation_required")
-        intent = object_value(json.loads(intent_path.read_bytes()),
-                              {"schema", "operation_id", "container_name", "profile_digest", "input_digest"})
+        fields = {"schema", "operation_id", "container_name", "profile_digest", "input_digest"}
+        if transport is not None:
+            fields.update({"probe_name", "transport_digest"})
+        intent = object_value(json.loads(intent_path.read_bytes()), fields)
         name = "openrtl-design-" + operation_id
-        require(intent == {"schema": "openrtl.design-runtime-intent.v1", "operation_id": operation_id,
-                           "container_name": name, "profile_digest": content_digest(self.profile),
-                           "input_digest": input_digest}, "runtime_intent_binding_invalid")
+        expected = {"schema": "openrtl.design-runtime-intent.v1", "operation_id": operation_id,
+                    "container_name": name, "profile_digest": content_digest(self.profile),
+                    "input_digest": input_digest}
+        if transport is not None:
+            expected.update(probe_name=name + "-probe",
+                            transport_digest=content_digest(transport.identity))
+        require(intent == expected, "runtime_intent_binding_invalid")
         config = safe_root(run / "docker-config")
         require(config.is_dir() and not any(config.iterdir()), "runtime_configuration_changed")
         prefix = [self.profile["docker_executable"], "--host", "unix://" + self.profile["socket"],
@@ -210,17 +274,24 @@ class IsolatedDesignSimulator:
         if self.profile.get("schema") == PROFILE_SCHEMA:
             from openrtl.adapters.runtime_selection import inspect_selection
             await inspect_selection(self.profile, config, self._process, authorized=True)
-        code, output = await self._process(prefix + ["ps", "--all", "--no-trunc", "--filter",
-                                          "name=^/" + name + "$", "--format", "{{.ID}}"], config, 30, 8192)
-        require(code == 0, "runtime_reconciliation_query_failed")
-        container = output.decode("ascii", errors="strict").strip()
-        if not container:
-            return
-        require(re.fullmatch(r"[a-f0-9]{64}", container) is not None, "runtime_reconciliation_ambiguous")
-        template = '{{.Name}}|{{.Image}}|{{index .Config.Labels "openrtl.operation"}}'
-        code, identity = await self._process(prefix + ["inspect", "--format", template, container], config, 30, 8192)
-        require(code == 0 and identity.decode("ascii", errors="strict").strip() ==
-                "/" + name + "|" + self.profile["image_id"] + "|" + operation_id,
-                "runtime_reconciliation_identity_mismatch")
-        removed, _ = await self._process(prefix + ["rm", "--force", container], config, 30, 8192)
-        require(removed == 0, "owned_container_cleanup_requires_reconciliation")
+        names = [name + "-probe", name] if transport is not None else [name]
+        for selected_name in names:
+            code, output = await self._process(prefix + ["ps", "--all", "--no-trunc", "--filter",
+                                              "name=^/" + selected_name + "$", "--format", "{{.ID}}"],
+                                               config, 30, 8192)
+            require(code == 0, "runtime_reconciliation_query_failed")
+            container = output.decode("ascii", errors="strict").strip()
+            if not container:
+                continue
+            require(re.fullmatch(r"[a-f0-9]{64}", container) is not None,
+                    "runtime_reconciliation_ambiguous")
+            template = '{{.Name}}|{{.Image}}|{{index .Config.Labels "openrtl.operation"}}'
+            code, identity = await self._process(prefix + ["inspect", "--format", template, container],
+                                                 config, 30, 8192)
+            require(code == 0 and identity.decode("ascii", errors="strict").strip() ==
+                    "/" + selected_name + "|" + self.profile["image_id"] + "|" + operation_id,
+                    "runtime_reconciliation_identity_mismatch")
+            removed, _ = await self._process(prefix + ["rm", "--force", container], config, 30, 8192)
+            require(removed == 0, "owned_container_cleanup_requires_reconciliation")
+        if transport is not None:
+            await transport.release(operation_id)

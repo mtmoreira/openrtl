@@ -16,6 +16,7 @@ import unittest
 from unittest.mock import AsyncMock, patch
 
 from openrtl.adapters.design_simulation import IsolatedDesignSimulator
+from openrtl.adapters.workload_transport import LimaWorkloadTransport
 from openrtl.adapters.runtime_selection import inspect_selection, local_identity, select_runtime, verify_local_identity
 from openrtl.adapters.runtime_selftest import collateral, selftest_digest, verify_evidence
 from openrtl.adapters import runtime_store
@@ -237,6 +238,104 @@ class RuntimeSimulationTest(RuntimeTemporaryTest):
             self.assertIn(flag, create)
         self.assertEqual(commands[-1][-3:], ["rm", "--force", "c"*64])
         self.assertNotIn("/unit-only/socket", " ".join(arg for arg in create if arg.startswith("type=bind")))
+
+    def test_guest_transport_probes_exact_mounts_before_design_container(self) -> None:
+        class Transport:
+            identity = {"schema": "unit-guest-transport", "instance": "unit-only"}
+            def __init__(self) -> None:
+                self.released: list[str] = []
+            async def stage(self, operation_id: str, inputs: Path, control: Path) -> tuple[str, str]:
+                self.staged = (operation_id, inputs, control)
+                return "/guest/work/input", "/guest/work/control"
+            async def release(self, operation_id: str) -> None:
+                self.released.append(operation_id)
+
+        transport = Transport()
+        commands: list[list[str]] = []
+        async def process(argv: list[str], config: Path, timeout: int,
+                          bound: int = 48*1024*1024) -> tuple[int, bytes]:
+            commands.append(argv)
+            if "info" in argv: return 0, info()
+            if "image" in argv: return 0, ('"' + profile()["image_id"] + '"|"linux"|"arm64"').encode()
+            if "create" in argv:
+                return 0, (b"b" if any("-probe" in arg for arg in argv) else b"c") * 64
+            if "start" in argv:
+                return (0, b"workload-visible\n") if "b"*64 in argv else (0, self.simulation_response())
+            if "rm" in argv: return 0, b"removed"
+            raise AssertionError("unexpected process")
+        with patch("openrtl.adapters.runtime_selection.verify_local_identity"):
+            runtime = IsolatedDesignSimulator(self.root, profile(), workload_transport=transport)
+            with patch.object(runtime, "_process", side_effect=process):
+                files, manifest = collateral(profile())
+                report = asyncio.run(runtime.simulate(files, manifest, selftest_digest(profile()), "e"*32))
+        self.assertEqual(report["status"], "passed")
+        creates = [argv for argv in commands if "create" in argv]
+        self.assertEqual(len(creates), 2)
+        self.assertIn("type=bind,src=/guest/work/input,dst=/input,readonly", creates[0])
+        self.assertIn("--user=65534:65534", creates[0])
+        self.assertEqual(transport.released, ["e"*32])
+        self.assertEqual(commands.index(creates[1]), commands.index(creates[0]) + 3)
+
+    def test_lima_transport_copies_and_checks_guest_bytes_without_host_permission_repair(self) -> None:
+        executable = self.root / "limactl"
+        executable.write_bytes(b"unit only")
+        executable.chmod(0o700)
+        inputs, control = self.root / "input", self.root / "control"
+        inputs.mkdir(mode=0o700)
+        control.mkdir(mode=0o700)
+        (inputs / "rtl.sv").write_bytes(b"module wire; endmodule\n")
+        (control / "run.py").write_bytes(b"print('unit')\n")
+        transport = LimaWorkloadTransport(executable, self.root, "managed-unit")
+        commands: list[list[str]] = []
+        async def process(argv: list[str], timeout: int = 30) -> bytes:
+            commands.append(argv)
+            if "sha256sum" in argv:
+                target = inputs / "rtl.sv" if argv[-1].endswith("rtl.sv") else control / "run.py"
+                return (hashlib.sha256(target.read_bytes()).hexdigest() + "  " + argv[-1] + "\n").encode()
+            return b""
+        with patch.object(transport, "_run", side_effect=process):
+            paths = asyncio.run(transport.stage("d"*32, inputs, control))
+            asyncio.run(transport.release("d"*32))
+        self.assertEqual(paths, ("/tmp/openrtl-workloads/" + "d"*32 + "/input",
+                                 "/tmp/openrtl-workloads/" + "d"*32 + "/control"))
+        self.assertEqual(stat.S_IMODE(inputs.stat().st_mode), 0o700)
+        self.assertEqual(stat.S_IMODE(control.stat().st_mode), 0o700)
+        self.assertIn(["copy", "--backend=scp", "--recursive", str(inputs), str(control),
+                       "managed-unit:/tmp/openrtl-workloads/" + "d"*32 + "/"], commands)
+        self.assertEqual(commands[-1][-4:], ["rm", "-rf", "--", "/tmp/openrtl-workloads/" + "d"*32])
+
+    def test_unreadable_guest_mount_never_starts_design_and_requires_exact_recovery(self) -> None:
+        class Transport:
+            identity = {"schema": "unit-guest-transport", "instance": "unit-only"}
+            def __init__(self) -> None:
+                self.released: list[str] = []
+            async def stage(self, operation_id: str, inputs: Path, control: Path) -> tuple[str, str]:
+                return "/guest/input", "/guest/control"
+            async def release(self, operation_id: str) -> None:
+                self.released.append(operation_id)
+        transport = Transport()
+        commands: list[list[str]] = []
+        async def process(argv: list[str], config: Path, timeout: int,
+                          bound: int = 48*1024*1024) -> tuple[int, bytes]:
+            commands.append(argv)
+            if "info" in argv: return 0, info()
+            if "image" in argv: return 0, ('"' + profile()["image_id"] + '"|"linux"|"arm64"').encode()
+            if "create" in argv: return 0, b"b"*64
+            if "start" in argv: return 1, b"unreadable fixture"
+            if "rm" in argv: return 0, b"removed"
+            if "ps" in argv: return 0, b""
+            raise AssertionError("unexpected process")
+        with patch("openrtl.adapters.runtime_selection.verify_local_identity"):
+            runtime = IsolatedDesignSimulator(self.root, profile(), workload_transport=transport)
+            with patch.object(runtime, "_process", side_effect=process):
+                files, selected_manifest = collateral(profile())
+                with self.assertRaisesRegex(ValueError, "guest_workload_visibility_failed"):
+                    asyncio.run(runtime.simulate(files, selected_manifest, selftest_digest(profile()), "f"*32))
+                self.assertEqual(transport.released, [])
+                self.assertTrue((self.root / "runs" / ("f"*32) / "intent.json").is_file())
+                asyncio.run(runtime.abandon("f"*32, selftest_digest(profile())))
+        self.assertEqual(len([argv for argv in commands if "create" in argv]), 1)
+        self.assertEqual(transport.released, ["f"*32])
 
     def test_changed_input_output_toolchain_and_report_cannot_reuse_selftest(self) -> None:
         report, _ = self.run_fixture()

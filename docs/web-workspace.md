@@ -1,4 +1,4 @@
-# Local web workspace (W2 workbench candidate)
+# Local web workspace (W3 simulation candidate)
 
 This local candidate presents a project through a loopback browser interface.
 It reuses the same DesignAgent operations and SQLite session as the CLI. W1
@@ -78,6 +78,40 @@ the owned compiler transport is qualified. Until that transport supplies a
 validated index, the interface states that elaboration is unavailable while
 keeping source inspection usable. The index is process-scoped and must be
 recomputed after service restart or source change; it is never silently reused
-for a different design input. Real simulation and embedded waveforms
-remain W3–W4.
+for a different design input. Compiler transport qualification and embedded
+waveforms remain open acceptance work.
 Historical passing results never qualify a changed source digest.
+
+The simulation panel displays a digest-bound configuration for the current
+complete baseline, including top, sources, test selection, seed, timeout and
+bounded runtime identity. An explicit Run action submits one durable operation
+ID. Reconnect reads the saved result; a stale plan or competing writer is
+rejected. The panel labels evidence whose input digest no longer matches the
+current design as historical. Cancellation of active runtime work remains
+uncertain until the owned container is reconciled.
+
+The browser service exposes simulation only when the invocation selects both a
+self-test-verified runtime state and an owned Lima guest transport:
+
+```sh
+./openrtl ui --project /absolute/existing-project --allow-simulation \
+  --runtime-state /absolute/private/runtime-state \
+  --lima-executable /absolute/path/to/limactl \
+  --lima-state-root /absolute/private/managed-state \
+  --lima-instance managed-EXACT_INSTANCE_ID
+```
+
+This selection authorizes runtime contact only when the designer explicitly
+submits the displayed run. The transport copies task-owned input and control
+files to the selected running guest without changing host staging permissions
+or starting the VM. Before the design container starts, a separate container
+under the selected daemon and UID 65534 hashes the exact read-only mounts and
+compares every staged file. A mismatch fails closed. The durable runtime intent
+also binds the transport identity and a probe container name so an uncertain
+probe or run can be reconciled by exact identity. The browser can request
+recovery after reopening the project; interrupted output is never adopted.
+
+This code and its synthetic tests do not establish that a particular owned
+Lima VM, selected Docker daemon, and packaged Verilator/cocotb image work
+together. That live workload visibility and fresh-design qualification remain
+pending, as do M46 and M47.
