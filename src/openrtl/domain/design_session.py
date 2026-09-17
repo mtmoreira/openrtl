@@ -9,7 +9,8 @@ from typing import Any, cast
 
 
 JsonObject = dict[str, Any]
-SESSION_SCHEMA = "openrtl.design-session.v4"
+SESSION_SCHEMA = "openrtl.design-session.v5"
+COACHING_SESSION_SCHEMA = "openrtl.design-session.v4"
 IMPORT_SESSION_SCHEMA = "openrtl.design-session.v3"
 PREVIOUS_SESSION_SCHEMA = "openrtl.design-session.v2"
 LEGACY_SESSION_SCHEMA = "openrtl.design-session.v1"
@@ -199,8 +200,51 @@ def imported_initial_state() -> JsonObject:
     return {**previous_initial_state(), "schema": IMPORT_SESSION_SCHEMA, "imports": {}, "baseline": None, "change_plan": None}
 
 
+def coaching_initial_state() -> JsonObject:
+    return {**imported_initial_state(), "schema": COACHING_SESSION_SCHEMA,
+            "pace": "stage", "proposal": None, "analysis": None}
+
+
 def initial_state() -> JsonObject:
-    return {**imported_initial_state(), "schema": SESSION_SCHEMA, "pace": "stage", "proposal": None, "analysis": None}
+    return {**coaching_initial_state(), "schema": SESSION_SCHEMA,
+            "engineering_memory": [], "workspace_operations": {}}
+
+
+def validate_engineering_memory(value: object) -> list[JsonObject]:
+    """Bounded attributed design facts, never a transcript or authority grant."""
+    rows = sequence(value, maximum=64)
+    seen: set[str] = set()
+    for value in rows:
+        row = object_value(value, {"id", "kind", "text", "provenance"})
+        identifier = stable_id(row["id"])
+        require(identifier not in seen, "engineering_memory_id_duplicate")
+        seen.add(identifier)
+        require(row["kind"] in ("requirement", "assumption", "decision", "question"),
+                "engineering_memory_kind_invalid")
+        text(row["text"], maximum=1024)
+        require(row["provenance"] in ("agent_proposal", "user_confirmed"),
+                "engineering_memory_provenance_invalid")
+    require(len(canonical(rows)) <= 32 * 1024, "engineering_memory_too_large")
+    return cast(list[JsonObject], rows)
+
+
+def validate_workspace_operations(value: object, revision: int) -> None:
+    require(isinstance(value, dict) and len(value) <= 128, "workspace_operations_invalid")
+    for identifier, value in value.items():
+        require(isinstance(identifier, str) and re.fullmatch(r"[a-f0-9]{32}", identifier) is not None,
+                "workspace_operation_id_invalid")
+        row = object_value(value, {"request_digest", "phase", "result_revision", "error_code"})
+        require(isinstance(row["request_digest"], str) and
+                re.fullmatch(r"sha256:[a-f0-9]{64}", row["request_digest"]) is not None,
+                "workspace_request_digest_invalid")
+        require(row["phase"] in ("queued", "active", "completed", "failed", "cancelled",
+                                 "cancellation_requested", "reconciliation_needed"),
+                "workspace_operation_phase_invalid")
+        require(row["result_revision"] is None or
+                type(row["result_revision"]) is int and 0 <= row["result_revision"] <= revision,
+                "workspace_result_revision_invalid")
+        require(row["error_code"] is None or row["error_code"] in (
+            "operation_failed", "operation_cancelled_uncertain"), "workspace_error_code_invalid")
 
 
 def validate_state(value: object) -> JsonObject:
@@ -208,9 +252,11 @@ def validate_state(value: object) -> JsonObject:
     legacy = cast(JsonObject, value).get("schema") == LEGACY_SESSION_SCHEMA
     previous = cast(JsonObject, value).get("schema") == PREVIOUS_SESSION_SCHEMA
     imported = cast(JsonObject, value).get("schema") == IMPORT_SESSION_SCHEMA
+    coaching = cast(JsonObject, value).get("schema") == COACHING_SESSION_SCHEMA
     state = object_value(value, set(legacy_initial_state() if legacy else previous_initial_state() if previous else
-                                   imported_initial_state() if imported else initial_state()))
-    require(state["schema"] in (SESSION_SCHEMA, IMPORT_SESSION_SCHEMA, PREVIOUS_SESSION_SCHEMA, LEGACY_SESSION_SCHEMA), "session_schema_unrecognized")
+                                   imported_initial_state() if imported else coaching_initial_state() if coaching else initial_state()))
+    require(state["schema"] in (SESSION_SCHEMA, COACHING_SESSION_SCHEMA, IMPORT_SESSION_SCHEMA,
+                                PREVIOUS_SESSION_SCHEMA, LEGACY_SESSION_SCHEMA), "session_schema_unrecognized")
     for field in ("revision", "stage", "calls", "repairs"):
         require(type(state[field]) is int and state[field] >= 0, "session_counter_invalid")
     require(state["stage"] <= len(STAGES) and state["calls"] <= 200 and state["repairs"] <= 5,
@@ -262,10 +308,13 @@ def validate_state(value: object) -> JsonObject:
     if not legacy:
         from openrtl.domain.design_delegation import validate_session_extensions
         validate_session_extensions(state)
-    if state["schema"] in (SESSION_SCHEMA, IMPORT_SESSION_SCHEMA):
+    if state["schema"] in (SESSION_SCHEMA, COACHING_SESSION_SCHEMA, IMPORT_SESSION_SCHEMA):
         from openrtl.domain.design_imports import validate_import_state
         validate_import_state(state)
-    if state["schema"] == SESSION_SCHEMA:
+    if state["schema"] in (SESSION_SCHEMA, COACHING_SESSION_SCHEMA):
         from openrtl.domain.design_coaching import validate_coaching_state
         validate_coaching_state(state)
+    if state["schema"] == SESSION_SCHEMA:
+        validate_engineering_memory(state["engineering_memory"])
+        validate_workspace_operations(state["workspace_operations"], state["revision"])
     return state

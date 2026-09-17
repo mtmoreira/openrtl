@@ -137,7 +137,7 @@ class DesignAgentTest(unittest.TestCase):
         self.generate_files()
         self.assertEqual([s for s, _ in self.expert.seen], list(STAGES))
         for stage, pack in self.expert.seen:
-            self.assertEqual(pack["schema"], "openrtl.design-context.v4")
+            self.assertEqual(pack["schema"], "openrtl.design-context.v5")
             if stage in ("reference_model", "dv"):
                 self.assertFalse(any(p.startswith("rtl/") for p in pack["artifacts"]))
         receipts = [e for e in self.store.events() if e["event"] == "operation.received"]
@@ -154,6 +154,43 @@ class DesignAgentTest(unittest.TestCase):
             asyncio.run(self.agent.discuss("another ephemeral message"))
         self.assertNotIn("private prompt", canonical(self.store.events()).decode())
         self.assertIsNone(self.store.read()["active"])
+
+    def test_structured_discovery_survives_reopen_without_transcript(self) -> None:
+        self.expert.responses["discovery"] = {
+            "reply": "What width should the counter have?", "specification": None,
+            "engineering_memory": [{"id": "counter.width", "kind": "question",
+                "text": "Counter width is unresolved", "provenance": "agent_proposal"}],
+        }
+        asyncio.run(self.agent.discuss("PRIVATE: I need a counter"))
+        self.assertEqual(self.store.read()["engineering_memory"][0]["id"], "counter.width")
+        self.assertNotIn("PRIVATE:", canonical(self.store.read()).decode())
+        self.assertNotIn("What width should", canonical(self.store.events()).decode())
+        self.store.close()
+        self.store = DesignSessionStore(self.root)
+        self.agent = DesignAgent(self.store, self.expert, self.simulator)
+        self.assertEqual(self.store.read()["engineering_memory"][0]["provenance"], "agent_proposal")
+        self.expert.responses["discovery"] = {"reply": "A four-bit counter is ready for review.",
+            "specification": specification(), "engineering_memory": [
+                {"id": "counter.width", "kind": "decision", "text": "Width is four bits",
+                 "provenance": "agent_proposal"}]}
+        asyncio.run(self.agent.discuss("Use four bits"))
+        self.assertEqual(self.expert.seen[-1][1]["engineering_memory"][0]["id"], "counter.width")
+        self.assertEqual(self.store.read()["engineering_memory"][0]["kind"], "decision")
+        self.assertIsNone(self.store.read()["approved_spec"])
+
+    def test_memory_rejects_verbatim_prompt_and_fabricated_confirmation(self) -> None:
+        self.expert.responses["discovery"] = {"reply": "Tell me more.", "specification": None,
+            "engineering_memory": [{"id": "request", "kind": "requirement",
+                "text": "PRIVATE DESIGN PROMPT", "provenance": "agent_proposal"}]}
+        with self.assertRaisesRegex(ValueError, "expert_output_invalid"):
+            asyncio.run(self.agent.discuss("PRIVATE DESIGN PROMPT"))
+        self.assertEqual(self.store.read()["engineering_memory"], [])
+        self.assertNotIn("PRIVATE DESIGN PROMPT", canonical(self.store.read()).decode())
+        self.expert.responses["discovery"]["engineering_memory"][0].update(
+            text="A requirement remains to be reviewed", provenance="user_confirmed")
+        with self.assertRaisesRegex(ValueError, "expert_output_invalid"):
+            asyncio.run(self.agent.discuss("Another request"))
+        self.assertEqual(self.store.read()["engineering_memory"], [])
 
     def test_complete_gate_chain_needs_final_user_acceptance(self) -> None:
         self.generate_files()

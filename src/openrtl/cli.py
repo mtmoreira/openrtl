@@ -101,6 +101,15 @@ def parser() -> argparse.ArgumentParser:
     subcommands = root.add_subparsers(dest="command", required=True)
     from openrtl.design_cli import add_design_commands
     add_design_commands(subcommands)
+    ui = subcommands.add_parser("ui", help="serve the local design workspace")
+    ui.add_argument("--project", type=Path, required=True)
+    ui.add_argument("--create", action="store_true")
+    ui.add_argument("--port", type=int, default=8765)
+    ui.add_argument("--allow-provider", action="store_true")
+    ui.add_argument("--model")
+    ui.add_argument("--credential-env", default="OPENAI_API_KEY")
+    ui.add_argument("--max-calls", type=int, default=40)
+    ui.add_argument("--max-repairs", type=int, default=2)
     from openrtl.session_cli import add_session_commands
     add_session_commands(subcommands)
     from openrtl.runtime_cli import add_runtime_command
@@ -457,6 +466,25 @@ def parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = parser().parse_args(argv)
+    if arguments.command == "ui":
+        from openrtl.adapters.design_web import serve
+        from openrtl.application.design_agent import DesignPolicy
+        from openrtl.domain.design_session import require
+        require(not arguments.allow_provider or arguments.model is not None,
+                "explicit_model_required")
+        def expert_factory() -> Any:
+            if not arguments.allow_provider:
+                return None
+            from openrtl.adapters.design_generation import openai_design_expert
+            return openai_design_expert(authorized=True, model=arguments.model,
+                                        credential_environment=arguments.credential_env)
+        try:
+            serve(arguments.project, create=arguments.create, port=arguments.port,
+                  expert_factory=expert_factory,
+                  policy=DesignPolicy(arguments.max_calls, arguments.max_repairs))
+        except KeyboardInterrupt:
+            return 0
+        return 0
     if arguments.command == "sessions":
         from openrtl.session_cli import run_sessions
         return run_sessions(arguments)

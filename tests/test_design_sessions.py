@@ -347,6 +347,24 @@ class SessionServicesTest(unittest.TestCase):
             self.assertEqual(restored["calls"], legacy["calls"])
         finally: other.close()
 
+    def test_v4_upgrade_keeps_history_and_adds_empty_web_state(self) -> None:
+        from openrtl.domain.design_session import coaching_initial_state
+        prior = coaching_initial_state()
+        other = DesignSessionStore(self.root / "coaching-v4", create=True)
+        try:
+            other.connection.execute("UPDATE snapshots SET payload=? WHERE revision=0",
+                                     (canonical(prior).decode(),))
+            upgraded = other.upgrade()
+            self.assertEqual(upgraded["engineering_memory"], [])
+            self.assertEqual(upgraded["workspace_operations"], {})
+            plan, files = portable_material(other)
+            states = validate_records(document(files["records.json"]), files)
+            self.assertEqual(states[0], prior)
+            self.assertEqual(states[-1], upgraded)
+            self.assertEqual(restored_material(plan, files, states)[0]["engineering_memory"], [])
+        finally:
+            other.close()
+
     def test_observer_emits_waiting_and_failure_cannot_repeat_work(self) -> None:
         async def scenario() -> None:
             release = asyncio.Event(); rows = []; count = 0

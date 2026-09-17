@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenRTL workspace</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-icon">O</span><span>OpenRTL <small>Design workspace</small></span></div>
+    <div class="top-meta"><span id="project-label">Local project</span><span id="revision-label">Revision —</span><span id="status-label">Connecting</span></div>
+  </header>
+  <div class="workspace">
+    <nav class="navigator" aria-label="Project navigation">
+      <h2>Engineering state</h2>
+      <section><h3>Requirements &amp; questions</h3><div id="memory-list" class="stack muted">No design facts yet.</div></section>
+      <section><h3>Operations</h3><div id="operation-list" class="stack muted">No operations yet.</div></section>
+      <section><h3>Evidence</h3><div id="evidence-list" class="stack muted">No simulation yet.</div></section>
+    </nav>
+    <main class="document">
+      <div class="document-heading"><div><span class="eyebrow">PROJECT</span><h1>Design overview</h1></div><span id="digest-label" class="digest">No approved design</span></div>
+      <div id="notice" class="notice" role="status">Engineering decisions and accepted source revisions will appear here. Conversation text stays in this browser session.</div>
+      <button id="create-project-button" type="button" hidden>Create this project</button>
+      <button id="upgrade-project-button" type="button" hidden>Upgrade this project session</button>
+      <section class="surface"><div class="section-title"><h2>Current specification</h2><button id="review-button" type="button">Review proposal</button></div><div id="specification" class="stack muted">Describe your circuit to begin.</div></section>
+      <section class="surface"><div class="section-title"><h2>Review card</h2><span>Approval applies only to the displayed revision</span></div><div id="review-card" class="stack muted">No review requested.</div><button id="approve-button" type="button" hidden>Approve displayed specification</button></section>
+      <section class="surface"><div class="section-title"><h2>Activity</h2><span>Bounded, reconnectable events</span></div><div id="activity-list" class="stack muted">No activity yet.</div></section>
+    </main>
+    <aside class="conversation" aria-label="Design conversation">
+      <div class="conversation-heading"><div><span class="eyebrow">DESIGN LEAD</span><h2>Conversation</h2></div><span class="live-dot" aria-hidden="true"></span></div>
+      <div id="conversation-list" class="messages"><div class="message system">Describe a circuit in your own words. OpenRTL will ask about missing details and show a specification for review.</div></div>
+      <form id="chat-form" class="composer"><label for="chat-input">Your request</label><textarea id="chat-input" rows="3" maxlength="16000" placeholder="For example: I need a counter with a reset and enable…"></textarea><div class="composer-footer"><span id="composer-status">Provider unavailable until explicitly selected at launch.</span><button type="submit">Send</button></div></form>
+    </aside>
+  </div>
+</body>
+</html>

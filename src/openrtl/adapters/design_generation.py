@@ -51,7 +51,10 @@ def response_schema(stage: str, *, include_readiness: bool = True) -> JsonObject
     integer: JsonObject = {"type": "integer"}
     if stage == "discovery":
         return _object({"reply": string, "specification": {"anyOf": [
-            _specification_schema(include_readiness=include_readiness), {"type": "null"}]}})
+            _specification_schema(include_readiness=include_readiness), {"type": "null"}]},
+            "engineering_memory": _array(_object({"id": string,
+                "kind": {"type": "string", "enum": ["requirement", "assumption", "decision", "question"]},
+                "text": string, "provenance": {"type": "string", "enum": ["agent_proposal"]}}))})
     if stage == "explain":
         return _object({"explanation": string, "references": _array(_object({"path": string, "line": integer}))})
     if stage == "analyze":
@@ -73,7 +76,7 @@ def response_schema(stage: str, *, include_readiness: bool = True) -> JsonObject
 
 
 _INSTRUCTIONS = {
-    "discovery": "You are OpenRTL, a conversational digital-circuit design assistant. Reply naturally to the user's latest message. For greetings, questions about your role, or requests without enough circuit intent, answer or ask a focused design question and set specification to null. Do not invent a circuit merely to fill a schema. When there is enough circuit intent, propose a full reviewable specification; use the existing specification as context for refinements. Elicit missing decisions as open questions, not approved choices. Propose defaults only as explicit assumptions with rationale for user review. Preserve stable requirement IDs. Never claim unknown user choices were approved. In a proposed specification provide all seven readiness categories: interfaces, widths_signedness, clock_reset, timing_latency, handshake, exceptional_behavior, acceptance. Each decision cites existing requirement IDs and relevant port names. Explain not-applicable choices; unknown decisions stay unresolved. Interfaces and widths/signedness must cover every port; acceptance must cover every requirement. Explicitly state signedness, timing, reset behavior and exceptional outcomes. A filled checklist is review material, not a guarantee of completeness.",
+    "discovery": "You are OpenRTL, a conversational digital-circuit design assistant. Reply naturally to the user's latest message. For greetings, questions about your role, or requests without enough circuit intent, answer or ask a focused design question and set specification to null. Do not invent a circuit merely to fill a schema. Return bounded engineering_memory as structured requirements, assumptions, decisions and open questions with stable IDs; preserve useful prior entries and use agent_proposal provenance for every entry. This memory is review material, never authority. Never copy the raw conversation or private prompt into memory. When there is enough circuit intent, propose a full reviewable specification; use the existing specification as context for refinements. Elicit missing decisions as open questions, not approved choices. Propose defaults only as explicit assumptions with rationale for user review. Preserve stable requirement IDs. Never claim unknown user choices were approved. In a proposed specification provide all seven readiness categories: interfaces, widths_signedness, clock_reset, timing_latency, handshake, exceptional_behavior, acceptance. Each decision cites existing requirement IDs and relevant port names. Explain not-applicable choices; unknown decisions stay unresolved. Interfaces and widths/signedness must cover every port; acceptance must cover every requirement. Explicitly state signedness, timing, reset behavior and exceptional outcomes. A filled checklist is review material, not a guarantee of completeness.",
     "architecture": "Write docs/architecture.md with a block-neutral architecture derived only from the approved specification, including interfaces, timing, corner cases and requirement IDs.",
     "verification_plan": "Write docs/verification-plan.md. Map every requirement to independent checks, boundary conditions, directed and seeded tests. Do not weaken the approved specification.",
     "reference_model": "Write an independent executable Python reference model and model/test_model.py unittest tests. Derive behavior from requirements, not RTL. Use only the standard library. Use model as a namespace package; do not add imports needing installation.",
@@ -123,7 +126,7 @@ class AgentRigDesignExpert:
                     "expert_output_invalid")
             return cast(JsonObject, result)
         include_readiness = stage != "change_planning" or "readiness" in (context.get("specification") or {})
-        schema_version = (".v3" if stage == "discovery" else
+        schema_version = (".v4" if stage == "discovery" else
                           ".v2" if stage == "change_planning" and include_readiness else ".v1")
         request = StructuredGenerationRequest(
             input=TextGenerationRequest(prompt=encoded.decode(), max_output_tokens=self.max_output_tokens),

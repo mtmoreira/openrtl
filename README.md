@@ -80,6 +80,13 @@ new release or evidence of real provider-designed RTL.
 
 ### Interactive, batch and existing-design agent: M36–M40 candidates
 
+The local web workspace candidate serves packaged assets with
+`./openrtl ui --project /absolute/project`; create the selected project in the browser and
+reuse the same command to reopen it. See
+[the web workspace guide](docs/web-workspace.md) for the explicit provider
+selection and current W1 boundaries. The interface's deterministic tests do
+not qualify a live design, simulation or release.
+
 The new `chat`, `resume`, `status` and `doctor` commands begin the executing
 design-agent layer. It uses reviewed requirements, role-specific AgentRig
 turns, durable sessions, independent model/DV context, isolated simulation and

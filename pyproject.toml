@@ -36,6 +36,7 @@ agentrig = { path = "../agentrig", editable = true }
 [tool.uv.build-backend]
 source-include = [
   "openrtl",
+  "src/openrtl/web/**",
   "bootstrap/**",
   "tools/bootstrap_openrtl.py",
   "tools/bootstrap_sdk.py",
@@ -61,6 +62,7 @@ source-include = [
   "tools/verify_release_examples_v040.py",
   "tools/verify_design_agent_install.py",
   "docs/design-agent-alpha.md",
+  "docs/web-workspace.md",
   "docs/design-imports.md",
   "docs/design-coaching.md",
   "docs/design-agent-acceptance.md",

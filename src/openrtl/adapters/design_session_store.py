@@ -15,7 +15,7 @@ from typing import Iterator, cast
 import uuid
 
 from openrtl.domain.design_session import (
-    JsonObject, MAX_ARTIFACT_BYTES, SESSION_SCHEMA, LEGACY_SESSION_SCHEMA, PREVIOUS_SESSION_SCHEMA, IMPORT_SESSION_SCHEMA, canonical, initial_state,
+    JsonObject, MAX_ARTIFACT_BYTES, SESSION_SCHEMA, COACHING_SESSION_SCHEMA, LEGACY_SESSION_SCHEMA, PREVIOUS_SESSION_SCHEMA, IMPORT_SESSION_SCHEMA, canonical, initial_state,
     require, source_path, validate_state, text, content_digest,
 )
 
@@ -91,12 +91,14 @@ class DesignSessionStore:
         return operation_id in self._owned_operations
 
     def upgrade(self) -> JsonObject:
-        """Explicit, append-only v1/v2/v3 migration; prior snapshots remain unchanged."""
+        """Explicit, append-only v1/v2/v3/v4 migration; prior snapshots remain unchanged."""
         state = self.read()
         if state["schema"] == SESSION_SCHEMA:
             return state
-        require(state["schema"] in (LEGACY_SESSION_SCHEMA, PREVIOUS_SESSION_SCHEMA, IMPORT_SESSION_SCHEMA), "session_upgrade_unrecognized")
-        updated = {**initial_state(), **state, "schema": SESSION_SCHEMA}
+        require(state["schema"] in (LEGACY_SESSION_SCHEMA, PREVIOUS_SESSION_SCHEMA,
+                                    IMPORT_SESSION_SCHEMA, COACHING_SESSION_SCHEMA), "session_upgrade_unrecognized")
+        updated = {**state, **{k: v for k, v in initial_state().items() if k not in state},
+                   "schema": SESSION_SCHEMA}
         if state["schema"] == LEGACY_SESSION_SCHEMA:
             updated.update(approval_mode="legacy_user" if state["approved_spec"] else None,
                            acceptance_mode="legacy_user" if state["status"] == "accepted" else None)
@@ -217,3 +219,11 @@ class DesignSessionStore:
 
     def events(self) -> tuple[JsonObject, ...]:
         return tuple(json.loads(row[0]) for row in self.connection.execute("SELECT payload FROM events ORDER BY sequence"))
+
+    def events_after(self, cursor: int, *, limit: int = 64) -> tuple[JsonObject, ...]:
+        require(type(cursor) is int and cursor >= 0 and type(limit) is int and 1 <= limit <= 128,
+                "event_cursor_invalid")
+        rows = self.connection.execute(
+            "SELECT payload FROM events WHERE sequence > ? ORDER BY sequence LIMIT ?", (cursor, limit)
+        )
+        return tuple(json.loads(row[0]) for row in rows)

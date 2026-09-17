@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import copy
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable, Protocol
 import uuid
 import time
 
 from openrtl.domain.design_session import (
     JsonObject, MAX_CONTEXT_BYTES, ROLES, STAGES, SESSION_SCHEMA, canonical, content_digest,
-    object_value, require, sequence, text, validate_files, validate_manifest, validate_spec,
+    object_value, require, sequence, text, validate_engineering_memory,
+    validate_files, validate_manifest, validate_spec,
 )
 from openrtl.domain.design_delegation import specification_warnings, validate_delegated_spec, warning
 from openrtl.domain.design_imports import baseline_plan, digest_value, validate_change_plan
@@ -18,6 +20,7 @@ from openrtl.domain.design_coaching import analysis_input_digest, validate_analy
 
 
 class SessionStore(Protocol):
+    root: Path
     @property
     def exclusive(self) -> bool: ...
     def operation_owned(self, operation_id: str) -> bool: ...
@@ -25,6 +28,7 @@ class SessionStore(Protocol):
     def contents(self, state: JsonObject) -> dict[str, str]: ...
     def import_contents(self, state: JsonObject) -> dict[str, str]: ...
     def historical_state(self, revision: int) -> JsonObject: ...
+    def events_after(self, cursor: int, *, limit: int = 64) -> tuple[JsonObject, ...]: ...
     def measurement(self, state: JsonObject) -> JsonObject: ...
     def save(self, previous: JsonObject, updated: JsonObject, event: str,
              fields: JsonObject | None = None, *, files: list[JsonObject] | None = None,
@@ -144,11 +148,23 @@ class DesignAgent:
             reply = None
             proposal = result
             if isinstance(result, dict) and "specification" in result:
-                require(set(result) == {"reply", "specification"}, "expert_discussion_fields_invalid")
+                require(set(result) in ({"reply", "specification"},
+                                        {"reply", "specification", "engineering_memory"}),
+                        "expert_discussion_fields_invalid")
                 reply = text(result["reply"], maximum=8000)
                 proposal = result["specification"]
             updated = copy.deepcopy(started)
             updated.update(active=None, last_error=None)
+            if isinstance(result, dict) and "engineering_memory" in result:
+                memory = validate_engineering_memory(result["engineering_memory"])
+                require(all(row["provenance"] == "agent_proposal" for row in memory),
+                        "expert_cannot_confirm_user_memory")
+                require(all(message.casefold().strip() not in row["text"].casefold() for row in memory),
+                        "raw_prompt_in_engineering_memory")
+                if reply is not None:
+                    require(all(reply.casefold().strip() not in row["text"].casefold() for row in memory),
+                            "raw_reply_in_engineering_memory")
+                updated["engineering_memory"] = memory
             if proposal is None:
                 require(reply is not None, "expert_discussion_reply_missing")
                 saved = self.store.save(started, updated, "operation.completed", {"role": ROLES["discovery"]})
@@ -350,8 +366,9 @@ class DesignAgent:
         elif stage == "dv":
             files = {p: c for p, c in files.items() if not p.startswith("rtl/")}
             references = {p: c for p, c in references.items() if not p.startswith("rtl/")}
-        pack = {"schema": "openrtl.design-context.v4", "role": ROLES[stage], "stage": stage,
+        pack = {"schema": "openrtl.design-context.v5", "role": ROLES[stage], "stage": stage,
                 "specification": state["spec"], "approved_spec_digest": state["approved_spec"],
+                "engineering_memory": state.get("engineering_memory", []),
                 "artifacts": files, "artifact_digests": state["files"], "manifest": state["manifest"],
                 "reference_artifacts": references, "reference_status": "untrusted_imports_not_run_evidence",
                 "change_scope": state["change_plan"],

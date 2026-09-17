@@ -212,7 +212,7 @@ class DesignCoachingTest(unittest.TestCase):
 
     def test_v3_upgrade_preserves_baseline_history_and_budgets(self) -> None:
         prior = self.store.read()
-        for key in ("pace", "proposal", "analysis"):
+        for key in ("pace", "proposal", "analysis", "engineering_memory", "workspace_operations"):
             del prior[key]
         prior["schema"] = IMPORT_SESSION_SCHEMA
         encoded = canonical(prior).decode()

@@ -96,6 +96,8 @@ def show(state: JsonObject, emit: Callable[[str], None]) -> None:
     emit("Detail: " + state["detail"] + "; pace: " + state.get("pace", "stage"))
     if state["active"] is not None:
         emit("Interrupted operation retained; no automatic replay: " + state["active"]["id"])
+    for row in state.get("engineering_memory", []):
+        emit("PROPOSED " + row["kind"].upper() + " " + row["id"] + ": " + row["text"])
     if state["spec"] is not None:
         spec = state["spec"]
         emit(spec["title"] + " — top: " + spec["top"])
@@ -173,7 +175,8 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
             show(state, emit)
             shown = None
     async def discuss(message: str) -> None:
-        state = await agent.discuss(message, emit_reply=emit)
+        from openrtl.application.design_workspace import DesignWorkspace
+        state = await DesignWorkspace(agent).discuss_direct(message, emit_reply=emit)
         if state["spec"] is not None:
             present(state)
     emit("OpenRTL design-agent alpha. Raw conversation text is not saved; reviewed artifacts and events are.")

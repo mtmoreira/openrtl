@@ -45,7 +45,7 @@ def _validate_text_files() -> None:
             part in IGNORED_DIRECTORY_NAMES for part in relative_path.parts
         ):
             continue
-        if path.suffix not in {".json", ".md", ".py", ".toml", ".sv", ".zsh", ".sh", ".lock"} and path.name not in {
+        if path.suffix not in {".json", ".md", ".py", ".toml", ".sv", ".zsh", ".sh", ".lock", ".html", ".css", ".js"} and path.name not in {
             ".gitignore",
             "LICENSE",
             "openrtl",
@@ -113,6 +113,7 @@ def _validate_architecture() -> None:
         "docs/adr/0030-coaching-and-evidence-comparisons.md",
         "docs/adr/0031-design-agent-acceptance-tiers.md",
         "docs/design-agent-acceptance.md",
+        "docs/web-workspace.md",
         "src/openrtl/adapters/design_acceptance.py",
         "tests/test_design_acceptance.py",
         "tools/verify_design_agent_install.py",
@@ -152,6 +153,13 @@ def _validate_architecture() -> None:
         "docs/import-evolution.md",
         "src/openrtl/application/design_batch.py",
         "src/openrtl/adapters/design_session_store.py",
+        "src/openrtl/application/design_workspace.py",
+        "src/openrtl/adapters/design_web.py",
+        "src/openrtl/web/index.html",
+        "src/openrtl/web/app.css",
+        "src/openrtl/web/app.js",
+        "tests/test_design_workspace.py",
+        "tests/test_design_web.py",
         "src/openrtl/adapters/design_generation.py",
         "src/openrtl/adapters/design_simulation.py",
         "src/openrtl/adapters/runtime_selection.py",
