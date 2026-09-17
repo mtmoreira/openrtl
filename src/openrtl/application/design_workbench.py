@@ -12,6 +12,47 @@ from openrtl.domain.design_session import JsonObject, content_digest, require, s
 class DesignWorkbench:
     def __init__(self, store: Any) -> None:
         self.store = store
+        self._elaborated: JsonObject | None = None
+
+    def use_elaborated_index(self, index: JsonObject) -> None:
+        """Accept only an index bound to the exact saved source revision."""
+        require(isinstance(index, dict) and index.get("schema") == "openrtl.verilator-hierarchy.v1" and
+                index.get("status") == "elaborated" and index.get("tool") == "verilator" and
+                index.get("tool_version") == "5.046" and isinstance(index.get("instances"), list),
+                "workbench_hierarchy_invalid")
+        revision = index.get("revision")
+        state = self._state(revision)
+        require(state["spec"] is not None and
+                index.get("input_digest") == design_input_digest(state) and
+                index.get("top") == state["spec"]["top"], "workbench_hierarchy_input_stale")
+        for row in index["instances"]:
+            require(isinstance(row, dict), "workbench_hierarchy_invalid")
+            for field in ("definition", "instantiation"):
+                source = row.get(field)
+                require(isinstance(source, dict) and source.get("revision") == revision and
+                        state["files"].get(source.get("path")) == source.get("digest"),
+                        "workbench_hierarchy_source_stale")
+                content = self.store.contents(state)[source["path"]]
+                require(type(source.get("line")) is int and
+                        1 <= source["line"] <= len(content.splitlines()),
+                        "workbench_hierarchy_line_invalid")
+        self._elaborated = index
+
+    def index_compiler_output(self, tree: bytes, metadata: bytes, *, revision: int,
+                              source_root: str, tool_version: str,
+                              options: list[str]) -> JsonObject:
+        """Import trusted adapter output without exposing an arbitrary browser upload."""
+        from openrtl.adapters.verilator_hierarchy import parse_verilator_hierarchy
+        state = self._state(revision)
+        require(state["spec"] is not None and state["manifest"] is not None,
+                "workbench_hierarchy_inputs_missing")
+        index = parse_verilator_hierarchy(
+            tree, metadata, revision=revision, source_root=source_root,
+            sources=state["files"], top=state["manifest"]["top"],
+            input_digest=design_input_digest(state), tool_version=tool_version,
+            options=options)
+        self.use_elaborated_index(index)
+        return index
 
     def _state(self, revision: int) -> JsonObject:
         require(type(revision) is int and revision >= 0, "workbench_revision_invalid")
@@ -41,7 +82,10 @@ class DesignWorkbench:
                             "test_modules": manifest["test_modules"] if manifest else [],
                             "expected_tests": manifest["expected_tests"] if manifest else [],
                             "requirement_tests": requirement_tests},
-                "elaborated": {"status": "unavailable", "reason": "compiler_index_not_available"},
+                "elaborated": (self._elaborated if self._elaborated is not None and
+                               self._elaborated["revision"] == revision and
+                               self._elaborated["input_digest"] == design_input_digest(state)
+                               else {"status": "unavailable", "reason": "compiler_index_not_available"}),
                 "proposal": state["proposal"],
                 "history": [{"revision": event["sequence"], "event": event["event"]}
                             for event in self.store.events_after(max(0, revision - 64), limit=64)

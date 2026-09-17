@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -88,6 +89,20 @@ class DesignWorkbenchTest(unittest.TestCase):
             self.assertEqual(workspace.review("change")["payload"], after["proposal"])
             self.assertNotIn("PRIVATE CHANGE", str(after))
         asyncio.run(scenario())
+
+    def test_compiler_index_requires_exact_saved_source(self) -> None:
+        current = self.store.read()["revision"]
+        tree = {"type": "NETLIST", "modulesp": [{"type": "MODULE", "name": "wire_top",
+                "origName": "wire_top", "addr": "(T)", "loc": "e,1:1,1:10", "stmtsp": []}]}
+        meta = {"files": {"e": {"filename": "/tmp/owned/rtl/wire_top.sv"}}}
+        index = self.workbench.index_compiler_output(
+            json.dumps(tree).encode(), json.dumps(meta).encode(), revision=current,
+            source_root="/tmp/owned", tool_version="5.046", options=["--top-module", "wire_top"])
+        self.assertEqual(self.workbench.inventory(current)["elaborated"], index)
+        changed = {**index, "instances": [{**index["instances"][0],
+                   "definition": {**index["instances"][0]["definition"], "digest": "bad"}}]}
+        with self.assertRaisesRegex(ValueError, "source_stale"):
+            self.workbench.use_elaborated_index(changed)
 
 
 if __name__ == "__main__":

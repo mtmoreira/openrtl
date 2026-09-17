@@ -68,7 +68,16 @@ machine. Post-discovery questions can attach a checked source revision and
 bounded line range without persisting the question or source excerpt.
 
 An actual elaborated instance hierarchy requires a compiler-produced index.
-Until the selected Verilator JSON output and the owned workload path are
-qualified, the interface states that this view is unavailable while keeping
-source inspection usable. Real simulation and embedded waveforms remain W3–W4.
+The Verilator 5.046 JSON adapter can ingest bounded `.tree.json` and
+`.tree.meta.json` bytes from a trusted compiler transport. It follows CELL
+references to MODULE definitions, preserving repeated instance paths,
+generated names and specialized module identities. The workbench checks every
+source link against the exact saved revision and digest before displaying it.
+Synthetic fixtures exercise the parser contract; they are not evidence that
+the owned compiler transport is qualified. Until that transport supplies a
+validated index, the interface states that elaboration is unavailable while
+keeping source inspection usable. The index is process-scoped and must be
+recomputed after service restart or source change; it is never silently reused
+for a different design input. Real simulation and embedded waveforms
+remain W3–W4.
 Historical passing results never qualify a changed source digest.

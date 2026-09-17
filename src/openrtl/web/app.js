@@ -109,10 +109,13 @@ function renderSpecification(spec) {
 
 async function openSource(file) {
   try {
-    const source = await api("/api/source?" + new URLSearchParams(file));
+    const source = await api("/api/source?" + new URLSearchParams({
+      revision: file.revision, path: file.path, digest: file.digest}));
     selectedSource = source;
-    elements["source-identity"].textContent = source.path + " · r" + source.revision + " · " + source.digest;
+    elements["source-identity"].textContent = source.path + " · r" + source.revision +
+      (file.line ? " · line " + file.line : "") + " · " + source.digest;
     elements["source-content"].textContent = source.content;
+    elements["source-content"].scrollTop = file.line ? (file.line - 1) * 19 : 0;
     elements["attach-source-button"].hidden = !source.content.trim();
     elements["diff-source-button"].hidden = source.revision === 0;
   } catch (error) { notice("Source identity is stale or unavailable. Select a saved revision again."); }
@@ -137,7 +140,19 @@ function renderWorkbench(data) {
     if (file) button.addEventListener("click", () => openSource(file));
     elements["planned-list"].append(button);
   }
-  elements["elaborated-list"].append(node("div", "Unavailable: " + data.elaborated.reason.replaceAll("_", " ") + ". Source navigation remains available.", "muted"));
+  if (data.elaborated.status === "elaborated") {
+    elements["elaborated-list"].append(node("div", "Verilator " + data.elaborated.tool_version +
+      " · exact input " + data.elaborated.input_digest, "muted"));
+    for (const instance of data.elaborated.instances) {
+      const button = node("button", instance.id + " → " + instance.module, "file-button");
+      button.type = "button";
+      button.addEventListener("click", () => openSource(instance.definition));
+      elements["elaborated-list"].append(button);
+    }
+  } else {
+    elements["elaborated-list"].append(node("div", "Unavailable: " +
+      data.elaborated.reason.replaceAll("_", " ") + ". Source navigation remains available.", "muted"));
+  }
   for (const requirement of data.requirements) {
     elements["link-list"].append(node("div", requirement.id + ": " + requirement.text +
       " · planned tests: " + (requirement.planned_tests.join(", ") || "none") + " · no coverage claim", "nav-item"));
