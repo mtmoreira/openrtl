@@ -23,8 +23,14 @@ permission is not restored automatically with a session.
 
 Inside the conversation:
 
-- Describe the circuit. OpenRTL presents requirements, questions and explicit
-  proposed assumptions. Resolve questions or ask it to propose choices.
+- Ask OpenRTL what it does or describe a circuit in ordinary language. When no
+  circuit is specified yet, it answers or asks a focused design question
+  without inventing an RTL specification. Provider-backed conversation consumes
+  a call even when it does not propose a specification; only bounded call
+  accounting is saved, not the raw exchange.
+- When enough design intent is available, OpenRTL presents requirements,
+  questions and explicit proposed assumptions. Resolve questions or ask it to
+  propose choices. The proposed specification remains subject to review.
 - `/approve <displayed-spec-digest>` approves the displayed specification,
   including assumptions. No RTL generation happens before this gate.
 - `/next` runs one engineering stage; `/build` continues within call and repair

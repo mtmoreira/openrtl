@@ -47,8 +47,10 @@ class ReadinessTest(unittest.TestCase):
     def test_complete_versioned_decisions_validate_and_schema_requires_them(self) -> None:
         require_ready(validate_spec(ready_spec()))
         schema = response_schema("discovery")
-        self.assertIn("readiness", schema["required"])
-        self.assertNotIn("readiness", response_schema("discovery", include_readiness=False)["required"])
+        proposed = schema["properties"]["specification"]["anyOf"][0]
+        self.assertIn("readiness", proposed["required"])
+        legacy = response_schema("discovery", include_readiness=False)["properties"]["specification"]["anyOf"][0]
+        self.assertNotIn("readiness", legacy["required"])
 
     def test_missing_duplicate_categories_unknown_anchors_and_uncovered_ports_fail(self) -> None:
         for mutation in ("missing", "duplicate", "anchor", "port", "acceptance", "empty"):
@@ -108,6 +110,34 @@ class ConversationTest(unittest.TestCase):
         self.assertTrue(any("unsigned four-bit" in line for line in output))
         self.assertFalse(any("/approve sha256:" in line for line in output))
         self.assertFalse(any('"readiness":' in line for line in output))
+
+    def test_greeting_and_role_question_answer_without_fabricating_a_design(self) -> None:
+        replies = iter((
+            {"reply": "Hi. Tell me what circuit you want to design.", "specification": None},
+            {"reply": "I help turn circuit requirements into reviewable RTL and tests.", "specification": None},
+        ))
+        class DiscussionExpert(FakeExpert):
+            async def generate(self, stage: str, context: JsonObject, operation_id: str):
+                self.responses["discovery"] = next(replies)
+                return await super().generate(stage, context, operation_id)
+        self.agent.expert = DiscussionExpert()
+        output = self.chat(["hi", "who are you?"])
+        self.assertTrue(any("Tell me what circuit" in line for line in output))
+        self.assertTrue(any("reviewable RTL" in line for line in output))
+        self.assertIsNone(self.store.read()["spec"])
+        self.assertEqual(self.store.read()["calls"], 2)
+        self.assertFalse(any("Review for specification" in line for line in output))
+        self.assertNotIn("Tell me what circuit", json.dumps(self.store.read()))
+        self.assertNotIn("reviewable RTL", json.dumps(self.store.events()))
+
+    def test_natural_language_design_request_still_requires_exact_review(self) -> None:
+        self.expert.responses["discovery"] = {"reply": "Here is a draft for your review.",
+                                               "specification": ready_spec()}
+        output = self.chat(["Design a four-bit wire"])
+        self.assertEqual(self.store.read()["status"], "discovery")
+        self.assertEqual(self.store.read()["spec"], ready_spec())
+        self.assertTrue(any("draft for your review" in line for line in output))
+        self.assertTrue(any("Review for specification" in line for line in output))
 
     def test_stale_shown_review_is_refused_and_new_review_can_be_approved(self) -> None:
         self.agent.propose(ready_spec())

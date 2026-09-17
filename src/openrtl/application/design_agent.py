@@ -136,19 +136,33 @@ class DesignAgent:
         existing = {w["id"] for w in updated["warnings"]}
         updated["warnings"].extend(w for w in specification_warnings(seed, updated["spec"]) if w["id"] not in existing)
 
-    async def discuss(self, message: str) -> JsonObject:
+    async def discuss(self, message: str, *, emit_reply: Callable[[str], None] | None = None) -> JsonObject:
         state = self._idle()
         require(state["status"] == "discovery", "use_explain_or_explicit_revision")
         result, started = await self._generate(state, "discovery", message)
         try:
-            spec = validate_spec(result)
+            reply = None
+            proposal = result
+            if isinstance(result, dict) and "specification" in result:
+                require(set(result) == {"reply", "specification"}, "expert_discussion_fields_invalid")
+                reply = text(result["reply"], maximum=8000)
+                proposal = result["specification"]
             updated = copy.deepcopy(started)
-            updated.update(spec=spec, active=None, last_error=None)
-            self._record_spec_warnings(updated)
-            return self.store.save(started, updated, "spec.proposed", {"spec_digest": content_digest(spec)})
+            updated.update(active=None, last_error=None)
+            if proposal is None:
+                require(reply is not None, "expert_discussion_reply_missing")
+                saved = self.store.save(started, updated, "operation.completed", {"role": ROLES["discovery"]})
+            else:
+                spec = validate_spec(proposal)
+                updated["spec"] = spec
+                self._record_spec_warnings(updated)
+                saved = self.store.save(started, updated, "spec.proposed", {"spec_digest": content_digest(spec)})
         except (ValueError, TypeError, KeyError):
             self._failed(started, "expert_output_invalid")
             raise ValueError("expert_output_invalid") from None
+        if reply is not None and emit_reply is not None:
+            emit_reply(reply)
+        return saved
 
     def approve(self, digest: str, *, delegated: bool = False) -> JsonObject:
         state = self._idle()

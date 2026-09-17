@@ -172,8 +172,13 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
         else:
             show(state, emit)
             shown = None
+    async def discuss(message: str) -> None:
+        state = await agent.discuss(message, emit_reply=emit)
+        if state["spec"] is not None:
+            present(state)
     emit("OpenRTL design-agent alpha. Raw conversation text is not saved; reviewed artifacts and events are.")
-    emit("Describe your design or ask to propose missing details. Say 'keep it brief' or 'go step by step' to adjust explanations.")
+    emit("Ask about OpenRTL or describe a circuit in your own words. I will ask for missing design details before review.")
+    emit("Say 'keep it brief' or 'go step by step' to adjust explanations.")
     emit("Use /help for advanced commands; /quit saves and exits.")
     emit("Say 'review', 'approve this specification', 'approve this change', 'accept this design', or 'continue'.")
     emit("Say 'revoke provider permission' or 'revoke simulation permission' to disable that capability for this invocation.")
@@ -225,7 +230,7 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
                     emit("Please specify: explain, propose a change, review, approve this specification/change, accept this design, or continue. No action taken.")
                     continue
                 if action == "discuss":
-                    present(await agent.discuss(message))
+                    await discuss(message)
                     continue
                 commands = {"review": "/review", "approve-specification": "/approve-specification",
                     "approve-change": "/approve-shown-change", "approve-acceptance": "/approve-acceptance",
@@ -320,7 +325,7 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
             elif command.startswith("/"):
                 emit("Unknown command; no changes made.")
             elif agent.store.read()["status"] == "discovery":
-                show(await agent.discuss(message), emit)
+                await discuss(message)
             else:
                 result = await agent.explain(message)
                 emit(result["explanation"])

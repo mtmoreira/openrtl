@@ -56,6 +56,10 @@ class DesignGenerationTest(unittest.TestCase):
             self.assertEqual(set(schema["required"]), set(schema["properties"]))
         self.assertEqual(response_schema("rtl")["properties"]["manifest"], {"type": "null"})
         self.assertEqual(response_schema("dv")["properties"]["manifest"]["type"], "object")
+        self.assertEqual(response_schema("discovery")["properties"]["specification"]["anyOf"][1],
+                         {"type": "null"})
+        self.assertEqual(response_schema("change_planning")["properties"]["specification"]["type"],
+                         "object")
 
 
 if __name__ == "__main__":
