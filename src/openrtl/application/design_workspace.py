@@ -9,7 +9,8 @@ import uuid
 
 from openrtl.application.design_agent import DesignAgent, design_input_digest
 from openrtl.application.design_conversation import ShownReview, approve_shown, review_payload
-from openrtl.domain.design_session import JsonObject, content_digest, require, text
+from openrtl.application.design_workbench import DesignWorkbench
+from openrtl.domain.design_session import JsonObject, STAGES, content_digest, require, text
 
 
 class DesignWorkspace:
@@ -22,6 +23,7 @@ class DesignWorkspace:
 
     def __init__(self, agent: DesignAgent) -> None:
         self.agent = agent
+        self.workbench = DesignWorkbench(agent.store)
         self._tasks: dict[str, asyncio.Task[None]] = {}
         self._replies: dict[str, str] = {}
 
@@ -91,6 +93,88 @@ class DesignWorkspace:
                 self._tasks.pop(client_operation_id, None)
         task.add_done_callback(reconcile_before_start)
         return self.operation(client_operation_id)
+
+    async def submit_question(self, message: str, *, client_operation_id: str,
+                              expected_revision: int, attachment: object | None = None,
+                              kind: str = "question", intent: str = "feature") -> JsonObject:
+        require(uuid.UUID(hex=client_operation_id).hex == client_operation_id,
+                "client_operation_id_invalid")
+        require(type(expected_revision) is int and expected_revision >= 0,
+                "expected_revision_invalid")
+        selected = text(message, maximum=16000)
+        require(kind in ("question", "change"), "workbench_request_kind_invalid")
+        require(intent in ("feature", "dv", "optimization"), "workbench_change_intent_invalid")
+        bound = self.workbench.attachment(attachment) if attachment is not None else None
+        request_digest = content_digest({"action": kind, "intent": intent,
+                                         "message": selected, "attachment": bound})
+        state = self.agent.store.read()
+        existing = state["workspace_operations"].get(client_operation_id)
+        if existing is not None:
+            require(existing["request_digest"] == request_digest, "client_operation_id_conflict")
+            return self.operation(client_operation_id)
+        require(state["revision"] == expected_revision, "workspace_revision_stale")
+        if kind == "change":
+            require(state["stage"] == len(STAGES) and state["manifest"] is not None,
+                    "change_requires_complete_baseline")
+        require(state["active"] is None, "interrupted_operation_requires_reconciliation")
+        require(not any(row["phase"] in ("queued", "active", "cancellation_requested")
+                        for row in state["workspace_operations"].values()),
+                "workspace_writer_busy_or_unreconciled")
+        require(self.agent.expert is not None, "expert_not_configured")
+        require(len(state["workspace_operations"]) < 128, "workspace_operation_limit")
+        updated = copy.deepcopy(state)
+        updated["workspace_operations"][client_operation_id] = {
+            "request_digest": request_digest, "phase": "queued",
+            "result_revision": None, "error_code": None,
+        }
+        self.agent.store.save(state, updated, "workspace.requested",
+                              {"client_operation_id": client_operation_id,
+                               "request_digest": request_digest})
+        task = asyncio.create_task(self._run_question(client_operation_id, selected, bound, kind, intent))
+        self._tasks[client_operation_id] = task
+        task.add_done_callback(lambda done: self._reconcile_cancelled_task(client_operation_id, done))
+        return self.operation(client_operation_id)
+
+    def _reconcile_cancelled_task(self, identifier: str, done: asyncio.Task[None]) -> None:
+        if done.cancelled():
+            self._finish(identifier, "reconciliation_needed", "operation_cancelled_uncertain")
+            self._tasks.pop(identifier, None)
+
+    async def _run_question(self, identifier: str, message: str, attachment: JsonObject | None,
+                            kind: str, intent: str) -> None:
+        try:
+            state = self.agent.store.read()
+            row = state["workspace_operations"][identifier]
+            if row["phase"] == "cancellation_requested":
+                self._finish(identifier, "reconciliation_needed", "operation_cancelled_uncertain")
+                return
+            if row["phase"] != "queued":
+                return
+            updated = copy.deepcopy(state)
+            updated["workspace_operations"][identifier]["phase"] = "active"
+            self.agent.store.save(state, updated, "workspace.active", {"client_operation_id": identifier})
+            context = message
+            if attachment is not None:
+                source = self.workbench.source(attachment["revision"], attachment["path"], attachment["digest"])
+                lines = source["content"].splitlines()[attachment["start_line"] - 1:attachment["end_line"]]
+                context += ("\nSelected source: " + attachment["path"] + " at revision " +
+                            str(attachment["revision"]) + " digest " + attachment["digest"] +
+                            " lines " + str(attachment["start_line"]) + "-" + str(attachment["end_line"]) +
+                            "\n" + "\n".join(lines))
+                require(len(context.encode("utf-8")) <= 32000, "workbench_question_too_large")
+            if kind == "change":
+                result = await self.agent.propose_improvement(context, intent=intent)
+                self._replies[identifier] = result["summary"] + " Review the exact change card before approval."
+            else:
+                result = await self.agent.explain(context)
+                self._replies[identifier] = result["explanation"]
+            self._finish(identifier, "completed", None)
+        except asyncio.CancelledError:
+            self._finish(identifier, "reconciliation_needed", "operation_cancelled_uncertain")
+        except Exception:
+            self._finish(identifier, "failed", "operation_failed")
+        finally:
+            self._tasks.pop(identifier, None)
 
     async def _run_discussion(self, identifier: str, message: str) -> None:
         try:

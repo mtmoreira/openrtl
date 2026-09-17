@@ -15,6 +15,11 @@
   <div class="workspace">
     <nav class="navigator" aria-label="Project navigation">
       <h2>Engineering state</h2>
+      <section><h3>Source files</h3><div id="file-list" class="stack muted">No source files yet.</div></section>
+      <section><h3>Planned structure</h3><div id="planned-list" class="stack muted">No plan yet.</div></section>
+      <section><h3>Elaborated instances</h3><div id="elaborated-list" class="stack muted">No compiler index yet.</div></section>
+      <section><h3>DV and requirements</h3><div id="link-list" class="stack muted">No verification links yet.</div></section>
+      <section><h3>History</h3><div id="history-list" class="stack muted">No history yet.</div></section>
       <section><h3>Requirements &amp; questions</h3><div id="memory-list" class="stack muted">No design facts yet.</div></section>
       <section><h3>Operations</h3><div id="operation-list" class="stack muted">No operations yet.</div></section>
       <section><h3>Evidence</h3><div id="evidence-list" class="stack muted">No simulation yet.</div></section>
@@ -25,13 +30,15 @@
       <button id="create-project-button" type="button" hidden>Create this project</button>
       <button id="upgrade-project-button" type="button" hidden>Upgrade this project session</button>
       <section class="surface"><div class="section-title"><h2>Current specification</h2><button id="review-button" type="button">Review proposal</button></div><div id="specification" class="stack muted">Describe your circuit to begin.</div></section>
+      <section class="surface"><div class="section-title"><h2>Source inspection</h2><span id="source-identity">Select a source file</span></div><pre id="source-content" class="source-content">Source is available after a generated revision is saved.</pre><div class="source-actions"><button id="attach-source-button" type="button" hidden>Attach source to conversation</button><button id="diff-source-button" type="button" hidden>Compare with previous revision</button></div></section>
+      <section class="surface"><div class="section-title"><h2>Proposed change</h2><button id="change-review-button" type="button">Review change</button></div><div id="proposal-content" class="stack muted">No change proposal.</div></section>
       <section class="surface"><div class="section-title"><h2>Review card</h2><span>Approval applies only to the displayed revision</span></div><div id="review-card" class="stack muted">No review requested.</div><button id="approve-button" type="button" hidden>Approve displayed specification</button></section>
       <section class="surface"><div class="section-title"><h2>Activity</h2><span>Bounded, reconnectable events</span></div><div id="activity-list" class="stack muted">No activity yet.</div></section>
     </main>
     <aside class="conversation" aria-label="Design conversation">
       <div class="conversation-heading"><div><span class="eyebrow">DESIGN LEAD</span><h2>Conversation</h2></div><span class="live-dot" aria-hidden="true"></span></div>
       <div id="conversation-list" class="messages"><div class="message system">Describe a circuit in your own words. OpenRTL will ask about missing details and show a specification for review.</div></div>
-      <form id="chat-form" class="composer"><label for="chat-input">Your request</label><textarea id="chat-input" rows="3" maxlength="16000" placeholder="For example: I need a counter with a reset and enable…"></textarea><div class="composer-footer"><span id="composer-status">Provider unavailable until explicitly selected at launch.</span><button type="submit">Send</button></div></form>
+      <form id="chat-form" class="composer"><label for="chat-input">Your request</label><textarea id="chat-input" rows="3" maxlength="16000" placeholder="For example: I need a counter with a reset and enable…"></textarea><label for="chat-kind">Action</label><select id="chat-kind"><option value="question">Ask about the design</option><option value="change">Propose a reviewed change</option></select><div class="composer-footer"><span id="composer-status">Provider unavailable until explicitly selected at launch.</span><button type="submit">Send</button></div></form>
     </aside>
   </div>
 </body>

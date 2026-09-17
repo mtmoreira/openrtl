@@ -108,6 +108,15 @@ class WorkspaceRuntime:
                                                           expected_revision=revision)
         return self._await(invoke())
 
+    def question(self, message: str, identifier: str, revision: int, attachment: object | None,
+                 kind: str, intent: str) -> JsonObject:
+        async def invoke() -> JsonObject:
+            require(self.workspace is not None, "project_not_created")
+            return await self.workspace.submit_question(message, client_operation_id=identifier,
+                                                        expected_revision=revision, attachment=attachment,
+                                                        kind=kind, intent=intent)
+        return self._await(invoke())
+
     def _await(self, operation: Coroutine[Any, Any, JsonObject]) -> JsonObject:
         future: Future[JsonObject] = asyncio.run_coroutine_threadsafe(operation, self.loop)
         return future.result(timeout=15)
@@ -204,6 +213,26 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
                     require(set(query) == {"kind"} and len(query["kind"]) == 1, "web_query_invalid")
                     self._json(200, runtime.call(lambda workspace: workspace.review(query["kind"][0])))
                     return
+                if parsed.path == "/api/workbench":
+                    query = parse_qs(parsed.query, strict_parsing=True)
+                    require(set(query) == {"revision"} and len(query["revision"]) == 1, "web_query_invalid")
+                    revision = int(query["revision"][0])
+                    self._json(200, runtime.call(lambda workspace: workspace.workbench.inventory(revision)))
+                    return
+                if parsed.path == "/api/source":
+                    query = parse_qs(parsed.query, strict_parsing=True)
+                    require(set(query) == {"revision", "path", "digest"} and
+                            all(len(value) == 1 for value in query.values()), "web_query_invalid")
+                    self._json(200, runtime.call(lambda workspace: workspace.workbench.source(
+                        int(query["revision"][0]), query["path"][0], query["digest"][0])))
+                    return
+                if parsed.path == "/api/diff":
+                    query = parse_qs(parsed.query, strict_parsing=True)
+                    require(set(query) == {"before", "after", "path"} and
+                            all(len(value) == 1 for value in query.values()), "web_query_invalid")
+                    self._json(200, runtime.call(lambda workspace: workspace.workbench.diff(
+                        int(query["before"][0]), int(query["after"][0]), query["path"][0])))
+                    return
                 match = re.fullmatch(r"/api/operations/([a-f0-9]{32})", parsed.path)
                 if match is not None:
                     identifier = match.group(1)
@@ -220,6 +249,13 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
                     body = self._body({"message", "client_operation_id", "expected_revision"})
                     self._json(202, runtime.submit(body["message"], body["client_operation_id"],
                                                    body["expected_revision"]))
+                    return
+                if parsed.path == "/api/questions":
+                    body = self._body({"message", "client_operation_id", "expected_revision",
+                                       "attachment", "kind", "intent"})
+                    self._json(202, runtime.question(body["message"], body["client_operation_id"],
+                                                     body["expected_revision"], body["attachment"],
+                                                     body["kind"], body["intent"]))
                     return
                 if parsed.path == "/api/project":
                     self._body(set())

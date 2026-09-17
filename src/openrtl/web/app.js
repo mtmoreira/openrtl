@@ -3,14 +3,21 @@
 const elements = Object.fromEntries([
   "project-label", "revision-label", "status-label", "digest-label", "notice", "create-project-button", "upgrade-project-button",
   "memory-list", "operation-list", "evidence-list", "specification",
+  "file-list", "planned-list", "elaborated-list", "link-list", "history-list",
+  "source-identity", "source-content", "attach-source-button", "diff-source-button",
+  "proposal-content", "change-review-button",
   "review-card", "review-button", "approve-button", "activity-list",
-  "conversation-list", "chat-form", "chat-input", "composer-status"
+  "conversation-list", "chat-form", "chat-input", "chat-kind", "composer-status"
 ].map(id => [id, document.getElementById(id)]));
 let state = null;
 let cursor = 0;
 let card = null;
 let pending = new Set();
 let projectReady = false;
+let selectedSource = null;
+let selectedAttachment = null;
+let shownRevision = null;
+let latestRevision = null;
 
 function node(tag, text, className) {
   const item = document.createElement(tag);
@@ -100,6 +107,63 @@ function renderSpecification(spec) {
   }
 }
 
+async function openSource(file) {
+  try {
+    const source = await api("/api/source?" + new URLSearchParams(file));
+    selectedSource = source;
+    elements["source-identity"].textContent = source.path + " · r" + source.revision + " · " + source.digest;
+    elements["source-content"].textContent = source.content;
+    elements["attach-source-button"].hidden = !source.content.trim();
+    elements["diff-source-button"].hidden = source.revision === 0;
+  } catch (error) { notice("Source identity is stale or unavailable. Select a saved revision again."); }
+}
+
+function renderWorkbench(data) {
+  shownRevision = data.revision;
+  for (const id of ["file-list", "planned-list", "elaborated-list", "link-list", "history-list", "proposal-content"]) empty(elements[id]);
+  for (const file of data.files) {
+    const button = node("button", file.path + " · r" + file.revision, "file-button");
+    button.type = "button";
+    button.addEventListener("click", () => openSource(file));
+    elements["file-list"].append(button);
+  }
+  if (!data.files.length) elements["file-list"].append(node("div", "No source files yet.", "muted"));
+  elements["planned-list"].append(node("div", data.planned.top ? "Top: " + data.planned.top : "No plan yet.", "muted"));
+  for (const module of data.planned.test_modules) {
+    const path = "dv/" + module + ".py";
+    const file = data.files.find(row => row.path === path);
+    const button = node("button", "DV module: " + module, "file-button");
+    button.disabled = !file;
+    if (file) button.addEventListener("click", () => openSource(file));
+    elements["planned-list"].append(button);
+  }
+  elements["elaborated-list"].append(node("div", "Unavailable: " + data.elaborated.reason.replaceAll("_", " ") + ". Source navigation remains available.", "muted"));
+  for (const requirement of data.requirements) {
+    elements["link-list"].append(node("div", requirement.id + ": " + requirement.text +
+      " · planned tests: " + (requirement.planned_tests.join(", ") || "none") + " · no coverage claim", "nav-item"));
+  }
+  if (!data.requirements.length) elements["link-list"].append(node("div", "No verification links yet.", "muted"));
+  for (const row of data.history.slice().reverse()) {
+    const button = node("button", "r" + row.revision + " · " + row.event, "file-button");
+    button.addEventListener("click", () => loadWorkbench(row.revision));
+    elements["history-list"].append(button);
+  }
+  if (data.proposal) {
+    const changed = Object.keys(data.proposal.plan.specification).filter(key =>
+      JSON.stringify(data.proposal.plan.specification[key]) !== JSON.stringify(state.spec?.[key]));
+    elements["proposal-content"].append(node("p", data.proposal.summary));
+    elements["proposal-content"].append(node("p", "Changed specification fields: " + (changed.join(", ") || "none")));
+    elements["proposal-content"].append(node("pre", JSON.stringify(data.proposal.plan.stage_paths, null, 2)));
+    elements["proposal-content"].append(node("p", "Source edits are pending generation; this is a plan, not a source diff."));
+  } else elements["proposal-content"].append(node("div", "No change proposal.", "muted"));
+  elements["change-review-button"].disabled = !data.proposal || data.revision !== data.current_revision;
+}
+
+async function loadWorkbench(revision) {
+  try { renderWorkbench(await api("/api/workbench?revision=" + revision)); }
+  catch (error) { notice("That engineering revision is unavailable."); }
+}
+
 function renderSnapshot(snapshot) {
   state = snapshot.state;
   cursor = snapshot.next_cursor;
@@ -109,9 +173,15 @@ function renderSnapshot(snapshot) {
   elements["composer-status"].textContent = state.active ? "An operation is active. Refresh keeps its identity." :
     snapshot.capabilities.provider ? "Messages are shown only in this browser session." :
     "Provider unavailable. Restart with explicit provider selection to chat.";
+  elements["chat-kind"].disabled = state.status === "discovery";
+  elements["chat-kind"].options[1].disabled = state.stage !== 6 || !state.manifest;
+  if (elements["chat-kind"].options[1].disabled) elements["chat-kind"].value = "question";
   renderMemory(state.engineering_memory || []);
   renderOperations(state.workspace_operations || {});
   renderSpecification(state.spec);
+  if (shownRevision === null || (shownRevision === latestRevision && latestRevision !== state.revision))
+    loadWorkbench(state.revision);
+  latestRevision = state.revision;
   empty(elements["evidence-list"]);
   elements["evidence-list"].append(node("div", state.simulation ?
     state.simulation.status + " · " + state.simulation.evidence_kind : "No simulation yet.", "muted"));
@@ -146,11 +216,14 @@ elements["chat-form"].addEventListener("submit", async event => {
   if (!value || !state) return;
   const id = crypto.randomUUID().replaceAll("-", "");
   try {
-    const job = await post("/api/discussions", {
-      message: value, client_operation_id: id, expected_revision: state.revision
-    });
+    const discovery = state.status === "discovery";
+    const job = await post(discovery ? "/api/discussions" : "/api/questions", discovery ?
+      {message: value, client_operation_id: id, expected_revision: state.revision} :
+      {message: value, client_operation_id: id, expected_revision: state.revision,
+        attachment: selectedAttachment, kind: elements["chat-kind"].value, intent: "feature"});
     message("user", value);
     elements["chat-input"].value = "";
+    selectedAttachment = null;
     pending.add(job.id);
     notice("Design Lead operation submitted. Its state will survive a page refresh.");
     refresh();
@@ -159,17 +232,41 @@ elements["chat-form"].addEventListener("submit", async event => {
   }
 });
 
-elements["review-button"].addEventListener("click", async () => {
+async function showReview(kind) {
   if (!state) return;
   try {
-    card = await api("/api/review?kind=specification");
+    card = await api("/api/review?kind=" + kind);
     empty(elements["review-card"]);
     elements["review-card"].append(node("div", JSON.stringify(card.payload, null, 2), "review-line"));
     elements["review-card"].append(node("div", "Revision " + card.revision + " · " + card.payload_digest, "muted"));
+    elements["approve-button"].textContent = "Approve displayed " + kind;
     elements["approve-button"].hidden = false;
   } catch (error) {
-    notice("No specification is available for review yet.");
+    notice("No " + kind + " is available for review yet.");
   }
+}
+elements["review-button"].addEventListener("click", () => showReview("specification"));
+elements["change-review-button"].addEventListener("click", () => showReview("change"));
+
+elements["attach-source-button"].addEventListener("click", () => {
+  if (!selectedSource) return;
+  const lines = selectedSource.content.split(/\r?\n/);
+  if (lines.at(-1) === "") lines.pop();
+  const count = lines.length;
+  selectedAttachment = {revision: selectedSource.revision, path: selectedSource.path,
+    digest: selectedSource.digest, start_line: 1, end_line: Math.min(count, 200)};
+  notice("Attached " + selectedSource.path + " at revision " + selectedSource.revision +
+    ", lines 1-" + selectedAttachment.end_line + ". The exact source identity is checked when sent.");
+});
+
+elements["diff-source-button"].addEventListener("click", async () => {
+  if (!selectedSource) return;
+  try {
+    const diff = await api("/api/diff?" + new URLSearchParams({before: selectedSource.revision - 1,
+      after: selectedSource.revision, path: selectedSource.path}));
+    elements["source-identity"].textContent = diff.path + " · r" + diff.before_revision + " → r" + diff.after_revision;
+    elements["source-content"].textContent = diff.content || "No source change between these revisions.";
+  } catch (error) { notice("No comparable source revision is available."); }
 });
 
 elements["approve-button"].addEventListener("click", async () => {

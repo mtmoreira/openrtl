@@ -1,4 +1,4 @@
-# Local web workspace (W1 candidate)
+# Local web workspace (W2 workbench candidate)
 
 This local candidate presents a project through a loopback browser interface.
 It reuses the same DesignAgent operations and SQLite session as the CLI. W1
@@ -57,7 +57,18 @@ Origin, and fixes the project at launch. It exposes no arbitrary file path or
 credential route. Only one session writer can hold a project. The browser does
 not inherit runtime or provider authority from saved project state.
 
-W1 is a foundation, not a completed design workbench. RTL/DV source, elaborated
-hierarchy, real simulation and embedded waveforms belong to W2–W4. Until those
-milestones are implemented and validated, the UI's evidence area is a status
-placeholder. Historical passing results never qualify a changed source digest.
+The workbench reads saved source at an exact revision, path and content digest.
+Its history and source diff inspect prior snapshots without changing the current
+project. The planned top and DV test modules come from the specification and
+manifest; requirement-to-test links describe the plan and make no coverage
+claim. Change review shows the complete saved proposal and uses the same
+revision- and digest-bound approval as the CLI. Approved changes invalidate
+the current manifest and simulation evidence through the existing design state
+machine. Post-discovery questions can attach a checked source revision and
+bounded line range without persisting the question or source excerpt.
+
+An actual elaborated instance hierarchy requires a compiler-produced index.
+Until the selected Verilator JSON output and the owned workload path are
+qualified, the interface states that this view is unavailable while keeping
+source inspection usable. Real simulation and embedded waveforms remain W3–W4.
+Historical passing results never qualify a changed source digest.
