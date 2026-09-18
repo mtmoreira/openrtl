@@ -1,4 +1,4 @@
-# Local web workspace (W3 simulation candidate)
+# Local web workspace (W1–W5 implementation candidate)
 
 This local candidate presents a project through a loopback browser interface.
 It reuses the same DesignAgent operations and SQLite session as the CLI. W1
@@ -78,8 +78,8 @@ the owned compiler transport is qualified. Until that transport supplies a
 validated index, the interface states that elaboration is unavailable while
 keeping source inspection usable. The index is process-scoped and must be
 recomputed after service restart or source change; it is never silently reused
-for a different design input. Compiler transport qualification and embedded
-waveforms remain open acceptance work.
+for a different design input. Live compiler transport qualification remains
+open acceptance work.
 Historical passing results never qualify a changed source digest.
 
 The simulation panel displays a digest-bound configuration for the current
@@ -138,3 +138,26 @@ constructing the expert's context; it does not persist the raw question or
 waveform excerpt. The current viewer uses a bounded VCD adapter. It does not
 claim FST support, a live viewer performance target, or a precise failure
 source/time link without corresponding evidence.
+
+The checked-in `./openrtl` launcher serves the three web assets directly from
+the clone. It needs no frontend build step. The provider-free onboarding smoke
+copies the launcher, application modules and exact web assets into a temporary
+clone, uses a pinned retained AgentRig wheel in private test state, and starts
+the loopback UI twice: first to create a project, then to reopen it. It checks
+the served asset bytes, stable project identity, saved revision and empty run
+history. This proves local packaged asset and reopen behavior in that test
+environment; it does not run a provider, compiler, simulator or browser GUI.
+
+For an engineering-state transfer, use the existing reviewed `sessions export`
+and `sessions restore` commands described in [session diagnostics](sessions-diagnostics.md).
+The digest-bound portable format retains snapshots, events, source blobs and
+the evidence files of each saved runtime-bound simulation. It transfers no
+provider or runtime authority. Export requires a reconciled session and an
+explicit review digest. The browser's explicit waveform selection is stored
+only in that browser's local storage and is not part of a project export.
+
+The local tests and launcher smoke do not establish a fresh provider-designed
+circuit, a live owned-guest simulation, real-trace viewer performance, or an
+end-to-end repair and rerun. Those require separate owner-authorized live
+qualification with actual tool and artifact evidence. M46 and M47 remain
+pending; this workspace candidate is not a new published release.

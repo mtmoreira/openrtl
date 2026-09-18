@@ -9,9 +9,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import http.client
 import json
 import os
 from pathlib import Path
+import re
+import select
+import signal
 import stat
 import subprocess
 import sys
@@ -54,6 +58,7 @@ def verify(wheel: Path, output: Path) -> dict[str, object]:
                "tools/bootstrap_runtime.sh", "bootstrap/dependencies.json", "bootstrap/sdk-requirements.lock"]
     sources.extend(p.relative_to(ROOT).as_posix() for p in sorted((ROOT / "src/openrtl").rglob("*"))
                    if p.suffix == ".py" or p.name == "py.typed")
+    sources.extend("src/openrtl/web/" + name for name in ("index.html", "app.css", "app.js"))
     source_manifest = []
     for name in sources:
         original = _safe(ROOT / name)
@@ -110,6 +115,65 @@ def verify(wheel: Path, output: Path) -> dict[str, object]:
         checks.append(label)
         return completed.stdout.decode("utf-8")
 
+    def web_smoke(label: str, *, create: bool) -> dict[str, object]:
+        arguments = [*command, "--offline", "ui", "--project", str(output / "web design with spaces"),
+                     "--port", "0"]
+        if create:
+            arguments.append("--create")
+        process = subprocess.Popen(arguments, cwd=copied, env=environment,
+                                   stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT)
+        lines: list[bytes] = []
+        try:
+            if process.stdout is None or not select.select([process.stdout], [], [], 20)[0]:
+                raise ValueError("web_launcher_start_timeout")
+            first = process.stdout.readline()
+            lines.append(first)
+            match = re.fullmatch(rb"OpenRTL UI: http://127\.0\.0\.1:([0-9]{1,5})\n", first)
+            if match is None:
+                raise ValueError("web_launcher_address_invalid")
+            port = int(match.group(1))
+            if not 1 <= port <= 65535:
+                raise ValueError("web_launcher_port_invalid")
+            def get(path: str) -> tuple[int, bytes]:
+                connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+                try:
+                    connection.request("GET", path)
+                    response = connection.getresponse()
+                    body = response.read(2 * 1024 * 1024 + 1)
+                    if len(body) > 2 * 1024 * 1024:
+                        raise ValueError("web_response_limit")
+                    return response.status, body
+                finally:
+                    connection.close()
+            for route, source in (("/", "src/openrtl/web/index.html"),
+                                  ("/app.css", "src/openrtl/web/app.css"),
+                                  ("/app.js", "src/openrtl/web/app.js")):
+                code, body = get(route)
+                if code != 200 or body != (copied / source).read_bytes():
+                    raise ValueError("web_packaged_asset_mismatch")
+            code, body = get("/api/snapshot?cursor=0")
+            snapshot = json.loads(body)
+            if code != 200 or snapshot["state"]["revision"] != 0:
+                raise ValueError("web_reopen_state_mismatch")
+            code, body = get("/api/runs")
+            if code != 200 or json.loads(body)["runs"] != []:
+                raise ValueError("web_run_history_mismatch")
+            checks.append(label)
+            return {"project_id": snapshot["project_id"], "revision": snapshot["state"]["revision"]}
+        finally:
+            if process.poll() is None:
+                process.send_signal(signal.SIGINT)
+            try:
+                process.communicate(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.communicate(timeout=5)
+            filename = output / (label + ".log")
+            filename.write_bytes(b"".join(lines)[:2 * 1024 * 1024])
+            logs.append(_describe(filename, output))
+            save()
+
     save()
     try:
         run("unattended_denial", ["--offline", "chat", "--project", str(project)], expected=2)
@@ -124,6 +188,10 @@ def verify(wheel: Path, output: Path) -> dict[str, object]:
             raise ValueError("unexpected_runtime_authority")
         run("cached_resume_without_install_consent", ["--offline", "resume", "--project", str(project)],
             text="/show\n/quit\n")
+        created_web = web_smoke("packaged_web_create", create=True)
+        reopened_web = web_smoke("packaged_web_reopen", create=False)
+        if reopened_web != created_web:
+            raise ValueError("web_reopen_identity_changed")
         saved = json.loads(run("saved_specification", ["--offline", "status", "--project", str(project)]))
         if saved["spec"] != spec or saved["calls"] != 0 or saved["simulation"] is not None:
             raise ValueError("local_review_state_mismatch")
