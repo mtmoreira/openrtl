@@ -9,7 +9,8 @@ from typing import Any, cast
 
 
 JsonObject = dict[str, Any]
-SESSION_SCHEMA = "openrtl.design-session.v5"
+SESSION_SCHEMA = "openrtl.design-session.v6"
+WEB_SESSION_SCHEMA = "openrtl.design-session.v5"
 COACHING_SESSION_SCHEMA = "openrtl.design-session.v4"
 IMPORT_SESSION_SCHEMA = "openrtl.design-session.v3"
 PREVIOUS_SESSION_SCHEMA = "openrtl.design-session.v2"
@@ -205,9 +206,39 @@ def coaching_initial_state() -> JsonObject:
             "pace": "stage", "proposal": None, "analysis": None}
 
 
-def initial_state() -> JsonObject:
-    return {**coaching_initial_state(), "schema": SESSION_SCHEMA,
+def web_initial_state() -> JsonObject:
+    return {**coaching_initial_state(), "schema": WEB_SESSION_SCHEMA,
             "engineering_memory": [], "workspace_operations": {}}
+
+
+def initial_state() -> JsonObject:
+    return {**web_initial_state(), "schema": SESSION_SCHEMA,
+            "provider": {"model": None, "limit_nano_usd": None, "spent_nano_usd": 0,
+                         "pending": None, "uncertain": False, "prior_unpriced_calls": 0}}
+
+
+def validate_provider_state(value: object, active: object) -> None:
+    from openrtl.domain.provider_controls import compatible_model
+    row = object_value(value, {"model", "limit_nano_usd", "spent_nano_usd", "pending",
+                               "uncertain", "prior_unpriced_calls"})
+    require((row["model"] is None and row["limit_nano_usd"] is None) or
+            (row["model"] is not None and row["limit_nano_usd"] is not None),
+            "provider_selection_incomplete")
+    if row["model"] is not None:
+        compatible_model(row["model"])
+    require(row["limit_nano_usd"] is None or type(row["limit_nano_usd"]) is int and
+            10_000_000 <= row["limit_nano_usd"] <= 1_000_000_000_000,
+            "provider_spend_limit_invalid")
+    require(type(row["spent_nano_usd"]) is int and row["spent_nano_usd"] >= 0 and
+            type(row["prior_unpriced_calls"]) is int and 0 <= row["prior_unpriced_calls"] <= 200 and
+            type(row["uncertain"]) is bool, "provider_accounting_invalid")
+    if row["pending"] is not None:
+        pending = object_value(row["pending"], {"operation_id", "reserved_nano_usd", "model"})
+        require(isinstance(active, dict) and active["kind"] == "expert" and
+                active["id"] == pending["operation_id"] and
+                pending["model"] == row["model"] and
+                type(pending["reserved_nano_usd"]) is int and pending["reserved_nano_usd"] > 0,
+                "provider_pending_invalid")
 
 
 def validate_engineering_memory(value: object) -> list[JsonObject]:
@@ -253,9 +284,11 @@ def validate_state(value: object) -> JsonObject:
     previous = cast(JsonObject, value).get("schema") == PREVIOUS_SESSION_SCHEMA
     imported = cast(JsonObject, value).get("schema") == IMPORT_SESSION_SCHEMA
     coaching = cast(JsonObject, value).get("schema") == COACHING_SESSION_SCHEMA
+    web = cast(JsonObject, value).get("schema") == WEB_SESSION_SCHEMA
     state = object_value(value, set(legacy_initial_state() if legacy else previous_initial_state() if previous else
-                                   imported_initial_state() if imported else coaching_initial_state() if coaching else initial_state()))
-    require(state["schema"] in (SESSION_SCHEMA, COACHING_SESSION_SCHEMA, IMPORT_SESSION_SCHEMA,
+                                   imported_initial_state() if imported else coaching_initial_state() if coaching else
+                                   web_initial_state() if web else initial_state()))
+    require(state["schema"] in (SESSION_SCHEMA, WEB_SESSION_SCHEMA, COACHING_SESSION_SCHEMA, IMPORT_SESSION_SCHEMA,
                                 PREVIOUS_SESSION_SCHEMA, LEGACY_SESSION_SCHEMA), "session_schema_unrecognized")
     for field in ("revision", "stage", "calls", "repairs"):
         require(type(state[field]) is int and state[field] >= 0, "session_counter_invalid")
@@ -308,13 +341,15 @@ def validate_state(value: object) -> JsonObject:
     if not legacy:
         from openrtl.domain.design_delegation import validate_session_extensions
         validate_session_extensions(state)
-    if state["schema"] in (SESSION_SCHEMA, COACHING_SESSION_SCHEMA, IMPORT_SESSION_SCHEMA):
+    if state["schema"] in (SESSION_SCHEMA, WEB_SESSION_SCHEMA, COACHING_SESSION_SCHEMA, IMPORT_SESSION_SCHEMA):
         from openrtl.domain.design_imports import validate_import_state
         validate_import_state(state)
-    if state["schema"] in (SESSION_SCHEMA, COACHING_SESSION_SCHEMA):
+    if state["schema"] in (SESSION_SCHEMA, WEB_SESSION_SCHEMA, COACHING_SESSION_SCHEMA):
         from openrtl.domain.design_coaching import validate_coaching_state
         validate_coaching_state(state)
-    if state["schema"] == SESSION_SCHEMA:
+    if state["schema"] in (SESSION_SCHEMA, WEB_SESSION_SCHEMA):
         validate_engineering_memory(state["engineering_memory"])
         validate_workspace_operations(state["workspace_operations"], state["revision"])
+    if state["schema"] == SESSION_SCHEMA:
+        validate_provider_state(state["provider"], state["active"])
     return state

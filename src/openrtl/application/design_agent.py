@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import copy
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Callable, Protocol
+from typing import Callable, Protocol, cast
 import uuid
 import time
 
@@ -61,10 +61,16 @@ class DesignRecovery(Protocol):
 class DesignPolicy:
     max_calls: int = 40
     max_repairs: int = 2
+    provider_model: str | None = None
+    max_output_tokens: int = 16000
 
     def __post_init__(self) -> None:
         require(type(self.max_calls) is int and 1 <= self.max_calls <= 200, "call_budget_invalid")
         require(type(self.max_repairs) is int and 0 <= self.max_repairs <= 5, "repair_budget_invalid")
+        if self.provider_model is not None:
+            from openrtl.domain.provider_controls import compatible_model, request_reserve_nano
+            compatible_model(self.provider_model)
+            request_reserve_nano(self.provider_model, self.max_output_tokens)
 
 
 def design_input_digest(state: JsonObject) -> str:
@@ -79,6 +85,29 @@ class DesignAgent:
         self.store, self.expert, self.simulator, self.policy = store, expert, simulator, policy
         self.recovery = recovery
         self.progress = progress
+
+    def configure_provider(self, model: str, limit_nano_usd: int) -> JsonObject:
+        from openrtl.domain.provider_controls import compatible_model
+        compatible_model(model)
+        require(type(limit_nano_usd) is int and 10_000_000 <= limit_nano_usd <= 1_000_000_000_000,
+                "provider_spend_limit_invalid")
+        state = self._idle()
+        require(not any(row["phase"] in ("queued", "active", "cancellation_requested")
+                        for row in state["workspace_operations"].values()),
+                "workspace_writer_busy_or_unreconciled")
+        require(not state["provider"]["uncertain"], "provider_spend_uncertain")
+        require(limit_nano_usd >= state["provider"]["spent_nano_usd"],
+                "provider_spend_limit_below_used")
+        selected = replace(self.policy, provider_model=model)
+        if state["provider"]["model"] == model and state["provider"]["limit_nano_usd"] == limit_nano_usd:
+            self.policy = selected
+            return state
+        updated = copy.deepcopy(state)
+        updated["provider"].update(model=model, limit_nano_usd=limit_nano_usd)
+        saved = self.store.save(state, updated, "provider.configured",
+                                {"model": model, "limit_nano_usd": limit_nano_usd})
+        self.policy = selected
+        return saved
 
     def _idle(self) -> JsonObject:
         state = self.store.read()
@@ -118,6 +147,9 @@ class DesignAgent:
             await self.recovery.abandon(operation_id, design_input_digest(state))
         updated = copy.deepcopy(state)
         updated.update(active=None, last_error="interrupted_operation_abandoned")
+        if state["active"]["kind"] == "expert" and updated["provider"]["pending"] is not None:
+            updated["provider"]["pending"] = None
+            updated["provider"]["uncertain"] = True
         updated["warnings"].append(warning(
             "interrupted_operation", operation_id, content_digest(state["spec"]),
             "Interrupted operation explicitly abandoned; its output is not accepted as evidence.",
@@ -384,9 +416,25 @@ class DesignAgent:
         state = self._limits(state)
         require(state["calls"] < state["limits"]["max_calls"], "expert_call_budget_exhausted")
         pack = self.context(state, stage, message, intent=intent)
+        reserve = 0
+        if self.policy.provider_model is not None:
+            from openrtl.domain.provider_controls import request_reserve_nano
+            budget = state["provider"]
+            require(budget["model"] == self.policy.provider_model and
+                    budget["limit_nano_usd"] is not None, "provider_spend_not_configured")
+            require(not budget["uncertain"] and budget["pending"] is None,
+                    "provider_spend_uncertain")
+            reserve = request_reserve_nano(self.policy.provider_model, self.policy.max_output_tokens)
+            require(budget["spent_nano_usd"] + reserve <= budget["limit_nano_usd"],
+                    "provider_spend_budget_exhausted")
         operation = uuid.uuid4().hex
         updated = copy.deepcopy(state)
         updated.update(active={"id": operation, "kind": "expert", "stage": stage}, calls=state["calls"] + 1)
+        if reserve:
+            updated["provider"]["spent_nano_usd"] += reserve
+            updated["provider"]["pending"] = {"operation_id": operation,
+                                                "reserved_nano_usd": reserve,
+                                                "model": self.policy.provider_model}
         started = self.store.save(state, updated, "operation.started",
                                   {"operation_id": operation, "role": ROLES[stage],
                                    "context_digest": content_digest(pack)})
@@ -404,7 +452,19 @@ class DesignAgent:
                 require(count is None or type(count) is int and count >= 0, "expert_usage_invalid")
                 if count is not None:
                     metrics[field] = count
-            started = self.store.save(started, started, "operation.received", metrics)
+            received = copy.deepcopy(started)
+            if reserve:
+                from openrtl.domain.provider_controls import estimated_cost_nano
+                require(reply.provider == "openai" and reply.model == self.policy.provider_model and
+                        reply.input_tokens is not None and reply.output_tokens is not None,
+                        "provider_usage_unavailable")
+                actual = estimated_cost_nano(reply.model, cast(int, reply.input_tokens),
+                                             cast(int, reply.output_tokens))
+                require(actual <= reserve, "provider_spend_reserve_exceeded")
+                received["provider"]["spent_nano_usd"] -= reserve - actual
+                received["provider"]["pending"] = None
+                metrics["estimated_cost_nano_usd"] = actual
+            started = self.store.save(started, received, "operation.received", metrics)
             return reply.output, started
         except Exception:
             # Do not persist provider exception bodies, prompts, or authentication material.
@@ -414,6 +474,9 @@ class DesignAgent:
     def _failed(self, started: JsonObject, code: str) -> None:
         updated = copy.deepcopy(started)
         updated.update(active=None, last_error=code)
+        if updated["provider"]["pending"] is not None:
+            updated["provider"]["pending"] = None
+            updated["provider"]["uncertain"] = True
         self.store.save(started, updated, "operation.failed", {"error_code": code})
 
     async def advance(self) -> JsonObject:

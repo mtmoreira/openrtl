@@ -157,7 +157,7 @@ No technology mentioned here authorizes installation, downloads, provider calls,
 
 ## Local service and packaging
 
-Default to loopback binding and intentional browser access. Apply origin/request protections, contained artifact routes, and project-scoped authorization. Do not expose arbitrary filesystem reads, shell execution, or credential APIs. Keep provider credentials and runtime authority out of the browser.
+Default to loopback binding and intentional browser access. Apply origin/request protections, contained artifact routes, and project-scoped authorization. Do not expose arbitrary filesystem reads or shell execution. The later owner-requested [local provider controls](provider-controls.md) permit ephemeral key entry in the loopback browser while keeping values out of saved engineering state and responses; runtime authority remains server-side.
 
 Generated RTL and DV remain untrusted until the applicable deterministic validation passes, and execute only through the selected isolated runtime. Preserve existing process allowlists, exact argument construction, fixed roots, deadlines, and output limits.
 

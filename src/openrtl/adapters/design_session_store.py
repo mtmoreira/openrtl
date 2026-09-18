@@ -15,7 +15,7 @@ from typing import Iterator, cast
 import uuid
 
 from openrtl.domain.design_session import (
-    JsonObject, MAX_ARTIFACT_BYTES, SESSION_SCHEMA, COACHING_SESSION_SCHEMA, LEGACY_SESSION_SCHEMA, PREVIOUS_SESSION_SCHEMA, IMPORT_SESSION_SCHEMA, canonical, initial_state,
+    JsonObject, MAX_ARTIFACT_BYTES, SESSION_SCHEMA, WEB_SESSION_SCHEMA, COACHING_SESSION_SCHEMA, LEGACY_SESSION_SCHEMA, PREVIOUS_SESSION_SCHEMA, IMPORT_SESSION_SCHEMA, canonical, initial_state,
     require, source_path, validate_state, text, content_digest,
 )
 
@@ -91,14 +91,16 @@ class DesignSessionStore:
         return operation_id in self._owned_operations
 
     def upgrade(self) -> JsonObject:
-        """Explicit, append-only v1/v2/v3/v4 migration; prior snapshots remain unchanged."""
+        """Explicit, append-only v1–v5 migration; prior snapshots remain unchanged."""
         state = self.read()
         if state["schema"] == SESSION_SCHEMA:
             return state
         require(state["schema"] in (LEGACY_SESSION_SCHEMA, PREVIOUS_SESSION_SCHEMA,
-                                    IMPORT_SESSION_SCHEMA, COACHING_SESSION_SCHEMA), "session_upgrade_unrecognized")
+                                    IMPORT_SESSION_SCHEMA, COACHING_SESSION_SCHEMA,
+                                    WEB_SESSION_SCHEMA), "session_upgrade_unrecognized")
         updated = {**state, **{k: v for k, v in initial_state().items() if k not in state},
                    "schema": SESSION_SCHEMA}
+        updated["provider"]["prior_unpriced_calls"] = state["calls"]
         if state["schema"] == LEGACY_SESSION_SCHEMA:
             updated.update(approval_mode="legacy_user" if state["approved_spec"] else None,
                            acceptance_mode="legacy_user" if state["status"] == "accepted" else None)

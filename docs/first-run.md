@@ -6,6 +6,9 @@ setup tests do not prove that a provider designed new RTL.
 
 For local session discovery, portable backup/restore and support diagnostics, see
 [sessions and diagnostics](sessions-diagnostics.md).
+For current CLI and web model selection, estimated spend ceilings and ephemeral
+API-key entry, see [local provider controls](provider-controls.md). These are
+separate from the older setup preference shown below.
 
 From a clone, run:
 

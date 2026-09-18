@@ -167,6 +167,51 @@ class DesignWebTest(unittest.TestCase):
         finally:
             runtime.close()
 
+    def test_provider_settings_are_redacted_and_unknown_models_fail_closed(self) -> None:
+        provider_project = Path(self.temporary.name).resolve() / "provider-settings"
+        runtime = WorkspaceRuntime(provider_project, create=True, expert_factory=lambda: None,
+                                   provider_builder=lambda model, key: self.expert,
+                                   policy=DesignPolicy())
+        server = ThreadingHTTPServer(("127.0.0.1", 0), handler(runtime))
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        def request(method: str, body: dict[str, object] | None = None) -> tuple[int, dict[str, object]]:
+            connection = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+            try:
+                raw = json.dumps(body).encode() if body is not None else None
+                connection.request(method, "/api/provider", body=raw,
+                                   headers={"Content-Type": "application/json"} if body is not None else {})
+                response = connection.getresponse()
+                return response.status, json.loads(response.read())
+            finally:
+                connection.close()
+        try:
+            code, catalog = request("GET")
+            self.assertEqual(code, 200)
+            self.assertEqual(len(catalog["models"]), 5)
+            key = "synthetic-key-value-do-not-persist"
+            body = {"model": "gpt-5.6-terra", "max_spend_usd": "20.00",
+                    "api_key": key, "enabled": True}
+            code, selected = request("POST", body)
+            self.assertEqual(code, 200)
+            self.assertTrue(selected["key_present"])
+            code, state = request("GET")
+            self.assertEqual(code, 200)
+            self.assertEqual(state["selected_model"], "gpt-5.6-terra")
+            self.assertEqual(state["max_spend_usd"], "20.000000")
+            self.assertNotIn(key, json.dumps(state) + json.dumps(selected))
+            self.assertNotIn(key.encode(), (provider_project / "session.sqlite3").read_bytes())
+            body["model"] = "unknown-model"
+            code, rejected = request("POST", body)
+            self.assertEqual(code, 409)
+            self.assertEqual(rejected["error"], "provider_model_incompatible")
+            self.assertEqual(runtime.provider_settings()["selected_model"], "gpt-5.6-terra")
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
+            runtime.close()
+
 
 if __name__ == "__main__":
     unittest.main()

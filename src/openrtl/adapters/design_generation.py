@@ -16,7 +16,8 @@ from agentrig.core import ArtifactResolver, CancellationSource, RunContext, RunI
 from agentrig.integrations.openai import (
     OPENAI_RESPONSES_SDK_VERSION, OpenAIResponsesClientFactory, OpenAIResponsesStructuredGenerator,
 )
-from openrtl.adapters.provider_invocation import EnvironmentOpenAIAuthenticationSource, RejectingArtifactResolver
+from openrtl.adapters.provider_invocation import (EnvironmentOpenAIAuthenticationSource,
+                                                  MemoryOpenAIAuthenticationSource, RejectingArtifactResolver)
 from openrtl.application.design_agent import ExpertReply
 from openrtl.domain.design_session import JsonObject, MAX_CONTEXT_BYTES, STAGES, canonical, require, text
 
@@ -150,16 +151,20 @@ class AgentRigDesignExpert:
 
 
 def openai_design_expert(*, authorized: bool, model: str, credential_environment: str,
+                         credential_value: str | None = None,
                          timeout_seconds: int = 120, max_output_tokens: int = 16000) -> AgentRigDesignExpert:
-    """Construction is value-free. Credentials are resolved by AgentRig on a requested turn."""
+    """Construction makes no provider call; credentials are resolved on a requested turn."""
     require(authorized, "provider_authorization_required")
+    from openrtl.domain.provider_controls import compatible_model
+    compatible_model(model)
     require(re.fullmatch(r"[A-Z][A-Z0-9_]{0,127}", credential_environment) is not None,
             "credential_environment_name_invalid")
     from importlib.metadata import version
     require(version("openai") == OPENAI_RESPONSES_SDK_VERSION, "pinned_optional_openai_sdk_required")
     sdk = import_module("openai")
     bridge = import_module("agentrig.integrations.openai.responses_sdk")
-    authentication = EnvironmentOpenAIAuthenticationSource(credential_environment)
+    authentication = (EnvironmentOpenAIAuthenticationSource(credential_environment)
+                      if credential_value is None else MemoryOpenAIAuthenticationSource(credential_value))
     # Disable implicit retries: every authorized operation consumes at most one SDK request.
     # Fix endpoint and organization/project options instead of inheriting endpoint overrides.
     factory = bridge.OpenAIResponsesSdkClientFactory(

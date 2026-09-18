@@ -12,7 +12,8 @@ const elements = Object.fromEntries([
   "waveform-zoom-out", "waveform-pan-left", "waveform-pan-right", "waveform-chart",
   "waveform-cursor-a", "waveform-cursor-b", "waveform-values", "waveform-save", "waveform-attach",
   "review-card", "review-button", "approve-button", "activity-list",
-  "conversation-list", "chat-form", "chat-input", "chat-kind", "composer-status"
+  "conversation-list", "chat-form", "chat-input", "chat-kind", "composer-status",
+  "provider-form", "provider-model", "provider-spend", "provider-key", "provider-enabled", "provider-status"
 ].map(id => [id, document.getElementById(id)]));
 let state = null;
 let cursor = 0;
@@ -30,6 +31,7 @@ let selectedRun = null;
 let waveCatalog = null;
 let waveSignals = [];
 let waveWindow = null;
+let providerFieldsLoaded = false;
 
 function node(tag, text, className) {
   const item = document.createElement(tag);
@@ -55,6 +57,60 @@ function post(path, body) {
   return api(path, { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body) });
 }
+
+async function loadProviderSettings(resetFields = false) {
+  try {
+    const settings = await api("/api/provider");
+    if (!providerFieldsLoaded || resetFields) {
+      empty(elements["provider-model"]);
+      for (const item of settings.models) {
+        const option = node("option", item.id + " · $" + item.input_usd_per_million +
+          "/$" + item.output_usd_per_million + " per million tokens");
+        option.value = item.id;
+        elements["provider-model"].append(option);
+      }
+      elements["provider-model"].value = settings.selected_model || "gpt-5.6-terra";
+      elements["provider-spend"].value = settings.max_spend_usd ?
+        Number(settings.max_spend_usd).toFixed(2) : "";
+      elements["provider-enabled"].checked = settings.enabled;
+      providerFieldsLoaded = true;
+    }
+    elements["provider-form"].querySelectorAll("input,select,button").forEach(item => {
+      item.disabled = !settings.editable;
+    });
+    elements["provider-status"].textContent = "Estimated provider spend: $" +
+      settings.estimated_spend_usd + (settings.max_spend_usd ?
+        " of $" + settings.max_spend_usd : " · no ceiling selected") +
+      (settings.uncertain ? " · uncertain call; further calls blocked" : "") +
+      (settings.prior_unpriced_calls ? " · " + settings.prior_unpriced_calls +
+        " earlier calls have no price record" : "") +
+      (settings.key_present ? " · key in server memory" : " · no key stored in server memory");
+    elements["composer-status"].textContent = settings.enabled ?
+      "Provider enabled for this server. Project spend estimate is capped locally." :
+      "Provider unavailable until explicitly enabled here or at launch.";
+  } catch (error) {
+    elements["provider-status"].textContent = "Provider settings unavailable. No provider action was retried.";
+  }
+}
+
+elements["provider-form"].addEventListener("submit", async event => {
+  event.preventDefault();
+  const key = elements["provider-key"].value;
+  try {
+    await post("/api/provider", {model: elements["provider-model"].value,
+      max_spend_usd: elements["provider-spend"].value,
+      api_key: key || null, enabled: elements["provider-enabled"].checked});
+    elements["provider-key"].value = "";
+    await loadProviderSettings(true);
+    notice("Provider settings saved. Future calls use the displayed model and remaining project ceiling.");
+    refresh();
+  } catch (error) {
+    elements["provider-key"].value = "";
+    notice(error.message === "provider_model_incompatible" ?
+      "That model is not in OpenRTL's compatible catalog." :
+      "Provider settings were not saved. Check the model, spend ceiling and operation state.");
+  }
+});
 
 function renderMemory(rows) {
   empty(elements["memory-list"]);
@@ -433,7 +489,7 @@ function renderSnapshot(snapshot) {
   elements["digest-label"].textContent = state.approved_spec || "No approved design";
   elements["composer-status"].textContent = state.active ? "An operation is active. Refresh keeps its identity." :
     snapshot.capabilities.provider ? "Messages are shown only in this browser session." :
-    "Provider unavailable. Restart with explicit provider selection to chat.";
+    "Provider unavailable. Configure and enable a compatible model above to chat.";
   elements["chat-kind"].disabled = state.status === "discovery";
   elements["chat-kind"].options[1].disabled = state.stage !== 6 || !state.manifest;
   if (elements["chat-kind"].options[1].disabled) elements["chat-kind"].value = "question";
@@ -484,6 +540,7 @@ async function refresh() {
   if (!projectReady) return;
   try {
     renderSnapshot(await api("/api/snapshot?cursor=" + cursor));
+    loadProviderSettings();
     for (const id of [...pending]) {
       const job = await api("/api/operations/" + id);
       if (["completed", "failed", "cancelled", "reconciliation_needed"].includes(job.phase)) {
@@ -645,6 +702,7 @@ elements["create-project-button"].addEventListener("click", async () => {
     elements["create-project-button"].hidden = true;
     projectReady = true;
     notice("Project created. Describe a circuit to begin.");
+    loadProviderSettings(true);
     refresh();
   } catch (error) { notice("Project creation failed. Check the selected path and server state."); }
 });
@@ -655,6 +713,7 @@ elements["upgrade-project-button"].addEventListener("click", async () => {
     elements["upgrade-project-button"].hidden = true;
     projectReady = true;
     notice("Project session upgraded. Review its current engineering state before continuing.");
+    loadProviderSettings(true);
     refresh();
   } catch (error) { notice("Project upgrade failed. The saved project remains available for inspection."); }
 });
@@ -665,17 +724,20 @@ async function bootstrap() {
     elements["project-label"].textContent = project.name;
     projectReady = project.ready;
     if (!project.created) {
+      loadProviderSettings(true);
       elements["create-project-button"].hidden = false;
       elements["status-label"].textContent = "Project not created";
       notice("Create the selected local project to begin. The server cannot select other filesystem paths.");
       return;
     }
     if (!projectReady) {
+      loadProviderSettings(true);
       elements["upgrade-project-button"].hidden = false;
       elements["status-label"].textContent = "Session upgrade required";
       notice("This project uses an older session schema. Review and explicitly upgrade it to continue.");
       return;
     }
+    loadProviderSettings(true);
     refresh();
   } catch (error) { notice("Project service unavailable. Reconnect will inspect saved state."); }
 }

@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import json
 from pathlib import Path
+import sys
 from typing import Any, Sequence
 
 from agentrig.capabilities import (
@@ -108,6 +109,8 @@ def parser() -> argparse.ArgumentParser:
     ui.add_argument("--allow-provider", action="store_true")
     ui.add_argument("--model")
     ui.add_argument("--credential-env", default="OPENAI_API_KEY")
+    ui.add_argument("--api-key-stdin", action="store_true")
+    ui.add_argument("--max-spend-usd")
     ui.add_argument("--max-calls", type=int, default=40)
     ui.add_argument("--max-repairs", type=int, default=2)
     ui.add_argument("--allow-simulation", action="store_true")
@@ -115,6 +118,7 @@ def parser() -> argparse.ArgumentParser:
     ui.add_argument("--lima-executable", type=Path)
     ui.add_argument("--lima-state-root", type=Path)
     ui.add_argument("--lima-instance")
+    subcommands.add_parser("models", help="list reviewed compatible provider models and prices")
     from openrtl.session_cli import add_session_commands
     add_session_commands(subcommands)
     from openrtl.runtime_cli import add_runtime_command
@@ -475,19 +479,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         from openrtl.adapters.design_web import serve
         from openrtl.application.design_agent import DesignPolicy
         from openrtl.domain.design_session import require
-        require(not arguments.allow_provider or arguments.model is not None,
-                "explicit_model_required")
+        from openrtl.domain.provider_controls import compatible_model, spend_limit_nano
+        require(not arguments.api_key_stdin or arguments.allow_provider, "provider_key_without_permission")
+        selected_model = compatible_model(arguments.model) if arguments.allow_provider else None
+        selected_limit = spend_limit_nano(arguments.max_spend_usd) if arguments.allow_provider else None
+        key_value = None
+        if arguments.api_key_stdin:
+            require(arguments.credential_env == "OPENAI_API_KEY", "choose_one_credential_source")
+            from openrtl.adapters.provider_invocation import read_api_key_stdin
+            key_value = read_api_key_stdin(sys.stdin.buffer)
         selection = (arguments.runtime_state, arguments.lima_executable,
                      arguments.lima_state_root, arguments.lima_instance)
         require(arguments.allow_simulation == all(value is not None for value in selection) and
                 (arguments.allow_simulation or all(value is None for value in selection)),
                 "simulation_runtime_and_guest_transport_required_together")
-        def expert_factory() -> Any:
-            if not arguments.allow_provider:
-                return None
+        def provider_builder(model: str, value: str | None) -> Any:
             from openrtl.adapters.design_generation import openai_design_expert
-            return openai_design_expert(authorized=True, model=arguments.model,
-                                        credential_environment=arguments.credential_env)
+            return openai_design_expert(authorized=True, model=model,
+                                        credential_environment=arguments.credential_env,
+                                        credential_value=value)
         def simulator_factory() -> Any:
             if not arguments.allow_simulation:
                 return None
@@ -500,8 +510,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             return IsolatedDesignSimulator(arguments.project, profile, workload_transport=transport)
         try:
             serve(arguments.project, create=arguments.create, port=arguments.port,
-                  expert_factory=expert_factory, simulator_factory=simulator_factory,
-                  policy=DesignPolicy(arguments.max_calls, arguments.max_repairs))
+                  expert_factory=lambda: None, provider_builder=provider_builder,
+                  initial_model=selected_model, initial_limit_nano=selected_limit,
+                  initial_key=key_value, simulator_factory=simulator_factory,
+                  policy=DesignPolicy(arguments.max_calls, arguments.max_repairs,
+                                      selected_model))
         except KeyboardInterrupt:
             return 0
         return 0
@@ -530,6 +543,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 indent=2,
             )
         )
+        return 0
+    if arguments.command == "models":
+        from openrtl.domain.provider_controls import model_catalog
+        print(json.dumps(model_catalog(), sort_keys=True, indent=2))
         return 0
     if arguments.command == "plan":
         state = OpenRTLWorkflow().create(InteractionMode(arguments.mode))
