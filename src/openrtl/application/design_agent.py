@@ -67,10 +67,15 @@ class DesignPolicy:
     def __post_init__(self) -> None:
         require(type(self.max_calls) is int and 1 <= self.max_calls <= 200, "call_budget_invalid")
         require(type(self.max_repairs) is int and 0 <= self.max_repairs <= 5, "repair_budget_invalid")
+        require(type(self.max_output_tokens) is int and 256 <= self.max_output_tokens <= 32768,
+                "output_budget_invalid")
         if self.provider_model is not None:
-            from openrtl.domain.provider_controls import compatible_model, request_reserve_nano
-            compatible_model(self.provider_model)
-            request_reserve_nano(self.provider_model, self.max_output_tokens)
+            from openrtl.domain.provider_controls import (
+                request_reserve_nano, selector_model, selector_provider, validate_provider_selector,
+            )
+            selector = validate_provider_selector(self.provider_model)
+            if selector_provider(selector) == "openai":
+                request_reserve_nano(selector_model(selector), self.max_output_tokens)
 
 
 def design_input_digest(state: JsonObject) -> str:
@@ -86,26 +91,33 @@ class DesignAgent:
         self.recovery = recovery
         self.progress = progress
 
-    def configure_provider(self, model: str, limit_nano_usd: int) -> JsonObject:
-        from openrtl.domain.provider_controls import compatible_model
-        compatible_model(model)
-        require(type(limit_nano_usd) is int and 10_000_000 <= limit_nano_usd <= 1_000_000_000_000,
-                "provider_spend_limit_invalid")
+    def configure_provider(self, model: str, limit_nano_usd: int | None) -> JsonObject:
+        from openrtl.domain.provider_controls import selector_provider, validate_provider_selector
+        model = validate_provider_selector(model)
+        if selector_provider(model) == "openai":
+            require(type(limit_nano_usd) is int and
+                    10_000_000 <= limit_nano_usd <= 1_000_000_000_000,
+                    "provider_spend_limit_invalid")
+        else:
+            require(limit_nano_usd is None, "provider_spend_not_applicable")
         state = self._idle()
         require(not any(row["phase"] in ("queued", "active", "cancellation_requested")
                         for row in state["workspace_operations"].values()),
                 "workspace_writer_busy_or_unreconciled")
         require(not state["provider"]["uncertain"], "provider_spend_uncertain")
-        require(limit_nano_usd >= state["provider"]["spent_nano_usd"],
-                "provider_spend_limit_below_used")
+        if limit_nano_usd is not None:
+            require(limit_nano_usd >= state["provider"]["spent_nano_usd"],
+                    "provider_spend_limit_below_used")
         selected = replace(self.policy, provider_model=model)
         if state["provider"]["model"] == model and state["provider"]["limit_nano_usd"] == limit_nano_usd:
             self.policy = selected
             return state
         updated = copy.deepcopy(state)
         updated["provider"].update(model=model, limit_nano_usd=limit_nano_usd)
-        saved = self.store.save(state, updated, "provider.configured",
-                                {"model": model, "limit_nano_usd": limit_nano_usd})
+        event_fields: JsonObject = {"model": model}
+        if limit_nano_usd is not None:
+            event_fields["limit_nano_usd"] = limit_nano_usd
+        saved = self.store.save(state, updated, "provider.configured", event_fields)
         self.policy = selected
         return saved
 
@@ -433,16 +445,25 @@ class DesignAgent:
         require(state["calls"] < state["limits"]["max_calls"], "expert_call_budget_exhausted")
         pack = self.context(state, stage, message, intent=intent)
         reserve = 0
+        selected_provider = None
+        selected_model = None
         if self.policy.provider_model is not None:
-            from openrtl.domain.provider_controls import request_reserve_nano
+            from openrtl.domain.provider_controls import (
+                request_reserve_nano, selector_model, selector_provider,
+            )
             budget = state["provider"]
-            require(budget["model"] == self.policy.provider_model and
-                    budget["limit_nano_usd"] is not None, "provider_spend_not_configured")
+            selected_provider = selector_provider(self.policy.provider_model)
+            selected_model = selector_model(self.policy.provider_model)
+            require(budget["model"] == self.policy.provider_model, "provider_spend_not_configured")
             require(not budget["uncertain"] and budget["pending"] is None,
                     "provider_spend_uncertain")
-            reserve = request_reserve_nano(self.policy.provider_model, self.policy.max_output_tokens)
-            require(budget["spent_nano_usd"] + reserve <= budget["limit_nano_usd"],
-                    "provider_spend_budget_exhausted")
+            if selected_provider == "openai":
+                require(budget["limit_nano_usd"] is not None, "provider_spend_not_configured")
+                reserve = request_reserve_nano(selected_model, self.policy.max_output_tokens)
+                require(budget["spent_nano_usd"] + reserve <= budget["limit_nano_usd"],
+                        "provider_spend_budget_exhausted")
+            else:
+                require(budget["limit_nano_usd"] is None, "provider_spend_not_applicable")
         operation = uuid.uuid4().hex
         updated = copy.deepcopy(state)
         updated.update(active={"id": operation, "kind": "expert", "stage": stage}, calls=state["calls"] + 1)
@@ -469,10 +490,12 @@ class DesignAgent:
                 if count is not None:
                     metrics[field] = count
             received = copy.deepcopy(started)
+            if selected_provider is not None:
+                require(reply.provider == selected_provider and reply.model == selected_model,
+                        "provider_result_identity_invalid")
             if reserve:
                 from openrtl.domain.provider_controls import estimated_cost_nano
-                require(reply.provider == "openai" and reply.model == self.policy.provider_model and
-                        reply.input_tokens is not None and reply.output_tokens is not None,
+                require(reply.input_tokens is not None and reply.output_tokens is not None,
                         "provider_usage_unavailable")
                 actual = estimated_cost_nano(reply.model, cast(int, reply.input_tokens),
                                              cast(int, reply.output_tokens))

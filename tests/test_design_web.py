@@ -170,7 +170,7 @@ class DesignWebTest(unittest.TestCase):
     def test_provider_settings_are_redacted_and_unknown_models_fail_closed(self) -> None:
         provider_project = Path(self.temporary.name).resolve() / "provider-settings"
         runtime = WorkspaceRuntime(provider_project, create=True, expert_factory=lambda: None,
-                                   provider_builder=lambda model, key: self.expert,
+                                   provider_builder=lambda provider, model, key: self.expert,
                                    policy=DesignPolicy())
         server = ThreadingHTTPServer(("127.0.0.1", 0), handler(runtime))
         thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -189,9 +189,10 @@ class DesignWebTest(unittest.TestCase):
         try:
             code, catalog = request("GET")
             self.assertEqual(code, 200)
-            self.assertEqual(len(catalog["models"]), 5)
+            self.assertEqual(len(catalog["models"]), 9)
+            self.assertEqual(catalog["ollama"]["host"], "http://127.0.0.1:11434")
             key = "synthetic-key-value-do-not-persist"
-            body = {"model": "gpt-5.6-terra", "max_spend_usd": "20.00",
+            body = {"provider": "openai", "model": "gpt-5.6-terra", "max_spend_usd": "20.00",
                     "api_key": key, "enabled": True}
             code, selected = request("POST", body)
             self.assertEqual(code, 200)
@@ -199,6 +200,7 @@ class DesignWebTest(unittest.TestCase):
             code, state = request("GET")
             self.assertEqual(code, 200)
             self.assertEqual(state["selected_model"], "gpt-5.6-terra")
+            self.assertEqual(state["selected_provider"], "openai")
             self.assertEqual(state["max_spend_usd"], "20.000000")
             self.assertNotIn(key, json.dumps(state) + json.dumps(selected))
             self.assertNotIn(key.encode(), (provider_project / "session.sqlite3").read_bytes())
@@ -231,6 +233,22 @@ class DesignWebTest(unittest.TestCase):
             code, stale = request("POST", action, "/api/provider/reconcile")
             self.assertEqual(code, 409)
             self.assertEqual(stale["error"], "workspace_revision_stale")
+            local: dict[str, object] = {
+                "provider": "ollama", "model": "qwen3:8b", "max_spend_usd": None,
+                "api_key": None, "enabled": False,
+            }
+            code, configured = request("POST", local)
+            self.assertEqual(code, 200)
+            self.assertEqual(configured["selected_provider"], "ollama")
+            self.assertIsNone(configured["max_spend_usd"])
+            code, local_state = request("GET")
+            self.assertEqual(code, 200)
+            self.assertEqual(local_state["selected_model"], "qwen3:8b")
+            self.assertFalse(local_state["key_present"])
+            local["model"] = "http://remote/model"
+            code, rejected_local = request("POST", local)
+            self.assertEqual(code, 409)
+            self.assertEqual(rejected_local["error"], "provider_model_incompatible")
         finally:
             server.shutdown()
             server.server_close()

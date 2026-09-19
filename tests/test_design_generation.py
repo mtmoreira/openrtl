@@ -5,12 +5,16 @@ from __future__ import annotations
 import asyncio
 import unittest
 
+from agentrig.agents import AgentExecutionRequest, AgentExecutionResult, AgentRuntimeUsage
 from agentrig.capabilities import (
     CapabilityDescriptor, CapabilityFeature, CapabilityKind, CapabilityLimit, DataRetention,
     GenerationUsage, ModelMetadata, TextGenerationFinishReason,
 )
 from agentrig.testing import ScriptedStructuredGeneration, ScriptedStructuredGenerator
-from openrtl.adapters.design_generation import AgentRigDesignExpert, openai_design_expert, response_schema
+from openrtl.adapters.design_generation import (
+    AgentRigDesignExpert, OllamaDesignExpert, ollama_design_expert, openai_design_expert,
+    response_schema,
+)
 from openrtl.domain.design_session import JsonObject
 from tests.test_design_agent import specification
 
@@ -28,6 +32,17 @@ def generator(*, tools: bool = False, model: str = "test-model",
             usage=GenerationUsage(input_tokens=12, output_tokens=34),
             model=ModelMetadata(provider="openai", model_id=model), finish_reason=finish),),
     )
+
+
+class ScriptedOllamaRuntime:
+    def __init__(self) -> None:
+        self.requests: list[AgentExecutionRequest] = []
+
+    async def execute(self, request: AgentExecutionRequest, context: object) -> AgentExecutionResult:
+        self.requests.append(request)
+        return AgentExecutionResult.succeeded(
+            specification(), usage=AgentRuntimeUsage(input_tokens=21, output_tokens=43),
+            provider_metadata={"provider": "ollama", "model": "qwen3:8b", "finish_reason": "stop"})
 
 
 class DesignGenerationTest(unittest.TestCase):
@@ -48,6 +63,21 @@ class DesignGenerationTest(unittest.TestCase):
     def test_explicit_provider_authorization_precedes_optional_runtime_resolution(self) -> None:
         with self.assertRaisesRegex(ValueError, "authorization_required"):
             openai_design_expert(authorized=False, model="test-model", credential_environment="OPENAI_API_KEY")
+        with self.assertRaisesRegex(ValueError, "authorization_required"):
+            ollama_design_expert(authorized=False, model="qwen3:8b")
+
+    def test_native_ollama_turn_uses_a_tool_free_schema_contract(self) -> None:
+        runtime = ScriptedOllamaRuntime()
+        adapter = OllamaDesignExpert(runtime, model="qwen3:8b")
+        reply = asyncio.run(adapter.generate("discovery", {"schema": "unit_context"}, "b" * 32))
+        self.assertEqual(reply.provider, "ollama")
+        self.assertEqual(reply.model, "qwen3:8b")
+        self.assertEqual((reply.input_tokens, reply.output_tokens), (21, 43))
+        request = runtime.requests[0]
+        self.assertEqual(request.contract.allowed_tools, ())
+        self.assertEqual(request.contract.permissions["workspace"], "denied")
+        self.assertEqual(request.contract.permissions["network"], "allowed")
+        self.assertEqual(request.contract.output_schema, "openrtl.design.discovery.v4")
 
     def test_schemas_are_closed_and_role_specific(self) -> None:
         for stage in ("discovery", "architecture", "dv", "signoff", "explain"):

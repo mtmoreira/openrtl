@@ -18,7 +18,10 @@ from openrtl.adapters.design_session_store import DesignSessionStore, safe_root
 from openrtl.application.design_agent import DesignAgent, DesignExpert, DesignPolicy, DesignRecovery, DesignSimulator
 from openrtl.application.design_workspace import DesignWorkspace
 from openrtl.domain.design_session import JsonObject, SESSION_SCHEMA, canonical, require
-from openrtl.domain.provider_controls import compatible_model, dollars, model_catalog, spend_limit_nano
+from openrtl.domain.provider_controls import (
+    dollars, model_catalog, ollama_catalog, provider_selector, selector_model, selector_provider,
+    spend_limit_nano,
+)
 
 
 class WorkspaceRuntime:
@@ -26,7 +29,8 @@ class WorkspaceRuntime:
 
     def __init__(self, project: Path, *, create: bool, expert_factory: Callable[[], DesignExpert | None],
                  policy: DesignPolicy,
-                 provider_builder: Callable[[str, str | None], DesignExpert] | None = None,
+                 provider_builder: Callable[[str, str, str | None], DesignExpert] | None = None,
+                 initial_provider: str = "openai",
                  initial_model: str | None = None, initial_limit_nano: int | None = None,
                  initial_key: str | None = None,
                  simulator_factory: Callable[[], DesignSimulator | None] | None = None) -> None:
@@ -35,6 +39,7 @@ class WorkspaceRuntime:
         self.simulator_factory = simulator_factory or (lambda: None)
         self.policy = policy
         self.provider_builder = provider_builder
+        self.initial_provider = initial_provider
         self.initial_model = initial_model
         self.initial_limit_nano = initial_limit_nano
         self._key = initial_key
@@ -59,17 +64,17 @@ class WorkspaceRuntime:
 
     def _activate_project(self) -> None:
         require(self.store is not None and self.workspace is None, "project_activation_invalid")
-        expert = (self.provider_builder(self.initial_model, self._key)
+        expert = (self.provider_builder(self.initial_provider, self.initial_model, self._key)
                   if self.provider_builder is not None and self.initial_model is not None
                   else self.expert_factory())
         simulator = self.simulator_factory()
         recovery = cast(DesignRecovery | None, simulator if hasattr(simulator, "abandon") else None)
         agent = DesignAgent(self.store, expert, simulator, policy=self.policy, recovery=recovery)
         if self.initial_model is not None:
-            require(self.initial_limit_nano is not None, "provider_spend_limit_invalid")
+            selector = provider_selector(self.initial_provider, self.initial_model)
             selected = self.store.read()["provider"]
-            if selected["model"] != self.initial_model or selected["limit_nano_usd"] != self.initial_limit_nano:
-                agent.configure_provider(self.initial_model, cast(int, self.initial_limit_nano))
+            if selected["model"] != selector or selected["limit_nano_usd"] != self.initial_limit_nano:
+                agent.configure_provider(selector, self.initial_limit_nano)
         self.workspace = DesignWorkspace(agent)
         self.workspace.reconcile_interrupted()
 
@@ -80,14 +85,18 @@ class WorkspaceRuntime:
                         else {"model": None, "limit_nano_usd": None,
                               "spent_nano_usd": 0, "uncertain": False,
                               "prior_unpriced_calls": 0})
-            return {"models": model_catalog(), "selected_model": provider["model"],
+            selection = provider["model"]
+            selected_provider = selector_provider(selection) if selection is not None else "openai"
+            selected_model = selector_model(selection) if selection is not None else None
+            return {"models": model_catalog(), "ollama": ollama_catalog(),
+                    "selected_provider": selected_provider, "selected_model": selected_model,
                     "revision": state["revision"] if state is not None else None,
                     "max_spend_usd": dollars(provider["limit_nano_usd"]) if provider["limit_nano_usd"] is not None else None,
                     "estimated_spend_usd": dollars(provider["spent_nano_usd"]),
                     "uncertain": provider["uncertain"],
                     "prior_unpriced_calls": provider["prior_unpriced_calls"],
                     "enabled": self.workspace is not None and self.workspace.agent.expert is not None,
-                    "key_present": self._key is not None,
+                    "key_present": selected_provider == "openai" and self._key is not None,
                     "editable": self.provider_builder is not None and self.workspace is not None}
         return self._await(invoke())
 
@@ -103,26 +112,35 @@ class WorkspaceRuntime:
                     "uncertain": state["provider"]["uncertain"]}
         return self._await(invoke())
 
-    def configure_provider(self, model: object, max_spend_usd: object,
+    def configure_provider(self, provider: object, model: object, max_spend_usd: object,
                            api_key: object, enabled: object) -> JsonObject:
         async def invoke() -> JsonObject:
             require(self.workspace is not None and self.provider_builder is not None,
                     "provider_settings_unavailable")
-            selected_model = compatible_model(model)
-            limit = spend_limit_nano(max_spend_usd)
+            selection = provider_selector(provider, model)
+            selected_provider = selector_provider(selection)
+            selected_model = selector_model(selection)
             require(type(enabled) is bool and (api_key is None or type(api_key) is str),
                     "provider_settings_invalid")
             candidate_key = self._key
-            if api_key is not None:
+            if selected_provider == "openai" and api_key is not None:
                 from openrtl.adapters.provider_invocation import MemoryOpenAIAuthenticationSource
                 candidate_key = MemoryOpenAIAuthenticationSource(cast(str, api_key)).resolve_api_key()
-            candidate = self.provider_builder(selected_model, candidate_key) if enabled else None
-            self.workspace.agent.configure_provider(selected_model, limit)
+            if selected_provider == "openai":
+                limit = spend_limit_nano(max_spend_usd)
+            else:
+                require(max_spend_usd is None and api_key is None, "provider_spend_not_applicable")
+                limit = None
+            candidate = (self.provider_builder(selected_provider, selected_model, candidate_key)
+                         if enabled else None)
+            self.workspace.agent.configure_provider(selection, limit)
             self._key = candidate_key
             self.workspace.agent.expert = candidate
-            return {"selected_model": selected_model, "max_spend_usd": dollars(limit),
+            return {"selected_provider": selected_provider, "selected_model": selected_model,
+                    "max_spend_usd": dollars(limit) if limit is not None else None,
                     "estimated_spend_usd": dollars(self.workspace.agent.store.read()["provider"]["spent_nano_usd"]),
-                    "enabled": enabled, "key_present": candidate_key is not None}
+                    "enabled": enabled,
+                    "key_present": selected_provider == "openai" and candidate_key is not None}
         return self._await(invoke())
 
     def _run(self, create: bool) -> None:
@@ -271,6 +289,8 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
                            "waveform_browser_limit", "waveform_trace_metadata_invalid", "waveform_run_unknown",
                            "waveform_trace_identity_stale", "waveform_response_limit",
                            "provider_model_incompatible", "provider_spend_limit_invalid",
+                           "provider_kind_invalid", "provider_spend_not_applicable",
+                           "pinned_optional_ollama_sdk_required",
                            "provider_spend_limit_below_used", "provider_spend_uncertain",
                            "provider_reconciliation_request_invalid",
                            "provider_reconciliation_decision_invalid",
@@ -393,9 +413,10 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
                     self._json(201, runtime.create_project())
                     return
                 if parsed.path == "/api/provider":
-                    body = self._body({"model", "max_spend_usd", "api_key", "enabled"})
-                    self._json(200, runtime.configure_provider(body["model"], body["max_spend_usd"],
-                                                               body["api_key"], body["enabled"]))
+                    body = self._body({"provider", "model", "max_spend_usd", "api_key", "enabled"})
+                    self._json(200, runtime.configure_provider(
+                        body["provider"], body["model"], body["max_spend_usd"],
+                        body["api_key"], body["enabled"]))
                     return
                 if parsed.path == "/api/provider/reconcile":
                     body = self._body({"expected_revision", "decision"})
@@ -424,13 +445,15 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
 
 def serve(project: Path, *, create: bool, port: int, expert_factory: Callable[[], DesignExpert | None],
           policy: DesignPolicy,
-          provider_builder: Callable[[str, str | None], DesignExpert] | None = None,
+          provider_builder: Callable[[str, str, str | None], DesignExpert] | None = None,
+          initial_provider: str = "openai",
           initial_model: str | None = None, initial_limit_nano: int | None = None,
           initial_key: str | None = None,
           simulator_factory: Callable[[], DesignSimulator | None] | None = None) -> None:
     require(type(port) is int and 0 <= port <= 65535, "web_port_invalid")
     runtime = WorkspaceRuntime(project, create=create, expert_factory=expert_factory, policy=policy,
-                               provider_builder=provider_builder, initial_model=initial_model,
+                               provider_builder=provider_builder, initial_provider=initial_provider,
+                               initial_model=initial_model,
                                initial_limit_nano=initial_limit_nano, initial_key=initial_key,
                                simulator_factory=simulator_factory)
     try:

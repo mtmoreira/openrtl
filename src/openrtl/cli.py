@@ -107,6 +107,7 @@ def parser() -> argparse.ArgumentParser:
     ui.add_argument("--create", action="store_true")
     ui.add_argument("--port", type=int, default=8765)
     ui.add_argument("--allow-provider", action="store_true")
+    ui.add_argument("--provider", choices=("openai", "ollama"), default="openai")
     ui.add_argument("--model")
     ui.add_argument("--credential-env", default="OPENAI_API_KEY")
     ui.add_argument("--api-key-stdin", action="store_true")
@@ -118,7 +119,8 @@ def parser() -> argparse.ArgumentParser:
     ui.add_argument("--lima-executable", type=Path)
     ui.add_argument("--lima-state-root", type=Path)
     ui.add_argument("--lima-instance")
-    subcommands.add_parser("models", help="list reviewed compatible provider models and prices")
+    models = subcommands.add_parser("models", help="list compatible provider model controls")
+    models.add_argument("--provider", choices=("openai", "ollama"), default="openai")
     from openrtl.session_cli import add_session_commands
     add_session_commands(subcommands)
     from openrtl.runtime_cli import add_runtime_command
@@ -479,10 +481,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         from openrtl.adapters.design_web import serve
         from openrtl.application.design_agent import DesignPolicy
         from openrtl.domain.design_session import require
-        from openrtl.domain.provider_controls import compatible_model, spend_limit_nano
+        from openrtl.domain.provider_controls import provider_selector, selector_model, spend_limit_nano
         require(not arguments.api_key_stdin or arguments.allow_provider, "provider_key_without_permission")
-        selected_model = compatible_model(arguments.model) if arguments.allow_provider else None
-        selected_limit = spend_limit_nano(arguments.max_spend_usd) if arguments.allow_provider else None
+        require(arguments.allow_provider or arguments.provider == "openai",
+                "provider_selection_without_permission")
+        selected = (provider_selector(arguments.provider, arguments.model)
+                    if arguments.allow_provider else None)
+        selected_model = selector_model(selected) if selected is not None else None
+        selected_limit = (spend_limit_nano(arguments.max_spend_usd)
+                          if arguments.allow_provider and arguments.provider == "openai" else None)
+        require(arguments.provider == "openai" or
+                arguments.max_spend_usd is None and not arguments.api_key_stdin,
+                "provider_spend_not_applicable")
         key_value = None
         if arguments.api_key_stdin:
             require(arguments.credential_env == "OPENAI_API_KEY", "choose_one_credential_source")
@@ -493,7 +503,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         require(arguments.allow_simulation == all(value is not None for value in selection) and
                 (arguments.allow_simulation or all(value is None for value in selection)),
                 "simulation_runtime_and_guest_transport_required_together")
-        def provider_builder(model: str, value: str | None) -> Any:
+        def provider_builder(provider: str, model: str, value: str | None) -> Any:
+            if provider == "ollama":
+                from openrtl.adapters.design_generation import ollama_design_expert
+                return ollama_design_expert(authorized=True, model=model)
             from openrtl.adapters.design_generation import openai_design_expert
             return openai_design_expert(authorized=True, model=model,
                                         credential_environment=arguments.credential_env,
@@ -511,10 +524,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         try:
             serve(arguments.project, create=arguments.create, port=arguments.port,
                   expert_factory=lambda: None, provider_builder=provider_builder,
-                  initial_model=selected_model, initial_limit_nano=selected_limit,
+                  initial_provider=arguments.provider, initial_model=selected_model,
+                  initial_limit_nano=selected_limit,
                   initial_key=key_value, simulator_factory=simulator_factory,
                   policy=DesignPolicy(arguments.max_calls, arguments.max_repairs,
-                                      selected_model))
+                                      selected))
         except KeyboardInterrupt:
             return 0
         return 0
@@ -545,8 +559,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 0
     if arguments.command == "models":
-        from openrtl.domain.provider_controls import model_catalog
-        print(json.dumps(model_catalog(), sort_keys=True, indent=2))
+        from openrtl.domain.provider_controls import model_catalog, ollama_catalog
+        print(json.dumps(model_catalog() if arguments.provider == "openai" else ollama_catalog(),
+                         sort_keys=True, indent=2))
         return 0
     if arguments.command == "plan":
         state = OpenRTLWorkflow().create(InteractionMode(arguments.mode))

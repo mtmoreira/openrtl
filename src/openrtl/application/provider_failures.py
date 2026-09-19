@@ -36,9 +36,26 @@ def classify_provider_failure(error: Exception) -> str:
             if type(status) is str and len(status) == 3 and status.isdecimal() and 500 <= int(status) <= 599:
                 return "provider_service_unavailable"
             return "provider_connection_failed"
+        if failure.code == "ollama.client_creation_failed":
+            return "provider_client_unavailable"
+        if failure.code in ("ollama.invalid_response", "ollama.invalid_output"):
+            return "provider_response_invalid"
+        if failure.code in ("ollama.transport_failed", "ollama.client_close_failed"):
+            return "provider_connection_failed"
+        if failure.code == "ollama.request_failed":
+            status = failure.metadata.get("status_code")
+            categories = {"400": "provider_request_rejected", "404": "provider_model_unavailable",
+                          "408": "provider_timeout", "422": "provider_request_rejected",
+                          "429": "provider_rate_or_quota_limited"}
+            if status in categories:
+                return categories[status]
+            if type(status) is str and len(status) == 3 and status.isdecimal() and 500 <= int(status) <= 599:
+                return "provider_service_unavailable"
+            return "provider_connection_failed"
     if type(error) is ValueError and str(error) in {
         "expert_output_exceeds_bound", "expert_reply_invalid", "expert_usage_invalid",
         "provider_usage_unavailable", "provider_spend_reserve_exceeded",
+        "provider_result_identity_invalid", "expert_result_identity_or_finish_invalid",
     }:
         return "provider_result_invalid"
     return "expert_invocation_failed"

@@ -10,11 +10,11 @@ import shlex
 from pathlib import Path
 import sqlite3
 import sys
-from typing import Callable
+from typing import Callable, cast
 
 from openrtl.adapters.design_session_store import DesignSessionStore, safe_root
 from openrtl.adapters.design_imports import import_design_files
-from openrtl.application.design_agent import DesignAgent, DesignPolicy, design_input_digest
+from openrtl.application.design_agent import DesignAgent, DesignExpert, DesignPolicy, design_input_digest
 from openrtl.application.design_batch import bind_delegation, run_batch
 from openrtl.domain.design_session import JsonObject, MAX_CONTEXT_BYTES, STAGES, canonical, content_digest, require, object_value
 from openrtl.domain.design_coaching import analysis_input_digest
@@ -27,6 +27,7 @@ def add_design_commands(subcommands: argparse._SubParsersAction[argparse.Argumen
         if command in ("chat", "resume", "batch", "recover"):
             selected.add_argument("--upgrade-session", action="store_true")
             selected.add_argument("--allow-provider", action="store_true")
+            selected.add_argument("--provider", choices=("openai", "ollama"), default="openai")
             selected.add_argument("--model")
             selected.add_argument("--credential-env", default="OPENAI_API_KEY")
             selected.add_argument("--api-key-stdin", action="store_true")
@@ -427,26 +428,42 @@ def run_design_command(arguments: argparse.Namespace) -> int:
                 show(local_agent.approve_change(_json_file(arguments.plan), arguments.approve), print)
             return 0
         require(not arguments.api_key_stdin or arguments.allow_provider, "provider_key_without_permission")
+        require(arguments.allow_provider or arguments.provider == "openai",
+                "provider_selection_without_permission")
         key_value = None
-        expert = None
+        expert: DesignExpert | None = None
         simulator = None
+        selector = None
+        limit_nano = None
         require(arguments.command != "recover" or not arguments.allow_provider, "recovery_never_invokes_provider")
         if arguments.allow_provider:
-            from openrtl.domain.provider_controls import compatible_model, spend_limit_nano
-            compatible_model(arguments.model)
-            limit_nano = spend_limit_nano(arguments.max_spend_usd)
+            from openrtl.domain.provider_controls import provider_selector, spend_limit_nano
+            selector = provider_selector(arguments.provider, arguments.model)
+            if arguments.provider == "openai":
+                limit_nano = spend_limit_nano(arguments.max_spend_usd)
+            else:
+                require(arguments.max_spend_usd is None and not arguments.api_key_stdin,
+                        "provider_spend_not_applicable")
             if arguments.api_key_stdin:
                 require(arguments.credential_env == "OPENAI_API_KEY", "choose_one_credential_source")
                 from openrtl.adapters.provider_invocation import read_api_key_stdin
                 key_value = read_api_key_stdin(sys.stdin.buffer)
-            from openrtl.adapters.design_generation import openai_design_expert
-            expert = openai_design_expert(authorized=True, model=arguments.model,
-                                          credential_environment=arguments.credential_env,
-                                          credential_value=key_value,
-                                          timeout_seconds=arguments.timeout_seconds,
-                                          max_output_tokens=arguments.max_output_tokens)
-            print("Provider calls authorized for this invocation: OpenAI model " + arguments.model +
-                  "; provider-managed retention; bounded project context will leave this computer.")
+            if arguments.provider == "ollama":
+                from openrtl.adapters.design_generation import ollama_design_expert
+                expert = ollama_design_expert(authorized=True, model=arguments.model,
+                                              timeout_seconds=arguments.timeout_seconds,
+                                              max_output_tokens=arguments.max_output_tokens)
+                print("Local provider calls authorized for this invocation: Ollama model " +
+                      arguments.model + "; fixed loopback runtime; no OpenRTL USD reservation.")
+            else:
+                from openrtl.adapters.design_generation import openai_design_expert
+                expert = openai_design_expert(authorized=True, model=arguments.model,
+                                              credential_environment=arguments.credential_env,
+                                              credential_value=key_value,
+                                              timeout_seconds=arguments.timeout_seconds,
+                                              max_output_tokens=arguments.max_output_tokens)
+                print("Provider calls authorized for this invocation: OpenAI model " + arguments.model +
+                      "; provider-managed retention; bounded project context will leave this computer.")
         require(not (arguments.simulation_profile is not None and arguments.runtime_state is not None),
                 "choose_one_simulation_selection")
         require(arguments.allow_simulation == (arguments.simulation_profile is not None or arguments.runtime_state is not None),
@@ -464,7 +481,7 @@ def run_design_command(arguments: argparse.Namespace) -> int:
                         "runtime_state_required_for_qualified_profile")
             simulator = IsolatedDesignSimulator(arguments.project, simulation_profile)
         policy = DesignPolicy(arguments.max_calls, arguments.max_repairs,
-                              arguments.model if arguments.allow_provider else None,
+                              selector,
                               arguments.max_output_tokens)
         create = arguments.command == "chat" or arguments.command == "batch" and arguments.create
         store = DesignSessionStore(arguments.project, create=create)
@@ -472,7 +489,7 @@ def run_design_command(arguments: argparse.Namespace) -> int:
             store.upgrade()
         if arguments.allow_provider:
             agent_for_settings = DesignAgent(store, expert, None, policy)
-            agent_for_settings.configure_provider(arguments.model, limit_nano)
+            agent_for_settings.configure_provider(cast(str, selector), limit_nano)
         def progress(row: JsonObject) -> None:
             print("Progress " + row["stage"] + ": " + row["phase"] + " (" + str(row["elapsed_ms"]) + " ms)", file=sys.stderr, flush=True)
         agent = DesignAgent(store, expert, simulator, policy, recovery=simulator, progress=progress)

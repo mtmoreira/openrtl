@@ -13,7 +13,8 @@ const elements = Object.fromEntries([
   "waveform-cursor-a", "waveform-cursor-b", "waveform-values", "waveform-save", "waveform-attach",
   "review-card", "review-button", "approve-button", "activity-list",
   "conversation-list", "chat-form", "chat-input", "chat-kind", "composer-status",
-  "provider-form", "provider-model", "provider-spend", "provider-key", "provider-enabled", "provider-status",
+  "provider-form", "provider-kind", "provider-openai-settings", "provider-ollama-settings",
+  "provider-model", "provider-ollama-model", "provider-spend", "provider-key", "provider-enabled", "provider-status",
   "provider-recovery", "provider-reconcile-button"
 ].map(id => [id, document.getElementById(id)]));
 let state = null;
@@ -55,7 +56,7 @@ const providerFailureGuidance = Object.freeze({
 });
 function operationFailure(code) {
   return providerFailureGuidance[code] ? providerFailureGuidance[code] +
-    " Review the saved cost reservation before another call." :
+    (state?.provider?.uncertain ? " Review the saved cost reservation before another call." : "") :
     "Operation failed. Review its saved state before another request.";
 }
 
@@ -84,6 +85,16 @@ function post(path, body) {
     body: JSON.stringify(body) });
 }
 
+function showProviderFields() {
+  const local = elements["provider-kind"].value === "ollama";
+  elements["provider-openai-settings"].hidden = local;
+  elements["provider-ollama-settings"].hidden = !local;
+  elements["provider-model"].required = !local;
+  elements["provider-spend"].required = !local;
+  elements["provider-ollama-model"].required = local;
+}
+elements["provider-kind"].addEventListener("change", showProviderFields);
+
 async function loadProviderSettings(resetFields = false) {
   try {
     const settings = await api("/api/provider");
@@ -96,10 +107,14 @@ async function loadProviderSettings(resetFields = false) {
         option.value = item.id;
         elements["provider-model"].append(option);
       }
-      elements["provider-model"].value = settings.selected_model || "gpt-5.6-terra";
+      elements["provider-kind"].value = settings.selected_provider || "openai";
+      if (settings.selected_provider === "ollama")
+        elements["provider-ollama-model"].value = settings.selected_model || "";
+      else elements["provider-model"].value = settings.selected_model || "gpt-5.6-terra";
       elements["provider-spend"].value = settings.max_spend_usd ?
         Number(settings.max_spend_usd).toFixed(2) : "";
       elements["provider-enabled"].checked = settings.enabled;
+      showProviderFields();
       providerFieldsLoaded = true;
     }
     elements["provider-form"].querySelectorAll("input,select,button").forEach(item => {
@@ -107,13 +122,17 @@ async function loadProviderSettings(resetFields = false) {
     });
     elements["provider-recovery"].hidden = !settings.uncertain;
     elements["provider-reconcile-button"].disabled = !settings.editable || providerRevision === null;
-    elements["provider-status"].textContent = "Estimated provider spend: $" +
-      settings.estimated_spend_usd + (settings.max_spend_usd ?
+    elements["provider-status"].textContent = settings.selected_provider === "ollama" ?
+      "Local Ollama model: " + (settings.selected_model || "not selected") +
+        " · fixed loopback endpoint · no API key or OpenRTL USD estimate" +
+        (settings.estimated_spend_usd !== "0.000000" ?
+          " · historical OpenAI estimate $" + settings.estimated_spend_usd : "") :
+      "Estimated OpenAI spend: $" + settings.estimated_spend_usd + (settings.max_spend_usd ?
         " of $" + settings.max_spend_usd : " · no ceiling selected") +
-      (settings.uncertain ? " · uncertain call; further calls blocked" : "") +
-      (settings.prior_unpriced_calls ? " · " + settings.prior_unpriced_calls +
-        " earlier calls have no price record" : "") +
-      (settings.key_present ? " · key in server memory" : " · no key stored in server memory");
+        (settings.uncertain ? " · uncertain call; further calls blocked" : "") +
+        (settings.prior_unpriced_calls ? " · " + settings.prior_unpriced_calls +
+          " earlier calls have no price record" : "") +
+        (settings.key_present ? " · key in server memory" : " · no key stored in server memory");
     elements["composer-status"].textContent = settings.enabled ?
       "Provider enabled for this server. Project spend estimate is capped locally." :
       "Provider unavailable until explicitly enabled here or at launch.";
@@ -125,18 +144,23 @@ async function loadProviderSettings(resetFields = false) {
 elements["provider-form"].addEventListener("submit", async event => {
   event.preventDefault();
   const key = elements["provider-key"].value;
+  const local = elements["provider-kind"].value === "ollama";
   try {
-    await post("/api/provider", {model: elements["provider-model"].value,
-      max_spend_usd: elements["provider-spend"].value,
-      api_key: key || null, enabled: elements["provider-enabled"].checked});
+    await post("/api/provider", {provider: elements["provider-kind"].value,
+      model: local ? elements["provider-ollama-model"].value : elements["provider-model"].value,
+      max_spend_usd: local ? null : elements["provider-spend"].value,
+      api_key: local ? null : key || null, enabled: elements["provider-enabled"].checked});
     elements["provider-key"].value = "";
     await loadProviderSettings(true);
-    notice("Provider settings saved. Future calls use the displayed model and remaining project ceiling.");
+    notice(local ? "Local Ollama settings saved. Future calls use the displayed installed model." :
+      "OpenAI settings saved. Future calls use the displayed model and remaining project ceiling.");
     refresh();
   } catch (error) {
     elements["provider-key"].value = "";
     notice(error.message === "provider_model_incompatible" ?
       "That model is not in OpenRTL's compatible catalog." :
+      error.message === "pinned_optional_ollama_sdk_required" ?
+      "Ollama support needs OpenRTL's pinned optional Ollama SDK." :
       "Provider settings were not saved. Check the model, spend ceiling and operation state.");
   }
 });

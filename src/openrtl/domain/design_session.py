@@ -220,14 +220,15 @@ def initial_state() -> JsonObject:
 
 
 def validate_provider_state(value: object, active: object) -> None:
-    from openrtl.domain.provider_controls import compatible_model
+    from openrtl.domain.provider_controls import selector_provider, validate_provider_selector
     row = object_value(value, {"model", "limit_nano_usd", "spent_nano_usd", "pending",
                                "uncertain", "prior_unpriced_calls"})
-    require((row["model"] is None and row["limit_nano_usd"] is None) or
-            (row["model"] is not None and row["limit_nano_usd"] is not None),
+    require(row["model"] is not None or row["limit_nano_usd"] is None,
             "provider_selection_incomplete")
     if row["model"] is not None:
-        compatible_model(row["model"])
+        selector = validate_provider_selector(row["model"])
+        require((selector_provider(selector) == "openai") == (row["limit_nano_usd"] is not None),
+                "provider_selection_incomplete")
     require(row["limit_nano_usd"] is None or type(row["limit_nano_usd"]) is int and
             10_000_000 <= row["limit_nano_usd"] <= 1_000_000_000_000,
             "provider_spend_limit_invalid")

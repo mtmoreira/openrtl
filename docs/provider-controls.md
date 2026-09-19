@@ -1,17 +1,18 @@
 # Local provider controls
 
-OpenRTL's design CLI and loopback web workspace share a reviewed model catalog
-and a project-level estimated provider spend ceiling. List exact supported
-model IDs and standard text prices without a provider call:
+OpenRTL's design CLI and loopback web workspace support a reviewed OpenAI
+catalog and an explicit local Ollama model selection. List exact OpenAI model
+IDs and standard text prices without a provider call:
 
 ```sh
 ./openrtl models
 ```
 
-The current catalog includes the existing onboarding snapshot
+The OpenAI catalog includes the existing onboarding snapshot
 `gpt-5.4-nano-2026-03-17`, `gpt-6-astra`, `gpt-5.6-sol`, `gpt-5.6-terra`,
-and `gpt-5.6-luna`. Each is documented by OpenAI as supporting the Responses
-API and structured outputs. Other names, including unreviewed aliases, fail
+and `gpt-5.6-luna`, plus `gpt-4.1`, `gpt-4.1-mini`, `gpt-4o`, and
+`gpt-4o-mini`. Each is documented by OpenAI as supporting the Responses API
+and structured outputs. Other OpenAI names, including unreviewed aliases, fail
 before credential resolution. The catalog is a local compatibility decision;
 it cannot establish account access or live acceptance of OpenRTL's particular
 schemas. Review current model documentation and prices before changing it.
@@ -20,7 +21,7 @@ For a CLI design turn, select the model and ceiling explicitly:
 
 ```sh
 ./openrtl chat --project /absolute/private/project --allow-provider \
-  --model gpt-5.6-terra --max-spend-usd 20.00 --api-key-stdin
+  --provider openai --model gpt-5.6-terra --max-spend-usd 20.00 --api-key-stdin
 ```
 
 `--api-key-stdin` prompts without echo on a terminal or reads one bounded line
@@ -40,8 +41,28 @@ The server still binds only to loopback and checks Host and Origin. A browser
 serving this UI should be treated as a trusted local session because the key
 passes through that browser to the loopback server.
 
-The ceiling is stored in the project session without the key. Before a call,
-OpenRTL reserves a conservative amount using the selected model's published
+For local inference, first install and start Ollama separately and ensure the
+chosen model is already present. OpenRTL never starts Ollama or pulls a model.
+Then select the exact installed name:
+
+```sh
+./openrtl chat --project /absolute/private/project --allow-provider \
+  --provider ollama --model qwen3:8b
+```
+
+The Ollama route is fixed to `http://127.0.0.1:11434`; OpenRTL does not accept
+an arbitrary host, API key, or USD ceiling for this route. `./openrtl models
+--provider ollama` displays that local contract rather than claiming a static
+catalog of models installed on the user's computer. Model names are validated
+locally, and every call requires bounded tool-free JSON-schema output. A
+missing model is reported as unavailable; a model that rejects or fails the
+schema is reported as a rejected or invalid provider response. Selecting an
+Ollama model does not prove that it can satisfy every OpenRTL engineering stage.
+The pinned optional Ollama SDK must be installed explicitly; OpenRTL performs
+no dependency installation.
+
+The OpenAI ceiling is stored in the project session without the key. Before an
+OpenAI call, OpenRTL reserves a conservative amount using the selected model's published
 standard text rates, context window, any applicable high-context surcharge, and configured
 output-token maximum. A completed, identity-matched call with token usage
 replaces that reservation with an estimate. A failed or interrupted call keeps
@@ -50,6 +71,11 @@ estimate is not an exact provider bill or an account-side spending limit;
 pricing, charges and account availability must be independently checked.
 Changing the model or ceiling while idle preserves previously estimated spend.
 Earlier calls from a migrated session are visibly marked unpriced.
+Ollama calls still consume the project's call-count budget, but they reserve
+zero USD. Historical OpenAI estimates remain visible after switching to
+Ollama. An uncertain OpenAI reservation must be reconciled before switching
+providers; local inference cannot silently dismiss a possibly completed remote
+call.
 
 When a provider call fails, OpenRTL records a bounded cause where AgentRig supplies
 one (for example authentication, model access, rate/quota, timeout, or service

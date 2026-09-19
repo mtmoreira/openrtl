@@ -28,17 +28,27 @@ session** action. It appends a schema migration event before enabling edits;
 opening the project alone does not migrate it.
 
 The default interface permits local inspection without a provider. Natural
-language turns require an explicit launch selection, the optional pinned SDK,
-and a supported credential environment name. An example command shape is:
+language turns require an explicit launch or web selection and the matching
+optional pinned SDK. An OpenAI command shape is:
 
 ```sh
-./openrtl ui --project /absolute/existing-project --allow-provider --model EXACT_MODEL_ID --credential-env OPENAI_API_KEY
+./openrtl ui --project /absolute/existing-project --allow-provider --provider openai \
+  --model EXACT_MODEL_ID --max-spend-usd 20.00 --credential-env OPENAI_API_KEY
 ```
 
-This command shape is documentation, not authorization to run a provider call.
+An Ollama selection uses the fixed loopback service, an already-installed
+model, no API key and no OpenRTL USD ceiling:
+
+```sh
+./openrtl ui --project /absolute/existing-project --allow-provider \
+  --provider ollama --model qwen3:8b
+```
+
+These command shapes are documentation, not authorization to run a provider call.
 The credential value never belongs in the browser, command arguments or project
-files. Each launch selects authority anew. A provider-backed turn may transmit
-the bounded context to the selected provider under its retention policy.
+files. Each launch selects authority anew. An OpenAI-backed turn may transmit
+bounded context under OpenAI's retention policy. Ollama remains at
+`http://127.0.0.1:11434`; OpenRTL neither starts that service nor pulls models.
 
 The browser shows an ephemeral conversation plus saved engineering facts,
 specification revisions, review cards and bounded operation events. It saves
