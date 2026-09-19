@@ -13,7 +13,8 @@ const elements = Object.fromEntries([
   "waveform-cursor-a", "waveform-cursor-b", "waveform-values", "waveform-save", "waveform-attach",
   "review-card", "review-button", "approve-button", "activity-list",
   "conversation-list", "chat-form", "chat-input", "chat-kind", "composer-status",
-  "provider-form", "provider-model", "provider-spend", "provider-key", "provider-enabled", "provider-status"
+  "provider-form", "provider-model", "provider-spend", "provider-key", "provider-enabled", "provider-status",
+  "provider-recovery", "provider-reconcile-button"
 ].map(id => [id, document.getElementById(id)]));
 let state = null;
 let cursor = 0;
@@ -32,6 +33,31 @@ let waveCatalog = null;
 let waveSignals = [];
 let waveWindow = null;
 let providerFieldsLoaded = false;
+let providerRevision = null;
+const providerFailureGuidance = Object.freeze({
+  provider_credential_unavailable: "The server could not resolve an API key. Check the key source.",
+  provider_client_unavailable: "The local provider client could not start. Check the optional SDK installation.",
+  provider_authentication_rejected: "The provider rejected authentication. Check the API key.",
+  provider_access_denied: "The provider denied account or model access.",
+  provider_model_unavailable: "The provider did not accept the selected model.",
+  provider_request_rejected: "The provider rejected the request. Check model and schema compatibility.",
+  provider_rate_or_quota_limited: "The provider reported a rate or quota limit.",
+  provider_service_unavailable: "The provider service reported an error.",
+  provider_connection_failed: "The provider request could not connect or complete.",
+  provider_response_invalid: "The provider response was invalid.",
+  provider_timeout: "The provider request timed out; its completion is uncertain.",
+  provider_result_invalid: "The provider result or usage could not be validated.",
+  expert_invocation_failed: "The provider call failed; its exact cause was not safely classified.",
+  provider_spend_budget_exhausted: "The project ceiling cannot cover another full call reservation.",
+  provider_spend_uncertain: "A previous call's cost is still uncertain.",
+  expert_call_budget_exhausted: "The project's call budget is exhausted.",
+  expert_output_invalid: "The response failed local validation."
+});
+function operationFailure(code) {
+  return providerFailureGuidance[code] ? providerFailureGuidance[code] +
+    " Review the saved cost reservation before another call." :
+    "Operation failed. Review its saved state before another request.";
+}
 
 function node(tag, text, className) {
   const item = document.createElement(tag);
@@ -61,6 +87,7 @@ function post(path, body) {
 async function loadProviderSettings(resetFields = false) {
   try {
     const settings = await api("/api/provider");
+    providerRevision = settings.revision;
     if (!providerFieldsLoaded || resetFields) {
       empty(elements["provider-model"]);
       for (const item of settings.models) {
@@ -76,8 +103,10 @@ async function loadProviderSettings(resetFields = false) {
       providerFieldsLoaded = true;
     }
     elements["provider-form"].querySelectorAll("input,select,button").forEach(item => {
-      item.disabled = !settings.editable;
+      item.disabled = !settings.editable || settings.uncertain;
     });
+    elements["provider-recovery"].hidden = !settings.uncertain;
+    elements["provider-reconcile-button"].disabled = !settings.editable || providerRevision === null;
     elements["provider-status"].textContent = "Estimated provider spend: $" +
       settings.estimated_spend_usd + (settings.max_spend_usd ?
         " of $" + settings.max_spend_usd : " · no ceiling selected") +
@@ -112,6 +141,22 @@ elements["provider-form"].addEventListener("submit", async event => {
   }
 });
 
+elements["provider-reconcile-button"].addEventListener("click", async () => {
+  if (providerRevision === null) return;
+  elements["provider-reconcile-button"].disabled = true;
+  try {
+    await post("/api/provider/reconcile", {expected_revision: providerRevision,
+      decision: "retain_full_reservation"});
+    await loadProviderSettings(true);
+    notice("Full reservation retained. Review the provider bill and remaining ceiling " +
+      "before a new request. No call was retried.");
+    refresh();
+  } catch (error) {
+    await loadProviderSettings();
+    notice("Reconciliation was not saved. Refresh the project and review the current operation state.");
+  }
+});
+
 function renderMemory(rows) {
   empty(elements["memory-list"]);
   if (!rows.length) {
@@ -138,6 +183,7 @@ function renderOperations(rows) {
     const item = node("div", "", "nav-item");
     item.append(node("strong", row.phase.replaceAll("_", " ")));
     item.append(node("small", id.slice(0, 10) + " · " + (row.result_revision ?? "no result")));
+    if (row.phase === "failed") item.append(node("small", operationFailure(row.error_code)));
     if (["queued", "active"].includes(row.phase)) {
       const cancel = node("button", "Request cancellation");
       cancel.type = "button";
@@ -546,8 +592,8 @@ async function refresh() {
       if (["completed", "failed", "cancelled", "reconciliation_needed"].includes(job.phase)) {
         pending.delete(id);
         if (job.reply) message("agent", job.reply);
-        if (job.phase !== "completed") notice("Operation " + job.phase.replaceAll("_", " ") +
-          ". Review its saved state before another request.");
+        if (job.phase !== "completed") notice(job.phase === "failed" ? operationFailure(job.error_code) :
+          "Operation " + job.phase.replaceAll("_", " ") + ". Review its saved state before another request.");
       }
     }
   } catch (error) {

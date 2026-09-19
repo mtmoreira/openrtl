@@ -109,6 +109,22 @@ class DesignAgent:
         self.policy = selected
         return saved
 
+    def reconcile_provider_spend(self, expected_revision: int, decision: str) -> JsonObject:
+        require(decision == "retain_full_reservation", "provider_reconciliation_decision_invalid")
+        state = self._idle()
+        require(type(expected_revision) is int and state["revision"] == expected_revision,
+                "workspace_revision_stale")
+        require(not any(row["phase"] in ("queued", "active", "cancellation_requested")
+                        for row in state["workspace_operations"].values()),
+                "workspace_writer_busy_or_unreconciled")
+        require(state["provider"]["uncertain"] and state["provider"]["pending"] is None,
+                "provider_reconciliation_not_required")
+        updated = copy.deepcopy(state)
+        updated["provider"]["uncertain"] = False
+        return self.store.save(state, updated, "provider.spend_reconciled",
+                               {"model": state["provider"]["model"],
+                                "retained_nano_usd": state["provider"]["spent_nano_usd"]})
+
     def _idle(self) -> JsonObject:
         state = self.store.read()
         require(state["schema"] == SESSION_SCHEMA, "explicit_session_upgrade_required")
@@ -466,10 +482,15 @@ class DesignAgent:
                 metrics["estimated_cost_nano_usd"] = actual
             started = self.store.save(started, received, "operation.received", metrics)
             return reply.output, started
-        except Exception:
+        except Exception as error:
             # Do not persist provider exception bodies, prompts, or authentication material.
-            self._failed(started, "expert_invocation_failed")
-            raise ValueError("expert_invocation_failed") from None
+            if self.policy.provider_model is not None:
+                from openrtl.application.provider_failures import classify_provider_failure
+                code = classify_provider_failure(error)
+            else:
+                code = "expert_invocation_failed"
+            self._failed(started, code)
+            raise ValueError(code) from None
 
     def _failed(self, started: JsonObject, code: str) -> None:
         updated = copy.deepcopy(started)

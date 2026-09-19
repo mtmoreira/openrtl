@@ -11,6 +11,7 @@ from openrtl.application.design_agent import DesignAgent, design_input_digest
 from openrtl.application.design_conversation import ShownReview, approve_shown, review_payload
 from openrtl.application.design_workbench import DesignWorkbench
 from openrtl.domain.design_session import JsonObject, STAGES, canonical, content_digest, require, text
+from openrtl.domain.provider_failures import EXPERT_OPERATION_ERROR_CODES
 
 
 class DesignWorkspace:
@@ -278,6 +279,9 @@ class DesignWorkspace:
             self._finish(identifier, "completed", None)
         except asyncio.CancelledError:
             self._finish(identifier, "reconciliation_needed", "operation_cancelled_uncertain")
+        except ValueError as error:
+            code = str(error) if str(error) in EXPERT_OPERATION_ERROR_CODES else "operation_failed"
+            self._finish(identifier, "failed", code)
         except Exception:
             self._finish(identifier, "failed", "operation_failed")
         finally:
@@ -301,6 +305,9 @@ class DesignWorkspace:
             self._finish(identifier, "completed", None)
         except asyncio.CancelledError:
             self._finish(identifier, "reconciliation_needed", "operation_cancelled_uncertain")
+        except ValueError as error:
+            code = str(error) if str(error) in EXPERT_OPERATION_ERROR_CODES else "operation_failed"
+            self._finish(identifier, "failed", code)
         except Exception:
             # The provider exception, message and reply are never persisted.
             self._finish(identifier, "failed", "operation_failed")

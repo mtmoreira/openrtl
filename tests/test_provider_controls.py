@@ -8,9 +8,12 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from agentrig.core.errors import AgentRigError, Failure, FailureKind
+
 from openrtl.adapters.design_session_store import DesignSessionStore
 from openrtl.adapters.provider_invocation import read_api_key_stdin
 from openrtl.application.design_agent import DesignAgent, DesignPolicy, ExpertReply
+from openrtl.application.provider_failures import classify_provider_failure
 from openrtl.domain.design_session import JsonObject, WEB_SESSION_SCHEMA, canonical, web_initial_state
 from openrtl.domain.provider_controls import (
     compatible_model, estimated_cost_nano, model_catalog, request_reserve_nano, spend_limit_nano,
@@ -24,7 +27,57 @@ class MeteredExpert(FakeExpert):
         return ExpertReply(reply.output, "openai", "gpt-5.6-terra", 100, 50)
 
 
+class RejectedExpert(MeteredExpert):
+    async def generate(self, stage: str, context: JsonObject, operation_id: str) -> ExpertReply:
+        raise AgentRigError(Failure(
+            kind=FailureKind.PERMANENT_PROVIDER,
+            message="synthetic-private-provider-detail-do-not-persist",
+            code="openai.responses.request_failed", metadata={"status_code": "401"}))
+
+
 class ProviderControlsTest(unittest.TestCase):
+    def test_normalized_failures_have_bounded_categories(self) -> None:
+        for status, expected in (("400", "provider_request_rejected"),
+                                 ("401", "provider_authentication_rejected"),
+                                 ("429", "provider_rate_or_quota_limited"),
+                                 ("526", "provider_service_unavailable")):
+            error = AgentRigError(Failure(kind=FailureKind.PERMANENT_PROVIDER,
+                message="synthetic-private-detail", code="openai.responses.request_failed",
+                metadata={"status_code": status}))
+            self.assertEqual(classify_provider_failure(error), expected)
+        self.assertEqual(classify_provider_failure(RuntimeError("private-detail")),
+                         "expert_invocation_failed")
+
+    def test_failed_call_keeps_reservation_until_explicit_reconciliation(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            store = DesignSessionStore(Path(temporary).resolve() / "project", create=True)
+            try:
+                agent = DesignAgent(store, RejectedExpert(),
+                                    policy=DesignPolicy(provider_model="gpt-5.6-terra"))
+                agent.configure_provider("gpt-5.6-terra", spend_limit_nano("5.00"))
+                with self.assertRaisesRegex(ValueError, "provider_authentication_rejected"):
+                    asyncio.run(agent.discuss("A wire"))
+                failed = store.read()
+                reserved = request_reserve_nano("gpt-5.6-terra", 16000)
+                self.assertEqual(failed["last_error"], "provider_authentication_rejected")
+                self.assertEqual(failed["provider"]["spent_nano_usd"], reserved)
+                self.assertTrue(failed["provider"]["uncertain"])
+                database_text = (store.root / "session.sqlite3").read_bytes().decode(errors="ignore")
+                self.assertNotIn("synthetic-private-provider-detail", database_text)
+                with self.assertRaisesRegex(ValueError, "provider_reconciliation_decision_invalid"):
+                    agent.reconcile_provider_spend(failed["revision"], "refund")
+                with self.assertRaisesRegex(ValueError, "workspace_revision_stale"):
+                    agent.reconcile_provider_spend(failed["revision"] - 1, "retain_full_reservation")
+                reconciled = agent.reconcile_provider_spend(failed["revision"], "retain_full_reservation")
+                self.assertFalse(reconciled["provider"]["uncertain"])
+                self.assertEqual(reconciled["provider"]["spent_nano_usd"], reserved)
+                self.assertEqual(reconciled["calls"], 1)
+                self.assertEqual(reconciled["last_error"], "provider_authentication_rejected")
+                agent.configure_provider("gpt-5.6-terra", spend_limit_nano("10.00"))
+                self.assertEqual(store.read()["provider"]["spent_nano_usd"], reserved)
+            finally:
+                store.close()
+
     def test_reviewed_catalog_rejects_unknown_aliases_and_prices_reserve(self) -> None:
         self.assertEqual(len(model_catalog()), 5)
         self.assertEqual(compatible_model("gpt-5.6-terra"), "gpt-5.6-terra")

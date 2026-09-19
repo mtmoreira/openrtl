@@ -51,6 +51,22 @@ pricing, charges and account availability must be independently checked.
 Changing the model or ceiling while idle preserves previously estimated spend.
 Earlier calls from a migrated session are visibly marked unpriced.
 
+When a provider call fails, OpenRTL records a bounded cause where AgentRig supplies
+one (for example authentication, model access, rate/quota, timeout, or service
+failure). The workspace displays that category without persisting the SDK's
+exception text, API key, request, or response. Older failed operations may still
+show only the generic category; their original cause cannot be reconstructed.
+
+If a failed call has uncertain cost, **Keep reservation and unblock settings**
+explicitly marks its full conservative reservation as retained. It does not
+refund the call, establish the actual provider bill, or replay the request.
+Check account-side usage and the selected credential/model, then adjust the
+project ceiling if needed before submitting a new request. The action requires
+the current project revision and an idle workspace, so a stale browser tab
+cannot reconcile a different state. For example, a $4.488 reservation under a
+$5 ceiling leaves too little for another $4.488 reservation; a fresh call would
+require a ceiling of at least $8.976, subject to the local ceiling format.
+
 Provider settings are project-level. M46's six-project live qualification also
 requires a separately approved aggregate call/token/time/repair and monetary
 ceiling, an exact model and a freshly verified owned runtime. These controls do

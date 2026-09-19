@@ -175,11 +175,12 @@ class DesignWebTest(unittest.TestCase):
         server = ThreadingHTTPServer(("127.0.0.1", 0), handler(runtime))
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
-        def request(method: str, body: dict[str, object] | None = None) -> tuple[int, dict[str, object]]:
+        def request(method: str, body: dict[str, object] | None = None,
+                    path: str = "/api/provider") -> tuple[int, dict[str, object]]:
             connection = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
             try:
                 raw = json.dumps(body).encode() if body is not None else None
-                connection.request(method, "/api/provider", body=raw,
+                connection.request(method, path, body=raw,
                                    headers={"Content-Type": "application/json"} if body is not None else {})
                 response = connection.getresponse()
                 return response.status, json.loads(response.read())
@@ -206,6 +207,30 @@ class DesignWebTest(unittest.TestCase):
             self.assertEqual(code, 409)
             self.assertEqual(rejected["error"], "provider_model_incompatible")
             self.assertEqual(runtime.provider_settings()["selected_model"], "gpt-5.6-terra")
+            self.expert.fail = True
+            revision = runtime.call(lambda workspace: workspace.snapshot()["state"]["revision"])
+            operation_id = uuid.uuid4().hex
+            runtime.submit("A wire", operation_id, revision)
+            import time
+            for _ in range(50):
+                operation = runtime.call(lambda workspace: workspace.operation(operation_id))
+                if operation["phase"] == "failed":
+                    break
+                time.sleep(0.01)
+            self.assertEqual(operation["error_code"], "expert_invocation_failed")
+            code, uncertain = request("GET")
+            self.assertEqual(code, 200)
+            self.assertTrue(uncertain["uncertain"])
+            self.assertGreater(float(uncertain["estimated_spend_usd"]), 0)
+            action = {"expected_revision": uncertain["revision"],
+                      "decision": "retain_full_reservation"}
+            code, done = request("POST", action, "/api/provider/reconcile")
+            self.assertEqual(code, 200)
+            self.assertFalse(done["uncertain"])
+            self.assertEqual(done["estimated_spend_usd"], uncertain["estimated_spend_usd"])
+            code, stale = request("POST", action, "/api/provider/reconcile")
+            self.assertEqual(code, 409)
+            self.assertEqual(stale["error"], "workspace_revision_stale")
         finally:
             server.shutdown()
             server.server_close()

@@ -18,6 +18,20 @@ HINTS = {
     "explicit_session_upgrade_required": "Back up the existing project, then request an explicit session upgrade.",
     "expert_call_budget_exhausted": "The persisted call budget is exhausted; resume does not refund calls.",
     "expert_invocation_failed": "Inspect recorded call accounting and configuration before explicitly retrying.",
+    "provider_spend_budget_exhausted": "The project ceiling cannot cover another full reservation; review estimated and account-side spend.",
+    "provider_spend_uncertain": "Explicitly review and retain the full reservation before changing settings or trying a new call.",
+    "provider_credential_unavailable": "Check the selected credential source; keep the full call reservation until reviewed.",
+    "provider_client_unavailable": "Check local SDK/client readiness; keep the full call reservation until reviewed.",
+    "provider_authentication_rejected": "Check API-key validity without pasting it into logs; keep the full call reservation until reviewed.",
+    "provider_access_denied": "Check provider account and model access; keep the full call reservation until reviewed.",
+    "provider_model_unavailable": "Check exact model access; keep the full call reservation until reviewed.",
+    "provider_request_rejected": "Check the reviewed request/schema compatibility; keep the full call reservation until reviewed.",
+    "provider_rate_or_quota_limited": "Check provider rate and quota state; keep the full call reservation until reviewed.",
+    "provider_service_unavailable": "Check provider service state; keep the full call reservation until reviewed.",
+    "provider_connection_failed": "Check local connectivity; keep the full call reservation until reviewed.",
+    "provider_response_invalid": "The provider response could not be validated; keep the full reservation until reviewed.",
+    "provider_timeout": "Request completion is uncertain; keep the full reservation until reviewed.",
+    "provider_result_invalid": "The returned identity or usage could not be validated; keep the full reservation until reviewed.",
     "expert_output_invalid": "The response failed deterministic validation; inspect the current stage before retrying.",
     "simulation_execution_failed": "Inspect the retained operation and explicitly reconcile its original owned runtime before retrying.",
     "interrupted_operation_abandoned": "Review the retained uncertainty warning; external completion and cost may remain unknown.",
@@ -53,6 +67,7 @@ def safe_event(row: JsonObject) -> JsonObject:
             fields[key] = value
         elif key == "role" and value in ROLES.values(): fields[key] = value
         elif key == "error_code" and value in HINTS: fields[key] = value
+        elif key == "retained_nano_usd" and type(value) is int and 0 <= value < 2**63: fields[key] = value
     return {"sequence": row["sequence"], "event": row["event"] if row["event"] in EVENTS else "unrecognized", "fields": fields}
 
 

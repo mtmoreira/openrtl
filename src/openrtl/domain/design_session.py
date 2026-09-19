@@ -7,6 +7,8 @@ import json
 import re
 from typing import Any, cast
 
+from openrtl.domain.provider_failures import EXPERT_OPERATION_ERROR_CODES, PROVIDER_FAILURE_CODES
+
 
 JsonObject = dict[str, Any]
 SESSION_SCHEMA = "openrtl.design-session.v6"
@@ -274,8 +276,9 @@ def validate_workspace_operations(value: object, revision: int) -> None:
         require(row["result_revision"] is None or
                 type(row["result_revision"]) is int and 0 <= row["result_revision"] <= revision,
                 "workspace_result_revision_invalid")
-        require(row["error_code"] is None or row["error_code"] in (
-            "operation_failed", "operation_cancelled_uncertain"), "workspace_error_code_invalid")
+        require(row["error_code"] is None or row["error_code"] in
+                EXPERT_OPERATION_ERROR_CODES | {"operation_failed", "operation_cancelled_uncertain"},
+                "workspace_error_code_invalid")
 
 
 def validate_state(value: object) -> JsonObject:
@@ -320,7 +323,7 @@ def validate_state(value: object) -> JsonObject:
                 active["kind"] in ("expert", "simulation") and active["stage"] in (*ROLES, "simulation"),
                 "session_active_operation_invalid")
     require(state["last_error"] in (None, "expert_output_invalid", "expert_invocation_failed", "simulation_execution_failed",
-                                    "interrupted_operation_abandoned"),
+                                    "interrupted_operation_abandoned") or state["last_error"] in PROVIDER_FAILURE_CODES,
             "session_error_code_invalid")
     require(isinstance(state["summaries"], dict) and set(state["summaries"]).issubset(ROLES), "session_summaries_invalid")
     for summary in state["summaries"].values():

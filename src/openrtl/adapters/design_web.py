@@ -75,11 +75,13 @@ class WorkspaceRuntime:
 
     def provider_settings(self) -> JsonObject:
         async def invoke() -> JsonObject:
-            provider = (self.store.read()["provider"] if self.store is not None and self.workspace is not None
+            state = self.store.read() if self.store is not None and self.workspace is not None else None
+            provider = (state["provider"] if state is not None
                         else {"model": None, "limit_nano_usd": None,
                               "spent_nano_usd": 0, "uncertain": False,
                               "prior_unpriced_calls": 0})
             return {"models": model_catalog(), "selected_model": provider["model"],
+                    "revision": state["revision"] if state is not None else None,
                     "max_spend_usd": dollars(provider["limit_nano_usd"]) if provider["limit_nano_usd"] is not None else None,
                     "estimated_spend_usd": dollars(provider["spent_nano_usd"]),
                     "uncertain": provider["uncertain"],
@@ -87,6 +89,18 @@ class WorkspaceRuntime:
                     "enabled": self.workspace is not None and self.workspace.agent.expert is not None,
                     "key_present": self._key is not None,
                     "editable": self.provider_builder is not None and self.workspace is not None}
+        return self._await(invoke())
+
+    def reconcile_provider_spend(self, expected_revision: object, decision: object) -> JsonObject:
+        async def invoke() -> JsonObject:
+            require(self.workspace is not None, "provider_settings_unavailable")
+            require(type(expected_revision) is int and type(decision) is str,
+                    "provider_reconciliation_request_invalid")
+            state = self.workspace.agent.reconcile_provider_spend(
+                cast(int, expected_revision), cast(str, decision))
+            return {"revision": state["revision"], "estimated_spend_usd":
+                    dollars(state["provider"]["spent_nano_usd"]),
+                    "uncertain": state["provider"]["uncertain"]}
         return self._await(invoke())
 
     def configure_provider(self, model: object, max_spend_usd: object,
@@ -257,7 +271,12 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
                            "waveform_browser_limit", "waveform_trace_metadata_invalid", "waveform_run_unknown",
                            "waveform_trace_identity_stale", "waveform_response_limit",
                            "provider_model_incompatible", "provider_spend_limit_invalid",
-                           "provider_spend_limit_below_used", "provider_spend_uncertain"}
+                           "provider_spend_limit_below_used", "provider_spend_uncertain",
+                           "provider_reconciliation_request_invalid",
+                           "provider_reconciliation_decision_invalid",
+                           "provider_reconciliation_not_required", "workspace_revision_stale",
+                           "workspace_writer_busy_or_unreconciled",
+                           "interrupted_operation_requires_reconciliation"}
                 code = str(error) if type(error) is ValueError and str(error) in allowed else "invalid_or_stale_request"
                 self._json(409, {"error": code})
             except Exception:
@@ -377,6 +396,11 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
                     body = self._body({"model", "max_spend_usd", "api_key", "enabled"})
                     self._json(200, runtime.configure_provider(body["model"], body["max_spend_usd"],
                                                                body["api_key"], body["enabled"]))
+                    return
+                if parsed.path == "/api/provider/reconcile":
+                    body = self._body({"expected_revision", "decision"})
+                    self._json(200, runtime.reconcile_provider_spend(
+                        body["expected_revision"], body["decision"]))
                     return
                 if parsed.path == "/api/project/upgrade":
                     self._body(set())
