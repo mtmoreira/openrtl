@@ -18,8 +18,9 @@ A provider invocation additionally requires `--allow-provider --provider
 `--credential-env OPENAI_API_KEY` names the credential source; do not paste its
 value into chat, a specification, profile, report or command argument. The
 optional SDK must match AgentRig's declared pinned version. No automatic
-dependency installation is performed. Approved project context is sent to
-OpenAI with provider-managed retention; this is not an offline mode. Provider
+dependency installation is performed; prepare the hash-locked OpenAI and Ollama
+SDK cache explicitly with `./openrtl setup-sdk --allow-sdk-install`. Approved
+project context is sent to OpenAI with provider-managed retention; this is not an offline mode. Provider
 permission is not restored automatically with a session. The Ollama route uses
 only `http://127.0.0.1:11434`, requires an already-installed model and the
 pinned optional SDK, and has no API key or OpenRTL USD reservation. OpenRTL

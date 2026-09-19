@@ -41,6 +41,9 @@ class SDKSetupTest(unittest.TestCase):
             package = site / "openai"
             package.mkdir()
             (package / "__init__.py").write_text("__version__ = '2.47.0'\n")
+            package = site / "ollama"
+            package.mkdir()
+            (package / "__init__.py").write_text("")
         return b""
 
     def install(self) -> Path:
@@ -59,8 +62,9 @@ class SDKSetupTest(unittest.TestCase):
                 self.assertFalse(self.state.exists())
 
     def test_exact_lock_is_verified_and_changed_lock_is_rejected(self) -> None:
-        self.assertEqual(len(sdk.locked_packages()), 16)
+        self.assertEqual(len(sdk.locked_packages()), 17)
         self.assertEqual(sdk.locked_packages()["openai"], "2.47.0")
+        self.assertEqual(sdk.locked_packages()["ollama"], "0.6.2")
         changed = self.root / "changed.lock"
         changed.write_bytes(sdk.LOCK.read_bytes() + b"\n")
         with patch.object(sdk, "LOCK", changed), self.assertRaisesRegex(bootstrap.BootstrapError, "sdk_lock_changed"):
@@ -77,8 +81,13 @@ class SDKSetupTest(unittest.TestCase):
         self.assertEqual(command[command.index("--only-binary") + 1], ":all:")
         self.assertEqual(command[command.index("--link-mode") + 1], "copy")
         self.assertEqual(command[command.index("--requirements") + 1], str(sdk.LOCK))
+        import_command, import_environment = self.commands[1]
+        self.assertIn("import openai, ollama", import_command[5])
+        self.assertIn("version('ollama') == '0.6.2'", import_command[5])
         self.assertNotIn("OPENAI_API_KEY", environment)
         self.assertNotIn("UV_INDEX_URL", environment)
+        self.assertNotIn("OPENAI_API_KEY", import_environment)
+        self.assertNotIn("UV_INDEX_URL", import_environment)
         self.assertEqual(environment["UV_PYTHON_DOWNLOADS"], "never")
         for item in site.rglob("*"):
             self.assertEqual(stat.S_IMODE(item.stat().st_mode), 0o700 if item.is_dir() else 0o600)

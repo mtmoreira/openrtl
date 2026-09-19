@@ -311,7 +311,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return onboarding.main(frontend)
         if forwarded and forwarded[0] == "setup-sdk":
             require(forwarded == ["setup-sdk"], "sdk_setup_arguments_invalid")
-            print("Optional setup uses uv 0.12.3 and the hashed OpenAI SDK 2.47.0 wheel lock in private OpenRTL state.")
+            print("Optional setup uses uv 0.12.3 and the hashed OpenAI 2.47.0 "
+                  "and Ollama 0.6.2 SDK wheel lock in private OpenRTL state.")
             print("This permits SDK setup only. No credentials are read; no model or simulator is called.")
             if not options.allow_sdk_install:
                 print("To approve SDK/tool preparation, rerun setup-sdk with --allow-sdk-install. "

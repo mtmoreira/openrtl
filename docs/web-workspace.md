@@ -40,6 +40,7 @@ An Ollama selection uses the fixed loopback service, an already-installed
 model, no API key and no OpenRTL USD ceiling:
 
 ```sh
+./openrtl setup-sdk --allow-sdk-install
 ./openrtl ui --project /absolute/existing-project --allow-provider \
   --provider ollama --model qwen3:8b
 ```

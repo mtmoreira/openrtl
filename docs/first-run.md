@@ -40,11 +40,11 @@ source. This does not authenticate the checkout's origin.
 Startup disables inherited Python search paths and site initialization. The
 SDK-only evaluation environment and development package installations are not
 silently used as product dependencies. Optional SDK setup uses the checked-in,
-hashed 16-distribution OpenAI SDK 2.47.0 lock and requires a separate explicit
-choice. Actual installation of those locked packages and offline SDK readiness
-passed in private macOS state without provider calls. The existing installed
-development CLI's separately authorized provider workflow remains documented in
-the alpha guide; it does not qualify customer onboarding.
+hashed 17-distribution OpenAI SDK 2.47.0 and Ollama SDK 0.6.2 lock and requires
+a separate explicit choice. Setup validation checks the exact distribution set,
+cache receipt and isolated imports without making provider calls. The existing
+installed development CLI's separately authorized provider workflow remains
+documented in the alpha guide; it does not qualify customer onboarding.
 
 ## Setup and review
 
@@ -137,8 +137,9 @@ offline SDK path needs the uv archive plus compatible wheels for every locked
 distribution. It does not require a Python archive when using existing Python.
 Online SDK setup uses PyPI; source builds, dependency re-resolution, package
 hooks, keyring providers and automatic Python downloads are disabled. The SDK
-import check never creates a client or resolves a credential. Neither
-`--allow-install` nor `--allow-runtime-install` grants SDK consent, and
+import check verifies both provider SDKs without creating a client, contacting
+Ollama or resolving a credential. Neither `--allow-install` nor
+`--allow-runtime-install` grants SDK consent, and
 `--allow-sdk-install` does not grant provider or simulation permission.
 
 Successful SDK state has a receipt covering every installed file and exact

@@ -24,6 +24,7 @@ SETUP_SCHEMA = "openrtl.setup.v1"
 DEFAULT_MODEL = "gpt-5.4-nano-2026-03-17"
 AGENTRIG_VERSION = "0.3.1.dev12"
 OPENAI_SDK_VERSION = "2.47.0"
+OLLAMA_SDK_VERSION = "0.6.2"
 CONFIG_NAME = "setup.json"
 MAX_CONFIG_BYTES = 16384
 
@@ -187,9 +188,10 @@ def _package_version(package: str) -> str:
 
 
 def readiness(config: SetupConfig | None) -> dict[str, object]:
-    packages = {name: _package_version(name) for name in ("openrtl", "agentrig", "openai")}
+    packages = {name: _package_version(name) for name in ("openrtl", "agentrig", "openai", "ollama")}
     local_ready = sys.version_info >= (3, 12) and packages["agentrig"] == AGENTRIG_VERSION
-    sdk_ready = packages["openai"] == OPENAI_SDK_VERSION
+    sdk_ready = (packages["openai"] == OPENAI_SDK_VERSION and
+                 packages["ollama"] == OLLAMA_SDK_VERSION)
     return {
         "schema": "openrtl.readiness.v1",
         "local_review_ready": local_ready,
@@ -207,8 +209,10 @@ def readiness(config: SetupConfig | None) -> dict[str, object]:
         "credential_source": "name configured; value never inspected" if config else "not configured",
         "packages": packages,
         "optional_provider_sdk": (
-            "exact OpenAI SDK " + OPENAI_SDK_VERSION + " present; credential validity and access unverified" if sdk_ready else
-            "requires optional OpenAI SDK " + OPENAI_SDK_VERSION + "; current: " + packages["openai"] +
+            "exact OpenAI SDK " + OPENAI_SDK_VERSION + " and Ollama SDK " + OLLAMA_SDK_VERSION +
+            " present; credential validity, service availability and access unverified" if sdk_ready else
+            "requires optional OpenAI SDK " + OPENAI_SDK_VERSION + " and Ollama SDK " + OLLAMA_SDK_VERSION +
+            "; current: OpenAI " + packages["openai"] + ", Ollama " + packages["ollama"] +
             "; installation requires separate approval"),
         "provider": "not authorized; SDK version alone does not prove provider readiness",
         "simulation": "unconfigured; an explicitly approved isolated runtime is required",

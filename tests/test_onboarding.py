@@ -14,7 +14,8 @@ import unittest
 from unittest.mock import patch
 
 from openrtl.onboarding import (
-    AGENTRIG_VERSION, CONFIG_NAME, DEFAULT_MODEL, MAX_CONFIG_BYTES, OPENAI_SDK_VERSION, SetupConfig, SetupError,
+    AGENTRIG_VERSION, CONFIG_NAME, DEFAULT_MODEL, MAX_CONFIG_BYTES, OLLAMA_SDK_VERSION, OPENAI_SDK_VERSION,
+    SetupConfig, SetupError,
     default_state_dir, guided_setup, load_config, main, readiness, save_config, validate_config,
 )
 
@@ -146,7 +147,8 @@ class OnboardingConfigurationTest(unittest.TestCase):
         self.assertEqual(selected, SetupConfig("other-model", "RTL_KEY", 6, 1, 4000, 60))
 
     def test_readiness_inspects_metadata_only_and_retains_pending_gates(self) -> None:
-        versions = {"openrtl": "0.4.0", "agentrig": AGENTRIG_VERSION, "openai": OPENAI_SDK_VERSION}
+        versions = {"openrtl": "0.4.0", "agentrig": AGENTRIG_VERSION,
+                    "openai": OPENAI_SDK_VERSION, "ollama": OLLAMA_SDK_VERSION}
         with patch("openrtl.onboarding.version", side_effect=versions.__getitem__), \
                 patch("openrtl.onboarding.sys.version_info", (3, 12, 0)), \
                 patch.dict(os.environ, {"SYNTHETIC_RTL_KEY": "synthetic-never-read-value"}):
@@ -167,13 +169,15 @@ class OnboardingConfigurationTest(unittest.TestCase):
         self.assertNotIn("synthetic-never-read-value", json.dumps(report))
 
     def test_readiness_requires_exact_dependency_versions_and_never_infers_authority(self) -> None:
-        for agentrig_version, sdk_version, python_version, local_ready, configured in (
-            (AGENTRIG_VERSION, OPENAI_SDK_VERSION, (3, 12, 0), True, True),
-            ("0.3.1", OPENAI_SDK_VERSION, (3, 12, 0), False, False),
-            (AGENTRIG_VERSION, "2.48.0", (3, 12, 0), True, False),
-            (AGENTRIG_VERSION, OPENAI_SDK_VERSION, (3, 11, 0), False, False),
+        for agentrig_version, openai_version, ollama_version, python_version, local_ready, configured in (
+            (AGENTRIG_VERSION, OPENAI_SDK_VERSION, OLLAMA_SDK_VERSION, (3, 12, 0), True, True),
+            ("0.3.1", OPENAI_SDK_VERSION, OLLAMA_SDK_VERSION, (3, 12, 0), False, False),
+            (AGENTRIG_VERSION, "2.48.0", OLLAMA_SDK_VERSION, (3, 12, 0), True, False),
+            (AGENTRIG_VERSION, OPENAI_SDK_VERSION, "0.6.1", (3, 12, 0), True, False),
+            (AGENTRIG_VERSION, OPENAI_SDK_VERSION, OLLAMA_SDK_VERSION, (3, 11, 0), False, False),
         ):
-            versions = {"openrtl": "0.4.0", "agentrig": agentrig_version, "openai": sdk_version}
+            versions = {"openrtl": "0.4.0", "agentrig": agentrig_version,
+                        "openai": openai_version, "ollama": ollama_version}
             with self.subTest(versions=versions, python=python_version), \
                     patch("openrtl.onboarding.version", side_effect=versions.__getitem__), \
                     patch("openrtl.onboarding.sys.version_info", python_version):
@@ -181,8 +185,9 @@ class OnboardingConfigurationTest(unittest.TestCase):
             self.assertEqual(report["local_review_ready"], local_ready)
             self.assertEqual(report["provider_configuration_ready"], configured)
             self.assertFalse(report["provider_authorized"])
-            if sdk_version != OPENAI_SDK_VERSION:
+            if openai_version != OPENAI_SDK_VERSION or ollama_version != OLLAMA_SDK_VERSION:
                 self.assertIn(OPENAI_SDK_VERSION, str(report["optional_provider_sdk"]))
+                self.assertIn(OLLAMA_SDK_VERSION, str(report["optional_provider_sdk"]))
                 self.assertIn("separate approval", str(report["optional_provider_sdk"]))
 
     def test_default_paths_are_product_scoped_and_relative_xdg_is_rejected(self) -> None:

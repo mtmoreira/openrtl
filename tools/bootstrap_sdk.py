@@ -22,7 +22,7 @@ from tools.bootstrap_openrtl import BootstrapError, read_regular, require
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCK = ROOT / "bootstrap/sdk-requirements.lock"
-LOCK_SHA256 = "964ea525ed114a591db5a2b513f5f6e544cb966fac8033d371357a3e7d9026f7"
+LOCK_SHA256 = "fa37eadceb2cb83402108b184adcfe2ee72743abcb66f1fe3ae674e17834c0b4"
 MAX_FILE = 64 * 1024 * 1024
 MAX_TREE = 256 * 1024 * 1024
 
@@ -31,7 +31,8 @@ def locked_packages() -> dict[str, str]:
     data = read_regular(LOCK, 256 * 1024)
     require(hashlib.sha256(data).hexdigest() == LOCK_SHA256, "sdk_lock_changed")
     rows = re.findall(r"^([a-z][a-z0-9-]*)==([0-9.]+) \\", data.decode(), re.MULTILINE)
-    require(len(rows) == 16 and len(dict(rows)) == 16 and dict(rows).get("openai") == "2.47.0",
+    require(len(rows) == 17 and len(dict(rows)) == 17 and
+            dict(rows).get("openai") == "2.47.0" and dict(rows).get("ollama") == "0.6.2",
             "sdk_lock_invalid")
     return dict(rows)
 
@@ -217,8 +218,10 @@ def install_sdk(state: Path, *, authorized: bool, offline: bool,
         verify_metadata(site)
         files = inventory(site)
         run_bounded([sys.executable, "-I", "-S", "-B", "-c",
-                     "import sys; sys.path.insert(0, sys.argv[1]); import openai; "
-                     "raise SystemExit(0 if openai.__version__ == '2.47.0' else 2)", str(site)],
+                     "import sys; sys.path.insert(0, sys.argv[1]); import openai, ollama; "
+                     "from importlib.metadata import version; "
+                     "raise SystemExit(0 if openai.__version__ == '2.47.0' and "
+                     "version('ollama') == '0.6.2' else 2)", str(site)],
                     attempt, environment, timeout=30)
         require(inventory(site) == files, "sdk_import_modified_cache")
         document = {"schema": "openrtl.sdk-cache.v1", "lock_sha256": LOCK_SHA256,

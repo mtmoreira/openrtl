@@ -43,7 +43,12 @@ passes through that browser to the loopback server.
 
 For local inference, first install and start Ollama separately and ensure the
 chosen model is already present. OpenRTL never starts Ollama or pulls a model.
-Then select the exact installed name:
+Prepare OpenRTL's pinned provider SDK cache once, then select the exact installed
+model name:
+
+```sh
+./openrtl setup-sdk --allow-sdk-install
+```
 
 ```sh
 ./openrtl chat --project /absolute/private/project --allow-provider \
@@ -58,8 +63,9 @@ locally, and every call requires bounded tool-free JSON-schema output. A
 missing model is reported as unavailable; a model that rejects or fails the
 schema is reported as a rejected or invalid provider response. Selecting an
 Ollama model does not prove that it can satisfy every OpenRTL engineering stage.
-The pinned optional Ollama SDK must be installed explicitly; OpenRTL performs
-no dependency installation.
+The explicit setup command installs only the hash-locked provider SDK set. It
+does not contact Ollama, pull a model, read credentials or authorize a provider
+call.
 
 The OpenAI ceiling is stored in the project session without the key. Before an
 OpenAI call, OpenRTL reserves a conservative amount using the selected model's published
