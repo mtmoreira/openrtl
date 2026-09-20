@@ -11,7 +11,7 @@ const elements = Object.fromEntries([
   "waveform-start", "waveform-end", "waveform-radix", "waveform-load", "waveform-zoom-in",
   "waveform-zoom-out", "waveform-pan-left", "waveform-pan-right", "waveform-chart",
   "waveform-cursor-a", "waveform-cursor-b", "waveform-values", "waveform-save", "waveform-attach",
-  "review-card", "review-button", "approve-button", "activity-list",
+  "review-card", "review-button", "approve-button", "activity-list", "history-detail",
   "conversation-list", "chat-form", "chat-input", "chat-kind", "composer-status",
   "provider-form", "provider-kind", "provider-openai-settings", "provider-ollama-settings",
   "provider-model", "provider-ollama-model", "provider-spend", "provider-key", "provider-enabled", "provider-status",
@@ -68,6 +68,46 @@ function node(tag, text, className) {
 }
 
 function empty(target) { target.replaceChildren(); }
+
+function printable(value) {
+  if (value === null || value === undefined) return "none";
+  if (typeof value === "object") return JSON.stringify(value, null, 2);
+  return String(value);
+}
+
+function detailRow(label, value) {
+  const row = node("div", "", "history-field");
+  row.append(node("strong", label), node("span", printable(value)));
+  return row;
+}
+
+async function loadHistory(sequence) {
+  try {
+    const detail = await api("/api/history/" + sequence);
+    const target = elements["history-detail"];
+    empty(target);
+    target.classList.remove("muted");
+    target.append(node("h3", "Saved execution trace · r" + detail.event.sequence));
+    target.append(detailRow("Event", detail.event.event));
+    for (const [name, value] of Object.entries(detail.event.fields)) target.append(detailRow(name, value));
+    target.append(node("h4", "Related events"));
+    const timeline = node("div", "", "history-timeline");
+    for (const event of detail.trace) timeline.append(node("div",
+      "r" + event.sequence + " · " + event.event + " · " + printable(event.fields), "history-trace-row"));
+    target.append(timeline, node("h4", "Saved state"));
+    for (const [name, value] of Object.entries(detail.state)) target.append(detailRow(name, value));
+    if (detail.evidence) {
+      target.append(node("h4", "Simulation evidence"));
+      for (const [name, value] of Object.entries(detail.evidence)) target.append(detailRow(name, value));
+    }
+    target.append(node("h4", "Visibility"));
+    for (const [name, value] of Object.entries(detail.visibility)) target.append(detailRow(name, value));
+    target.append(node("p", "Raw prompts and replies are not persisted. Hidden reasoning is not collected. Design Lead turns record zero tool and shell calls; simulation diagnostics appear only when saved as run evidence.", "muted"));
+    target.scrollIntoView({block: "nearest", behavior: "smooth"});
+  } catch (error) {
+    notice("That saved history entry is unavailable or failed validation.");
+  }
+}
 function message(kind, value) {
   elements["conversation-list"].append(node("div", value, "message " + kind));
   elements["conversation-list"].scrollTop = elements["conversation-list"].scrollHeight;
@@ -298,7 +338,10 @@ function renderWorkbench(data) {
   if (!data.requirements.length) elements["link-list"].append(node("div", "No verification links yet.", "muted"));
   for (const row of data.history.slice().reverse()) {
     const button = node("button", "r" + row.revision + " · " + row.event, "file-button");
-    button.addEventListener("click", () => loadWorkbench(row.revision));
+    button.addEventListener("click", () => {
+      loadWorkbench(row.revision);
+      if (row.revision > 0) loadHistory(row.revision);
+    });
     elements["history-list"].append(button);
   }
   if (data.proposal) {
@@ -600,7 +643,10 @@ function renderSnapshot(snapshot) {
   elements["evidence-list"].append(node("div", state.simulation ?
     state.simulation.status + " · " + state.simulation.evidence_kind : "No simulation yet.", "muted"));
   for (const event of snapshot.events) {
-    elements["activity-list"].prepend(node("div", "r" + event.sequence + " · " + event.event, "event-item"));
+    const button = node("button", "r" + event.sequence + " · " + event.event, "event-item");
+    button.type = "button";
+    button.addEventListener("click", () => loadHistory(event.sequence));
+    elements["activity-list"].prepend(button);
   }
   while (elements["activity-list"].children.length > 64) elements["activity-list"].lastChild.remove();
   if (snapshot.more_events) setTimeout(refresh, 0);

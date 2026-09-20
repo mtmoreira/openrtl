@@ -77,7 +77,11 @@ class DesignGenerationTest(unittest.TestCase):
         self.assertEqual(request.contract.allowed_tools, ())
         self.assertEqual(request.contract.permissions["workspace"], "denied")
         self.assertEqual(request.contract.permissions["network"], "allowed")
-        self.assertEqual(request.contract.output_schema, "openrtl.design.discovery.v4")
+        self.assertEqual(request.contract.output_schema, "openrtl.design.discovery.v5")
+        self.assertEqual(request.contract.prompt_version, "openrtl.design.instructions.v2")
+        self.assertEqual(request.contract.limits.max_tool_calls, 0)
+        self.assertIn("Never ask for permission to proceed", request.instructions)
+        self.assertIn("at most conversation_policy.max_questions_this_round", request.instructions)
 
     def test_schemas_are_closed_and_role_specific(self) -> None:
         for stage in ("discovery", "architecture", "dv", "signoff", "explain"):
@@ -88,6 +92,8 @@ class DesignGenerationTest(unittest.TestCase):
         self.assertEqual(response_schema("dv")["properties"]["manifest"]["type"], "object")
         self.assertEqual(response_schema("discovery")["properties"]["specification"]["anyOf"][1],
                          {"type": "null"})
+        self.assertEqual(response_schema("discovery")["properties"]["questions_asked"]["type"],
+                         "array")
         self.assertEqual(response_schema("change_planning")["properties"]["specification"]["type"],
                          "object")
 

@@ -137,7 +137,7 @@ class DesignAgentTest(unittest.TestCase):
         self.generate_files()
         self.assertEqual([s for s, _ in self.expert.seen], list(STAGES))
         for stage, pack in self.expert.seen:
-            self.assertEqual(pack["schema"], "openrtl.design-context.v5")
+            self.assertEqual(pack["schema"], "openrtl.design-context.v6")
             if stage in ("reference_model", "dv"):
                 self.assertFalse(any(p.startswith("rtl/") for p in pack["artifacts"]))
         receipts = [e for e in self.store.events() if e["event"] == "operation.received"]
@@ -160,9 +160,14 @@ class DesignAgentTest(unittest.TestCase):
             "reply": "What width should the counter have?", "specification": None,
             "engineering_memory": [{"id": "counter.width", "kind": "question",
                 "text": "Counter width is unresolved", "provenance": "agent_proposal"}],
+            "questions_asked": ["counter.width"],
         }
         asyncio.run(self.agent.discuss("PRIVATE: I need a counter"))
         self.assertEqual(self.store.read()["engineering_memory"][0]["id"], "counter.width")
+        policy = self.expert.seen[-1][1]["conversation_policy"]
+        self.assertEqual(policy["clarification_round"], 1)
+        self.assertEqual(policy["preferred_round_limit"], 3)
+        self.assertEqual(policy["max_questions_this_round"], 3)
         self.assertNotIn("PRIVATE:", canonical(self.store.read()).decode())
         self.assertNotIn("What width should", canonical(self.store.events()).decode())
         self.store.close()
@@ -177,6 +182,37 @@ class DesignAgentTest(unittest.TestCase):
         self.assertEqual(self.expert.seen[-1][1]["engineering_memory"][0]["id"], "counter.width")
         self.assertEqual(self.store.read()["engineering_memory"][0]["kind"], "decision")
         self.assertIsNone(self.store.read()["approved_spec"])
+
+    def test_discovery_rejects_repeated_or_excessive_question_rounds(self) -> None:
+        question = {"id": "fifo.width", "kind": "question",
+                    "text": "Choose the FIFO data width", "provenance": "agent_proposal"}
+        self.expert.responses["discovery"] = {
+            "reply": "What data width should the FIFO use?", "specification": None,
+            "engineering_memory": [question], "questions_asked": ["fifo.width"],
+        }
+        asyncio.run(self.agent.discuss("I need an asynchronous FIFO"))
+        completed = [row for row in self.store.events() if row["event"] == "operation.completed"][-1]
+        self.assertEqual(completed["fields"]["clarification_round"], 1)
+        self.assertEqual(completed["fields"]["question_count"], 1)
+        with self.assertRaisesRegex(ValueError, "expert_output_invalid"):
+            asyncio.run(self.agent.discuss("Please continue"))
+        self.expert.responses["discovery"] = {
+            "reply": "Four more questions", "specification": None,
+            "engineering_memory": [question] + [
+                {"id": "fifo.q" + str(index), "kind": "question", "text": "Question " + str(index),
+                 "provenance": "agent_proposal"} for index in range(4)],
+            "questions_asked": ["fifo.q" + str(index) for index in range(4)],
+        }
+        with self.assertRaisesRegex(ValueError, "expert_output_invalid"):
+            asyncio.run(self.agent.discuss("Ask only what matters"))
+        self.expert.responses["discovery"] = {
+            "reply": "One material CDC question remains", "specification": None,
+            "engineering_memory": [question, {"id": "fifo.reset_cdc", "kind": "question",
+                "text": "Define one-sided reset recovery across clock domains",
+                "provenance": "agent_proposal"}], "questions_asked": ["fifo.reset_cdc"],
+        }
+        asyncio.run(self.agent.discuss("The reset domains are independent"))
+        self.assertEqual(self.expert.seen[-1][1]["conversation_policy"]["clarification_round"], 2)
 
     def test_memory_rejects_verbatim_prompt_and_fabricated_confirmation(self) -> None:
         self.expert.responses["discovery"] = {"reply": "Tell me more.", "specification": None,

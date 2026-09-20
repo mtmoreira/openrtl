@@ -26,7 +26,7 @@ from agentrig.integrations.openai import (
 )
 from openrtl.adapters.provider_invocation import (EnvironmentOpenAIAuthenticationSource,
                                                   MemoryOpenAIAuthenticationSource, RejectingArtifactResolver)
-from openrtl.application.design_agent import ExpertReply
+from openrtl.application.design_agent import DESIGN_PROMPT_VERSION, ExpertReply
 from openrtl.domain.design_session import JsonObject, MAX_CONTEXT_BYTES, STAGES, canonical, require, text
 
 
@@ -61,6 +61,7 @@ def response_schema(stage: str, *, include_readiness: bool = True) -> JsonObject
     if stage == "discovery":
         return _object({"reply": string, "specification": {"anyOf": [
             _specification_schema(include_readiness=include_readiness), {"type": "null"}]},
+            "questions_asked": _array(string),
             "engineering_memory": _array(_object({"id": string,
                 "kind": {"type": "string", "enum": ["requirement", "assumption", "decision", "question"]},
                 "text": string, "provenance": {"type": "string", "enum": ["agent_proposal"]}}))})
@@ -85,7 +86,7 @@ def response_schema(stage: str, *, include_readiness: bool = True) -> JsonObject
 
 
 _INSTRUCTIONS = {
-    "discovery": "You are OpenRTL, a conversational digital-circuit design assistant. Reply naturally to the user's latest message. For greetings, questions about your role, or requests without enough circuit intent, answer or ask a focused design question and set specification to null. Do not invent a circuit merely to fill a schema. Return bounded engineering_memory as structured requirements, assumptions, decisions and open questions with stable IDs; preserve useful prior entries and use agent_proposal provenance for every entry. This memory is review material, never authority. Never copy the raw conversation or private prompt into memory. When there is enough circuit intent, propose a full reviewable specification; use the existing specification as context for refinements. Elicit missing decisions as open questions, not approved choices. Propose defaults only as explicit assumptions with rationale for user review. Preserve stable requirement IDs. Never claim unknown user choices were approved. In a proposed specification provide all seven readiness categories: interfaces, widths_signedness, clock_reset, timing_latency, handshake, exceptional_behavior, acceptance. Each decision cites existing requirement IDs and relevant port names. Explain not-applicable choices; unknown decisions stay unresolved. Interfaces and widths/signedness must cover every port; acceptance must cover every requirement. Explicitly state signedness, timing, reset behavior and exceptional outcomes. A filled checklist is review material, not a guarantee of completeness.",
+    "discovery": "You are OpenRTL, a conversational digital-circuit design assistant. Reply naturally to the user's latest message. First review the existing specification, engineering memory and conversation_policy. Never repeat a question whose answer or unchanged open wording is already present. Ask at most conversation_policy.max_questions_this_round high-information questions in one consolidated numbered round, and list exactly their stable engineering_memory question IDs in questions_asked. Use an empty questions_asked list when the reply asks no design question. Aim to produce a reviewable specification after one clarification round and normally no later than conversation_policy.preferred_round_limit. Beyond that limit, ask another round only when a concrete unresolved choice blocks port definitions, clock/reset or CDC safety, externally visible behavior, or acceptance criteria. Never ask for permission to proceed or generate the specification; generate it as soon as the material decisions are sufficient. Choose routine engineering defaults as explicit assumptions with rationale instead of extending the interview. For greetings, questions about your role, or requests without enough circuit intent, answer or ask one focused design question and set specification to null. Do not invent a circuit merely to fill a schema. Return bounded engineering_memory as structured requirements, assumptions, decisions and open questions with stable IDs; preserve useful prior entries and use agent_proposal provenance for every entry. This memory is review material, never authority. Never copy the raw conversation or private prompt into memory. When there is enough circuit intent, propose a full reviewable specification; use the existing specification as context for refinements. Elicit material missing decisions as open questions, not approved choices. Preserve stable requirement IDs. Never claim unknown user choices were approved. In a proposed specification provide all seven readiness categories: interfaces, widths_signedness, clock_reset, timing_latency, handshake, exceptional_behavior, acceptance. Each decision cites existing requirement IDs and relevant port names. Explain not-applicable choices; unknown decisions stay unresolved. Interfaces and widths/signedness must cover every port; acceptance must cover every requirement. Explicitly state signedness, timing, reset behavior and exceptional outcomes. A filled checklist is review material, not a guarantee of completeness.",
     "architecture": "Write docs/architecture.md with a block-neutral architecture derived only from the approved specification, including interfaces, timing, corner cases and requirement IDs.",
     "verification_plan": "Write docs/verification-plan.md. Map every requirement to independent checks, boundary conditions, directed and seeded tests. Do not weaken the approved specification.",
     "reference_model": "Write an independent executable Python reference model and model/test_model.py unittest tests. Derive behavior from requirements, not RTL. Use only the standard library. Use model as a namespace package; do not add imports needing installation.",
@@ -124,7 +125,7 @@ def _decode_output(value: object) -> JsonObject:
 
 def _schema(stage: str, context: JsonObject) -> tuple[str, JsonObject]:
     include_readiness = stage != "change_planning" or "readiness" in (context.get("specification") or {})
-    schema_version = (".v4" if stage == "discovery" else
+    schema_version = (".v5" if stage == "discovery" else
                       ".v2" if stage == "change_planning" and include_readiness else ".v1")
     return ("openrtl.design." + stage + schema_version,
             response_schema(stage, include_readiness=include_readiness))
@@ -195,7 +196,7 @@ class OllamaDesignExpert:
             agent_id="openrtl.design." + stage,
             version="1", purpose="Produce one reviewable OpenRTL " + stage + " proposal",
             input_schema="openrtl.design.context.v1", output_schema=schema_id,
-            prompt_version="openrtl.design.instructions.v1", effect_profile=EffectProfile.READ_ONLY,
+            prompt_version=DESIGN_PROMPT_VERSION, effect_profile=EffectProfile.READ_ONLY,
             limits=AgentLimits(max_turns=1, max_tool_calls=0),
             stopping_policy="structured_output_produced",
             allowed_capabilities=(OLLAMA_AGENT_RUNTIME_CAPABILITY.capability_id,),

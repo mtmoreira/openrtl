@@ -220,12 +220,15 @@ class DesignSessionStore:
         return output
 
     def events(self) -> tuple[JsonObject, ...]:
-        return tuple(json.loads(row[0]) for row in self.connection.execute("SELECT payload FROM events ORDER BY sequence"))
+        from openrtl.domain.design_events import event
+        rows = self.connection.execute("SELECT sequence, payload FROM events ORDER BY sequence")
+        return tuple(event(json.loads(payload), sequence) for sequence, payload in rows)
 
     def events_after(self, cursor: int, *, limit: int = 64) -> tuple[JsonObject, ...]:
         require(type(cursor) is int and cursor >= 0 and type(limit) is int and 1 <= limit <= 128,
                 "event_cursor_invalid")
+        from openrtl.domain.design_events import event
         rows = self.connection.execute(
-            "SELECT payload FROM events WHERE sequence > ? ORDER BY sequence LIMIT ?", (cursor, limit)
+            "SELECT sequence, payload FROM events WHERE sequence > ? ORDER BY sequence LIMIT ?", (cursor, limit)
         )
-        return tuple(json.loads(row[0]) for row in rows)
+        return tuple(event(json.loads(payload), sequence) for sequence, payload in rows)

@@ -26,6 +26,7 @@ class DesignWorkspaceTest(unittest.TestCase):
             "reply": "What width should the counter have?", "specification": None,
             "engineering_memory": [{"id": "counter.width", "kind": "question",
                 "text": "Counter width is unresolved", "provenance": "agent_proposal"}],
+            "questions_asked": ["counter.width"],
         }
         self.agent = DesignAgent(self.store, self.expert)
         self.workspace = DesignWorkspace(self.agent)

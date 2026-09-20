@@ -25,7 +25,8 @@ class DesignWebTest(unittest.TestCase):
         self.expert = FakeExpert()
         self.expert.responses["discovery"] = {"reply": "What width should it use?",
             "specification": None, "engineering_memory": [{"id": "width", "kind": "question",
-                "text": "Width is unresolved", "provenance": "agent_proposal"}]}
+                "text": "Width is unresolved", "provenance": "agent_proposal"}],
+            "questions_asked": ["width"]}
         self.project = Path(self.temporary.name).resolve() / "project"
         self.runtime = WorkspaceRuntime(self.project, create=True,
                                         expert_factory=lambda: self.expert, policy=DesignPolicy())
@@ -104,6 +105,19 @@ class DesignWebTest(unittest.TestCase):
         self.assertTrue(fresh["state"]["engineering_memory"])
         self.assertNotIn("A counter", json.dumps(fresh))
         self.assertNotIn("What width should", json.dumps(fresh))
+        received = next(row for row in fresh["events"] if row["event"] == "operation.received")
+        code, detail = self.request("GET", "/api/history/" + str(received["sequence"]))
+        self.assertEqual(code, 200)
+        self.assertEqual(detail["schema"], "openrtl.web-history-detail.v1")
+        self.assertEqual(detail["visibility"]["raw_prompt"], "not_persisted")
+        self.assertEqual(detail["visibility"]["raw_reply"], "not_persisted")
+        self.assertEqual(detail["visibility"]["hidden_reasoning"], "not_collected")
+        self.assertEqual(detail["visibility"]["tool_calls"], 0)
+        started = next(row for row in detail["trace"] if row["event"] == "operation.started")
+        self.assertEqual(started["fields"]["prompt_version"], "openrtl.design.instructions.v2")
+        self.assertEqual(started["fields"]["context_schema"], "openrtl.design-context.v6")
+        self.assertNotIn("A counter", json.dumps(detail))
+        self.assertNotIn("What width should", json.dumps(detail))
         code, idle = self.request("GET", "/api/snapshot?cursor=" + str(fresh["next_cursor"]))
         self.assertEqual(code, 200)
         self.assertEqual(idle["events"], [])

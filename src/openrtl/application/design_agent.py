@@ -18,6 +18,11 @@ from openrtl.domain.design_delegation import specification_warnings, validate_de
 from openrtl.domain.design_imports import baseline_plan, digest_value, validate_change_plan
 from openrtl.domain.design_coaching import analysis_input_digest, validate_analysis, validate_intent, validate_proposal
 
+DESIGN_CONTEXT_SCHEMA = "openrtl.design-context.v6"
+DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v2"
+PREFERRED_CLARIFICATION_ROUNDS = 3
+MAX_QUESTIONS_PER_ROUND = 3
+
 
 class SessionStore(Protocol):
     root: Path
@@ -28,6 +33,7 @@ class SessionStore(Protocol):
     def contents(self, state: JsonObject) -> dict[str, str]: ...
     def import_contents(self, state: JsonObject) -> dict[str, str]: ...
     def historical_state(self, revision: int) -> JsonObject: ...
+    def events(self) -> tuple[JsonObject, ...]: ...
     def events_after(self, cursor: int, *, limit: int = 64) -> tuple[JsonObject, ...]: ...
     def measurement(self, state: JsonObject) -> JsonObject: ...
     def save(self, previous: JsonObject, updated: JsonObject, event: str,
@@ -207,14 +213,24 @@ class DesignAgent:
         try:
             reply = None
             proposal = result
+            asked_question_ids: list[str] = []
             if isinstance(result, dict) and "specification" in result:
-                require(set(result) in ({"reply", "specification"},
-                                        {"reply", "specification", "engineering_memory"}),
+                base_fields = {"reply", "specification"}
+                require(set(result) in (base_fields, base_fields | {"engineering_memory"},
+                                        base_fields | {"questions_asked"},
+                                        base_fields | {"engineering_memory", "questions_asked"}),
                         "expert_discussion_fields_invalid")
                 reply = text(result["reply"], maximum=8000)
                 proposal = result["specification"]
+                if "questions_asked" in result:
+                    asked_question_ids = [text(value, maximum=128)
+                                          for value in sequence(result["questions_asked"], maximum=3)]
+                    require(len(asked_question_ids) == len(set(asked_question_ids)),
+                            "expert_clarification_question_duplicate")
             updated = copy.deepcopy(started)
             updated.update(active=None, last_error=None)
+            prior_memory = state.get("engineering_memory", [])
+            memory = prior_memory
             if isinstance(result, dict) and "engineering_memory" in result:
                 memory = validate_engineering_memory(result["engineering_memory"])
                 require(all(row["provenance"] == "agent_proposal" for row in memory),
@@ -227,9 +243,28 @@ class DesignAgent:
                 updated["engineering_memory"] = memory
             if proposal is None:
                 require(reply is not None, "expert_discussion_reply_missing")
-                saved = self.store.save(started, updated, "operation.completed", {"role": ROLES["discovery"]})
+                previous_questions = {row["id"]: row["text"] for row in prior_memory
+                                      if row["kind"] == "question"}
+                current_questions = {row["id"]: row["text"] for row in memory
+                                     if row["kind"] == "question"}
+                prior_rounds = self._clarification_rounds()
+                require(all(identifier in current_questions for identifier in asked_question_ids),
+                        "expert_clarification_question_unknown")
+                require(all(previous_questions.get(identifier) != current_questions[identifier]
+                            for identifier in asked_question_ids),
+                        "expert_clarification_repeated")
+                saved = self.store.save(started, updated, "operation.completed",
+                                        {"role": ROLES["discovery"],
+                                         "clarification_round": prior_rounds +
+                                         (1 if asked_question_ids else 0),
+                                         "question_count": len(asked_question_ids)})
             else:
                 spec = validate_spec(proposal)
+                require(len(spec["questions"]) <= MAX_QUESTIONS_PER_ROUND,
+                        "expert_clarification_question_limit")
+                require(all(identifier in {row["id"] for row in spec["questions"]}
+                            for identifier in asked_question_ids),
+                        "expert_clarification_question_unknown")
                 updated["spec"] = spec
                 self._record_spec_warnings(updated)
                 saved = self.store.save(started, updated, "spec.proposed", {"spec_digest": content_digest(spec)})
@@ -239,6 +274,12 @@ class DesignAgent:
         if reply is not None and emit_reply is not None:
             emit_reply(reply)
         return saved
+
+    def _clarification_rounds(self) -> int:
+        return sum(1 for row in self.store.events()
+                   if row["event"] == "operation.completed" and
+                   row["fields"].get("role") == ROLES["discovery"] and
+                   ("question_count" not in row["fields"] or row["fields"]["question_count"] > 0))
 
     def approve(self, digest: str, *, delegated: bool = False) -> JsonObject:
         state = self._idle()
@@ -426,7 +467,8 @@ class DesignAgent:
         elif stage == "dv":
             files = {p: c for p, c in files.items() if not p.startswith("rtl/")}
             references = {p: c for p, c in references.items() if not p.startswith("rtl/")}
-        pack = {"schema": "openrtl.design-context.v5", "role": ROLES[stage], "stage": stage,
+        prior_rounds = self._clarification_rounds() if stage == "discovery" else 0
+        pack = {"schema": DESIGN_CONTEXT_SCHEMA, "role": ROLES[stage], "stage": stage,
                 "specification": state["spec"], "approved_spec_digest": state["approved_spec"],
                 "engineering_memory": state.get("engineering_memory", []),
                 "artifacts": files, "artifact_digests": state["files"], "manifest": state["manifest"],
@@ -435,6 +477,15 @@ class DesignAgent:
                 "improvement_intent": intent, "pace": state["pace"],
                 "simulation": state["simulation"], "detail": state["detail"],
                 "user_message": text(message, maximum=16000) if message else None}
+        if stage == "discovery":
+            pack["conversation_policy"] = {
+                "clarification_round": prior_rounds + 1,
+                "preferred_round_limit": PREFERRED_CLARIFICATION_ROUNDS,
+                "max_questions_this_round": MAX_QUESTIONS_PER_ROUND,
+                "existing_question_ids": [row["id"] for row in state.get("engineering_memory", [])
+                                          if row["kind"] == "question"],
+                "after_preferred_limit": "ask_only_for_a_concrete_correctness_or_interface_blocker",
+            }
         require(len(canonical(pack)) <= MAX_CONTEXT_BYTES, "expert_context_exceeds_bound")
         return pack
 
@@ -474,7 +525,10 @@ class DesignAgent:
                                                 "model": self.policy.provider_model}
         started = self.store.save(state, updated, "operation.started",
                                   {"operation_id": operation, "role": ROLES[stage],
-                                   "context_digest": content_digest(pack)})
+                                   "context_digest": content_digest(pack),
+                                   "context_schema": DESIGN_CONTEXT_SCHEMA,
+                                   "prompt_version": DESIGN_PROMPT_VERSION,
+                                   "tool_calls": 0, "shell_commands": 0})
         assert self.expert is not None
         clock_start = time.monotonic()
         try:

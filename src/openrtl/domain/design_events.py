@@ -13,7 +13,8 @@ EVENTS = frozenset(("spec.proposed spec.approved spec.revised operation.started 
 FIELDS = frozenset(("operation_id role context_digest output_digest error_code input_tokens output_tokens "
     "elapsed_ms artifact_count spec_digest provider model evidence_kind run_id authority warning_id "
     "delegation_digest requirements_digest artifacts_digest client_operation_id "
-    "request_digest limit_nano_usd estimated_cost_nano_usd retained_nano_usd").split())
+    "request_digest limit_nano_usd estimated_cost_nano_usd retained_nano_usd prompt_version "
+    "context_schema tool_calls shell_commands clarification_round question_count").split())
 
 
 def event(value: object, sequence: int) -> JsonObject:

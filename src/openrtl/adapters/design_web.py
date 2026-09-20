@@ -369,6 +369,11 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
                     self._json(200, runtime.call(lambda workspace: workspace.workbench.diff(
                         int(query["before"][0]), int(query["after"][0]), query["path"][0])))
                     return
+                match = re.fullmatch(r"/api/history/([1-9][0-9]*)", parsed.path)
+                if match is not None:
+                    sequence = int(match.group(1))
+                    self._json(200, runtime.call(lambda workspace: workspace.history(sequence)))
+                    return
                 match = re.fullmatch(r"/api/operations/([a-f0-9]{32})", parsed.path)
                 if match is not None:
                     identifier = match.group(1)

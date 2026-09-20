@@ -56,6 +56,26 @@ specification revisions, review cards and bounded operation events. It saves
 structured proposed requirements, assumptions, decisions and questions with
 stable IDs and attribution. It does not persist raw prompt or reply text. A
 refresh or restart reconstructs engineering state rather than replaying a turn.
+The Design Lead reviews existing engineering memory before asking anything new.
+It batches at most three high-information questions in a round, aims to produce
+a reviewable specification after one round and normally stops clarifying by the
+third. A later round is valid only for a new concrete blocker involving the
+interface, clock/reset or CDC safety, externally visible behavior, or acceptance.
+The application rejects an unchanged repeated question set and any round with
+more than three materially new or refined questions. Routine choices are stated
+as reviewable assumptions, and a permission-only question does not delay a ready
+specification.
+
+History and Activity rows are clickable. Their saved execution detail shows the
+selected event, related operation timeline, provider and model identity, prompt
+and context schema versions, token use, elapsed time, bounded cost fields,
+failure codes and matching simulation diagnostics when those fields were
+persisted. The detail states when data is unavailable: raw prompts and replies
+are not persisted, hidden model reasoning is not collected, and Design Lead
+turns have no tool or shell authority. Simulation shell evidence is limited to
+the bounded diagnostics retained in a run record. The interface never invents
+tool calls or reconstructs a private transcript from engineering state.
+
 The browser sends a unique operation ID and expected revision. Retrying that ID
 with the same request returns the saved state; a changed request or stale tab is
 rejected. Closing a browser tab does not cancel work. A queued operation can be

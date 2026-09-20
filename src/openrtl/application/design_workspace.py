@@ -67,6 +67,57 @@ class DesignWorkspace:
             row["phase"] = "reconciliation_needed"
         return {"id": identifier, **row, "reply": self._replies.get(identifier)}
 
+    def history(self, sequence: int) -> JsonObject:
+        """Return one bounded, persisted execution trace without private model text."""
+        require(type(sequence) is int and sequence >= 1, "history_sequence_invalid")
+        events = self.agent.store.events()
+        matches = [row for row in events if row["sequence"] == sequence]
+        require(len(matches) == 1, "history_event_unknown")
+        selected = matches[0]
+        identifiers = {name: selected["fields"][name]
+                       for name in ("operation_id", "client_operation_id", "run_id")
+                       if name in selected["fields"]}
+        trace = [row for row in events if any(row["fields"].get(name) == value
+                                              for name, value in identifiers.items())]
+        if not trace:
+            trace = [selected]
+        require(len(trace) <= 32, "history_trace_limit")
+        historical = self.agent.store.historical_state(sequence)
+        provider = historical["provider"]
+        summary: JsonObject = {
+            "revision": historical["revision"], "status": historical["status"],
+            "stage": historical["stage"], "calls": historical["calls"],
+            "repairs": historical["repairs"], "last_error": historical["last_error"],
+            "active": historical["active"],
+            "provider": {"model": provider["model"],
+                         "spent_nano_usd": provider["spent_nano_usd"],
+                         "limit_nano_usd": provider["limit_nano_usd"],
+                         "uncertain": provider["uncertain"]},
+        }
+        run_ids = {str(value) for name, value in identifiers.items()
+                   if name in ("operation_id", "run_id")}
+        simulation = historical["simulation"]
+        evidence = None
+        if simulation is not None and simulation["run_id"] in run_ids:
+            evidence = {name: simulation[name] for name in
+                        ("run_id", "status", "evidence_kind", "tests", "model_tests",
+                         "diagnostics", "error_code")}
+        started = next((row for row in trace if row["event"] == "operation.started"), None)
+        tool_calls = started["fields"].get("tool_calls") if started else None
+        shell_commands = started["fields"].get("shell_commands") if started else None
+        return {
+            "schema": "openrtl.web-history-detail.v1", "event": selected,
+            "trace": trace, "state": summary, "evidence": evidence,
+            "visibility": {
+                "raw_prompt": "not_persisted",
+                "raw_reply": "not_persisted",
+                "hidden_reasoning": "not_collected",
+                "tool_calls": tool_calls if tool_calls is not None else "not_recorded",
+                "shell_commands": shell_commands if shell_commands is not None else "not_recorded",
+                "shell_output": "simulation_diagnostics" if evidence is not None else "not_recorded",
+            },
+        }
+
     async def submit_discussion(self, message: str, *, client_operation_id: str,
                                 expected_revision: int) -> JsonObject:
         require(uuid.UUID(hex=client_operation_id).hex == client_operation_id,
