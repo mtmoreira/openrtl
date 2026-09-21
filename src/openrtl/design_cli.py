@@ -36,6 +36,8 @@ def add_design_commands(subcommands: argparse._SubParsersAction[argparse.Argumen
             selected.add_argument("--max-repairs", type=int, default=2)
             selected.add_argument("--max-output-tokens", type=int, default=16000)
             selected.add_argument("--timeout-seconds", type=int, default=120)
+            selected.add_argument("--capture-details", action="store_true",
+                                  help="retain private local inputs, outputs and provider telemetry")
             selected.add_argument("--allow-simulation", action="store_true")
             selected.add_argument("--simulation-profile", type=Path)
             selected.add_argument("--runtime-state", type=Path, help="use a privately selected runtime with reverified self-test evidence")
@@ -485,6 +487,14 @@ def run_design_command(arguments: argparse.Namespace) -> int:
                               arguments.max_output_tokens)
         create = arguments.command == "chat" or arguments.command == "batch" and arguments.create
         store = DesignSessionStore(arguments.project, create=create)
+        from openrtl.adapters.design_trace_store import DesignTraceStore
+        from openrtl.adapters.design_generation import AgentRigDesignExpert, OllamaDesignExpert
+        trace_store = DesignTraceStore(store, enabled=arguments.capture_details)
+        if isinstance(expert, (AgentRigDesignExpert, OllamaDesignExpert)):
+            expert.trace_store = trace_store
+        from openrtl.adapters.design_simulation import IsolatedDesignSimulator
+        if isinstance(simulator, IsolatedDesignSimulator):
+            simulator.trace_store = trace_store
         if arguments.upgrade_session:
             store.upgrade()
         if arguments.allow_provider:
@@ -492,7 +502,8 @@ def run_design_command(arguments: argparse.Namespace) -> int:
             agent_for_settings.configure_provider(cast(str, selector), limit_nano)
         def progress(row: JsonObject) -> None:
             print("Progress " + row["stage"] + ": " + row["phase"] + " (" + str(row["elapsed_ms"]) + " ms)", file=sys.stderr, flush=True)
-        agent = DesignAgent(store, expert, simulator, policy, recovery=simulator, progress=progress)
+        agent = DesignAgent(store, expert, simulator, policy, recovery=simulator, progress=progress,
+                            trace_store=trace_store)
         if arguments.command == "recover":
             show(asyncio.run(agent.abandon(arguments.abandon_operation)), print)
             return 0

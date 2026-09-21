@@ -112,6 +112,9 @@ def parser() -> argparse.ArgumentParser:
     ui.add_argument("--credential-env", default="OPENAI_API_KEY")
     ui.add_argument("--api-key-stdin", action="store_true")
     ui.add_argument("--max-spend-usd")
+    ui.add_argument("--timeout-seconds", type=int, default=120)
+    ui.add_argument("--capture-details", action="store_true",
+                    help="retain private local prompts, outputs and provider telemetry for new operations")
     ui.add_argument("--max-calls", type=int, default=40)
     ui.add_argument("--max-repairs", type=int, default=2)
     ui.add_argument("--allow-simulation", action="store_true")
@@ -503,14 +506,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         require(arguments.allow_simulation == all(value is not None for value in selection) and
                 (arguments.allow_simulation or all(value is None for value in selection)),
                 "simulation_runtime_and_guest_transport_required_together")
-        def provider_builder(provider: str, model: str, value: str | None) -> Any:
+        def provider_builder(provider: str, model: str, value: str | None, timeout: int) -> Any:
             if provider == "ollama":
                 from openrtl.adapters.design_generation import ollama_design_expert
-                return ollama_design_expert(authorized=True, model=model)
+                return ollama_design_expert(authorized=True, model=model, timeout_seconds=timeout)
             from openrtl.adapters.design_generation import openai_design_expert
             return openai_design_expert(authorized=True, model=model,
                                         credential_environment=arguments.credential_env,
-                                        credential_value=value)
+                                        credential_value=value, timeout_seconds=timeout)
         def simulator_factory() -> Any:
             if not arguments.allow_simulation:
                 return None
@@ -526,6 +529,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                   expert_factory=lambda: None, provider_builder=provider_builder,
                   initial_provider=arguments.provider, initial_model=selected_model,
                   initial_limit_nano=selected_limit,
+                  timeout_seconds=arguments.timeout_seconds, detailed_capture=arguments.capture_details,
                   initial_key=key_value, simulator_factory=simulator_factory,
                   policy=DesignPolicy(arguments.max_calls, arguments.max_repairs,
                                       selected))

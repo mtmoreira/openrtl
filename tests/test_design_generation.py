@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
+import tempfile
 import unittest
 
 from agentrig.agents import AgentExecutionRequest, AgentExecutionResult, AgentRuntimeUsage
@@ -46,6 +48,59 @@ class ScriptedOllamaRuntime:
 
 
 class DesignGenerationTest(unittest.TestCase):
+    def test_opted_in_runtime_capture_survives_rejected_output_and_preserves_usage(self) -> None:
+        from agentrig.core.errors import AgentRigError, Failure, FailureKind
+        from openrtl.adapters.design_session_store import DesignSessionStore
+        from openrtl.adapters.design_trace_store import DesignTraceStore
+
+        class CapturingRuntime:
+            async def execute(self, request: AgentExecutionRequest, context: object) -> AgentExecutionResult:
+                capture = context.private_trace_capture
+                if capture is not None:
+                    capture.record(context, kind="provider.response",
+                                   content={"text": "synthetic invalid JSON response"},
+                                   metadata={"provider": "ollama", "model": "qwen3:8b"})
+                return AgentExecutionResult.from_failure(
+                    Failure(kind=FailureKind.UNEXPECTED, message="Response invalid", code="ollama.invalid_output"),
+                    usage=AgentRuntimeUsage(input_tokens=21, output_tokens=43),
+                    provider_metadata={"provider": "ollama", "model": "qwen3:8b", "elapsed_ms": "7"})
+
+        with tempfile.TemporaryDirectory() as temporary:
+            store = DesignSessionStore(Path(temporary).resolve() / "project", create=True)
+            try:
+                trace = DesignTraceStore(store, enabled=True)
+                adapter = OllamaDesignExpert(CapturingRuntime(), model="qwen3:8b")
+                adapter.trace_store = trace
+                with self.assertRaises(AgentRigError):
+                    asyncio.run(adapter.generate("discovery", {}, "d" * 32))
+                records = trace.records({"d" * 32})
+                self.assertIn("synthetic invalid JSON response", str(records))
+                metrics = next(row["payload"] for row in records if row["category"] == "provider_metrics")
+                self.assertEqual((metrics["input_tokens"], metrics["output_tokens"]), (21, 43))
+                self.assertNotIn("synthetic invalid", str(store.events()) + str(store.read()))
+                trace.set_enabled(False)
+                with self.assertRaises(AgentRigError):
+                    asyncio.run(adapter.generate("discovery", {}, "e" * 32))
+                self.assertEqual(trace.records({"e" * 32}), [])
+            finally:
+                store.close()
+
+    def test_normalized_runtime_timeout_and_cancellation_are_not_lost(self) -> None:
+        from agentrig.core.errors import AgentRigError, Failure, FailureKind
+        from openrtl.application.provider_failures import classify_provider_failure
+
+        class StoppedRuntime:
+            async def execute(self, request: AgentExecutionRequest, context: object) -> AgentExecutionResult:
+                return AgentExecutionResult.from_failure(Failure(kind=kind, message="safe scripted failure"))
+
+        for kind, expected in ((FailureKind.DEADLINE_EXCEEDED, "provider_timeout"),
+                               (FailureKind.CANCELLED, "provider_cancelled")):
+            with self.subTest(kind=kind):
+                adapter = OllamaDesignExpert(StoppedRuntime(), model="qwen3:8b", timeout_seconds=300)
+                with self.assertRaises(AgentRigError) as caught:
+                    asyncio.run(adapter.generate("discovery", {}, "c" * 32))
+                self.assertEqual(classify_provider_failure(caught.exception), expected)
+
     def test_one_tool_free_structured_turn_returns_usage_and_untrusted_output(self) -> None:
         adapter = AgentRigDesignExpert(generator(), model="test-model")
         reply = asyncio.run(adapter.generate("discovery", {"schema": "unit_context"}, "a" * 32))

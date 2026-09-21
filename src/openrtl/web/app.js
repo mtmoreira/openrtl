@@ -1,7 +1,7 @@
 "use strict";
 
 const elements = Object.fromEntries([
-  "project-label", "revision-label", "status-label", "digest-label", "notice", "create-project-button", "upgrade-project-button",
+  "project-label", "revision-label", "status-label", "digest-label", "create-project-button", "upgrade-project-button",
   "memory-list", "operation-list", "evidence-list", "specification",
   "file-list", "planned-list", "elaborated-list", "link-list", "history-list",
   "source-identity", "source-content", "attach-source-button", "diff-source-button",
@@ -15,6 +15,7 @@ const elements = Object.fromEntries([
   "conversation-list", "chat-form", "chat-input", "chat-kind", "composer-status",
   "provider-form", "provider-kind", "provider-openai-settings", "provider-ollama-settings",
   "provider-model", "provider-ollama-model", "provider-spend", "provider-key", "provider-enabled", "provider-status",
+  "provider-timeout", "provider-detailed-capture",
   "provider-recovery", "provider-reconcile-button"
 ].map(id => [id, document.getElementById(id)]));
 let state = null;
@@ -35,6 +36,20 @@ let waveSignals = [];
 let waveWindow = null;
 let providerFieldsLoaded = false;
 let providerRevision = null;
+let historyRequest = 0;
+let workbenchRequest = 0;
+let refreshPromise = null;
+let refreshRequested = false;
+const systemMessages = new Map();
+const deliveredReplies = new Set();
+const displayedUserOperations = new Set();
+const restoredMessageIds = new Set();
+const inspectedReplies = new Set();
+const replyQueries = new Set();
+const operationPhases = new Map();
+const operationProgress = new Map();
+const observedEvents = new Set();
+const terminalPhases = new Set(["completed", "failed", "cancelled", "reconciliation_needed"]);
 const providerFailureGuidance = Object.freeze({
   provider_credential_unavailable: "The server could not resolve an API key. Check the key source.",
   provider_client_unavailable: "The local provider client could not start. Check the optional SDK installation.",
@@ -46,7 +61,8 @@ const providerFailureGuidance = Object.freeze({
   provider_service_unavailable: "The provider service reported an error.",
   provider_connection_failed: "The provider request could not connect or complete.",
   provider_response_invalid: "The provider response was invalid.",
-  provider_timeout: "The provider request timed out; its completion is uncertain.",
+  provider_timeout: "The model exceeded the configured time limit. Inspect History and increase the provider timeout if needed; the request was not retried.",
+  provider_cancelled: "The provider request was cancelled; its external completion may still be uncertain.",
   provider_result_invalid: "The provider result or usage could not be validated.",
   expert_invocation_failed: "The provider call failed; its exact cause was not safely classified.",
   provider_spend_budget_exhausted: "The project ceiling cannot cover another full call reservation.",
@@ -70,7 +86,7 @@ function node(tag, text, className) {
 function empty(target) { target.replaceChildren(); }
 
 function printable(value) {
-  if (value === null || value === undefined) return "none";
+  if (value === null || value === undefined) return "Unavailable · not recorded";
   if (typeof value === "object") return JSON.stringify(value, null, 2);
   return String(value);
 }
@@ -82,17 +98,29 @@ function detailRow(label, value) {
 }
 
 async function loadHistory(sequence) {
+  const request = ++historyRequest;
   try {
     const detail = await api("/api/history/" + sequence);
+    if (request !== historyRequest) return;
     const target = elements["history-detail"];
     empty(target);
     target.classList.remove("muted");
     target.append(node("h3", "Saved execution trace · r" + detail.event.sequence));
+    target.append(node("p", "Inspecting this event does not change the source revision shown in the workbench.", "muted"));
+    const inspect = node("button", "Inspect source at revision " + detail.event.sequence);
+    inspect.type = "button";
+    inspect.addEventListener("click", () => loadWorkbench(detail.event.sequence));
+    const current = node("button", "Inspect current source revision");
+    current.type = "button";
+    current.addEventListener("click", () => { if (state) loadWorkbench(state.revision); });
+    const actions = node("div", "", "source-actions");
+    actions.append(inspect, current);
+    target.append(actions);
     target.append(detailRow("Event", detail.event.event));
     for (const [name, value] of Object.entries(detail.event.fields)) target.append(detailRow(name, value));
     target.append(node("h4", "Related events"));
     const timeline = node("div", "", "history-timeline");
-    for (const event of detail.trace) timeline.append(node("div",
+    for (const event of detail.trace || []) timeline.append(node("div",
       "r" + event.sequence + " · " + event.event + " · " + printable(event.fields), "history-trace-row"));
     target.append(timeline, node("h4", "Saved state"));
     for (const [name, value] of Object.entries(detail.state)) target.append(detailRow(name, value));
@@ -100,19 +128,131 @@ async function loadHistory(sequence) {
       target.append(node("h4", "Simulation evidence"));
       for (const [name, value] of Object.entries(detail.evidence)) target.append(detailRow(name, value));
     }
+    target.append(node("h4", "Artifact changes"));
+    if (!detail.files?.length) target.append(node("p", "No artifact changes were recorded for this operation.", "muted"));
+    for (const file of detail.files || []) {
+      const row = node("div", "", "history-artifact");
+      row.append(detailRow(file.change + " · " + file.path, file.digest ?? file.previous_digest));
+      const revision = file.change === "deleted" ? file.previous_revision : file.revision;
+      const digest = file.change === "deleted" ? file.previous_digest : file.digest;
+      if (revision !== null && revision !== undefined && digest) {
+        const button = node("button", "Open " + file.path + " · r" + revision);
+        button.type = "button";
+        button.addEventListener("click", () => openSource({revision, digest, path: file.path}));
+        row.append(button);
+      }
+      target.append(row);
+    }
+    target.append(node("h4", "Runtime, usage and cost"));
+    appendTelemetryMetrics(target, detail.metrics);
+    target.append(node("h4", "Detailed local capture"));
+    target.append(detailRow("Capture availability", detail.capture ?? detail.capture_availability ??
+      detail.visibility?.detailed_capture ?? "Unavailable for this attempt"));
+    const records = Array.isArray(detail.details) ? detail.details : [];
+    if (!records.length) target.append(node("p", "No detailed records were retained for this attempt. Enabling capture now cannot recover earlier inputs, outputs or provider-returned reasoning.", "muted"));
+    for (const [index, record] of records.entries()) renderCaptureRecord(target, record, index);
     target.append(node("h4", "Visibility"));
-    for (const [name, value] of Object.entries(detail.visibility)) target.append(detailRow(name, value));
-    target.append(node("p", "Raw prompts and replies are not persisted. Hidden reasoning is not collected. Design Lead turns record zero tool and shell calls; simulation diagnostics appear only when saved as run evidence.", "muted"));
+    for (const [name, value] of Object.entries(detail.visibility || {})) target.append(detailRow(name, value));
+    target.append(node("p", "Reasoning is shown only when the provider returned it and local capture retained it. Inaccessible model internals are unavailable. Missing token, cost, tool or process data is not a zero value.", "muted"));
     target.scrollIntoView({block: "nearest", behavior: "smooth"});
   } catch (error) {
+    if (request !== historyRequest) return;
     notice("That saved history entry is unavailable or failed validation.");
   }
 }
-function message(kind, value) {
-  elements["conversation-list"].append(node("div", value, "message " + kind));
-  elements["conversation-list"].scrollTop = elements["conversation-list"].scrollHeight;
+function appendTelemetryMetrics(target, metrics) {
+  if (!metrics || !Object.keys(metrics).length) {
+    target.append(node("p", "Runtime, token counts and cost are unavailable unless recorded in the linked events or capture records below.", "muted"));
+    return;
+  }
+  for (const [name, value] of Object.entries(metrics)) target.append(detailRow(name, value));
 }
-function notice(value) { elements.notice.textContent = value; }
+function renderCaptureRecord(target, record, index) {
+  const entry = record && typeof record === "object" ? record : {content: record};
+  const title = entry.title || entry.category || entry.kind || entry.type || "Capture record";
+  const section = node("details", "", "capture-record");
+  section.append(node("summary", (index + 1) + ". " + title));
+  for (const [name, value] of Object.entries(entry)) {
+    if (name === "title") continue;
+    const field = node("div", "", "capture-field");
+    field.append(node("strong", name.replaceAll("_", " ")));
+    field.append(node("pre", printable(value), "capture-content"));
+    section.append(field);
+  }
+  target.append(section);
+}
+function message(kind, value) {
+  const item = node("div", "", "message " + kind);
+  item.append(node("strong", kind === "system" ? "System" : kind === "user" ? "You" : "Design Lead", "message-identity"),
+    node("div", value, "message-text"));
+  elements["conversation-list"].append(item);
+  scrollConversation();
+  return item;
+}
+function scrollConversation() {
+  const list = elements["conversation-list"];
+  list.scrollTop = list.scrollHeight;
+}
+function systemMessage(key, value) {
+  const previous = systemMessages.get(key);
+  if (previous) {
+    if (previous.value !== value) {
+      previous.item.querySelector(".message-text").textContent = value;
+      previous.value = value;
+    }
+    return previous.item;
+  }
+  const item = message("system", value);
+  systemMessages.set(key, {item, value});
+  return item;
+}
+function notice(value, key = value) { systemMessage("notice:" + key, value); }
+function reconcileOperation(job, progress = null) {
+  const previousPhase = operationPhases.get(job.id);
+  if (terminalPhases.has(previousPhase) && !terminalPhases.has(job.phase)) return;
+  operationPhases.set(job.id, job.phase);
+  if (progress) operationProgress.set(job.id, progress);
+  progress = operationProgress.get(job.id) || null;
+  const phaseMessages = {queued: "Your request is queued", active: "Your request is running",
+    completed: "Your request completed", failed: "Your request failed", cancelled: "Your request was cancelled",
+    reconciliation_needed: "Your request needs review", cancellation_requested: "Cancellation requested"};
+  let description = phaseMessages[job.phase] || "Request status unavailable";
+  if (job.phase === "failed") description += ". " + operationFailure(job.error_code);
+  else if (job.phase === "reconciliation_needed") description += ". Completion is uncertain; inspect the saved operation before another request.";
+  else if (job.phase === "cancelled") description += ". Execution did not start.";
+  else if (job.phase === "cancellation_requested") description += ". Cancellation has not been confirmed.";
+  else if (job.phase === "completed") description += ". Details are available in History.";
+  if (progress && !terminalPhases.has(job.phase)) description += "\n" +
+    progress.stage + " · " + progress.phase.replaceAll("_", " ") +
+    " · " + progress.elapsed_ms + " ms elapsed";
+  systemMessage("operation:" + job.id, description);
+  if (terminalPhases.has(job.phase)) {
+    pending.delete(job.id);
+    if (!inspectedReplies.has(job.id)) replyQueries.add(job.id);
+  }
+  else pending.add(job.id);
+  if (job.reply && !deliveredReplies.has(job.id)) {
+    deliveredReplies.add(job.id);
+    message("agent", job.reply);
+  }
+}
+
+async function loadConversation() {
+  try {
+    const result = await api("/api/conversation");
+    for (const row of result.messages) {
+      if (restoredMessageIds.has(row.id)) continue;
+      restoredMessageIds.add(row.id);
+      const seen = row.kind === "agent" ? deliveredReplies : displayedUserOperations;
+      if (seen.has(row.operation_id)) continue;
+      seen.add(row.operation_id);
+      const item = message(row.kind, row.text + (row.truncated ? "\n[Captured text is truncated.]" : ""));
+      item.append(node("small", "Saved local capture", "message-origin"));
+    }
+  } catch (error) {
+    notice("Saved conversation capture is unavailable. Engineering state can still reconnect; no request was replayed.", "conversation-capture");
+  }
+}
 
 async function api(path, options) {
   const response = await fetch(path, { cache: "no-store", credentials: "omit", ...options });
@@ -154,6 +294,8 @@ async function loadProviderSettings(resetFields = false) {
       elements["provider-spend"].value = settings.max_spend_usd ?
         Number(settings.max_spend_usd).toFixed(2) : "";
       elements["provider-enabled"].checked = settings.enabled;
+      elements["provider-timeout"].value = String(settings.timeout_seconds ?? 120);
+      elements["provider-detailed-capture"].checked = settings.detailed_capture === true;
       showProviderFields();
       providerFieldsLoaded = true;
     }
@@ -173,8 +315,13 @@ async function loadProviderSettings(resetFields = false) {
         (settings.prior_unpriced_calls ? " · " + settings.prior_unpriced_calls +
           " earlier calls have no price record" : "") +
         (settings.key_present ? " · key in server memory" : " · no key stored in server memory");
+    elements["provider-status"].append(node("p", "Request deadline: " + (settings.timeout_seconds ?? 120) +
+      " seconds · detailed local capture " + (settings.detailed_capture ? "on" : "off") +
+      ". Capture consent resets when this server restarts.", "muted"));
     elements["composer-status"].textContent = settings.enabled ?
-      "Provider enabled for this server. Project spend estimate is capped locally." :
+      (settings.selected_provider === "ollama" ? "Local Ollama enabled for this server." :
+        "OpenAI enabled. Project spend estimate is capped locally.") +
+      (settings.detailed_capture ? " Detailed text is captured locally." : " Conversation prose is not saved.") :
       "Provider unavailable until explicitly enabled here or at launch.";
   } catch (error) {
     elements["provider-status"].textContent = "Provider settings unavailable. No provider action was retried.";
@@ -185,11 +332,18 @@ elements["provider-form"].addEventListener("submit", async event => {
   event.preventDefault();
   const key = elements["provider-key"].value;
   const local = elements["provider-kind"].value === "ollama";
+  const timeout = Number(elements["provider-timeout"].value);
+  if (!Number.isInteger(timeout) || timeout < 1 || timeout > 300) {
+    elements["provider-key"].value = "";
+    notice("Request deadline must be a whole number from 1 to 300 seconds.");
+    return;
+  }
   try {
     await post("/api/provider", {provider: elements["provider-kind"].value,
       model: local ? elements["provider-ollama-model"].value : elements["provider-model"].value,
       max_spend_usd: local ? null : elements["provider-spend"].value,
-      api_key: local ? null : key || null, enabled: elements["provider-enabled"].checked});
+      api_key: local ? null : key || null, enabled: elements["provider-enabled"].checked,
+      timeout_seconds: timeout, detailed_capture: elements["provider-detailed-capture"].checked});
     elements["provider-key"].value = "";
     await loadProviderSettings(true);
     notice(local ? "Local Ollama settings saved. Future calls use the displayed installed model." :
@@ -254,9 +408,7 @@ function renderOperations(rows) {
       cancel.addEventListener("click", async () => {
         try {
           const result = await post("/api/operations/" + id + "/cancel", {});
-          notice("Cancellation outcome: " + result.phase.replaceAll("_", " ") +
-            (result.phase === "cancelled" ? ". Execution had not started." :
-              ". The external operation may still need reconciliation before retry."));
+          reconcileOperation(result);
           refresh();
         } catch (error) { notice("Cancellation request was not accepted. Refresh operation state."); }
       });
@@ -338,8 +490,9 @@ function renderWorkbench(data) {
   if (!data.requirements.length) elements["link-list"].append(node("div", "No verification links yet.", "muted"));
   for (const row of data.history.slice().reverse()) {
     const button = node("button", "r" + row.revision + " · " + row.event, "file-button");
+    button.type = "button";
+    button.disabled = row.revision === 0;
     button.addEventListener("click", () => {
-      loadWorkbench(row.revision);
       if (row.revision > 0) loadHistory(row.revision);
     });
     elements["history-list"].append(button);
@@ -356,8 +509,11 @@ function renderWorkbench(data) {
 }
 
 async function loadWorkbench(revision) {
-  try { renderWorkbench(await api("/api/workbench?revision=" + revision)); }
-  catch (error) { notice("That engineering revision is unavailable."); }
+  const request = ++workbenchRequest;
+  try {
+    const result = await api("/api/workbench?revision=" + revision);
+    if (request === workbenchRequest) renderWorkbench(result);
+  } catch (error) { if (request === workbenchRequest) notice("That engineering revision is unavailable."); }
 }
 
 const svgNamespace = "http://www.w3.org/2000/svg";
@@ -608,6 +764,11 @@ function renderSnapshot(snapshot) {
   if (elements["chat-kind"].options[1].disabled) elements["chat-kind"].value = "question";
   renderMemory(state.engineering_memory || []);
   renderOperations(state.workspace_operations || {});
+  for (const [id, operation] of Object.entries(state.workspace_operations || {}).slice(-20)) {
+    const active = ["active", "cancellation_requested"].includes(operation.phase);
+    const progress = active && snapshot.progress?.operation_id === state.active?.id ? snapshot.progress : null;
+    reconcileOperation({id, ...operation}, progress);
+  }
   renderSpecification(state.spec);
   if (simulationPlan && simulationPlan.revision !== state.revision) {
     simulationPlan = null;
@@ -631,7 +792,7 @@ function renderSnapshot(snapshot) {
   } else {
     elements["simulation-result"].append(node("div", state.last_error || "No run evidence yet.", "muted"));
   }
-  if (snapshot.progress && state.active && snapshot.progress.operation_id === state.active.id) {
+  if (snapshot.progress?.stage === "simulation" && state.active && snapshot.progress.operation_id === state.active.id) {
     elements["simulation-result"].append(node("div", "Simulation " + snapshot.progress.phase +
       " · " + snapshot.progress.elapsed_ms + " ms", "muted"));
   }
@@ -643,6 +804,8 @@ function renderSnapshot(snapshot) {
   elements["evidence-list"].append(node("div", state.simulation ?
     state.simulation.status + " · " + state.simulation.evidence_kind : "No simulation yet.", "muted"));
   for (const event of snapshot.events) {
+    if (observedEvents.has(event.sequence)) continue;
+    observedEvents.add(event.sequence);
     const button = node("button", "r" + event.sequence + " · " + event.event, "event-item");
     button.type = "button";
     button.addEventListener("click", () => loadHistory(event.sequence));
@@ -654,20 +817,33 @@ function renderSnapshot(snapshot) {
 
 async function refresh() {
   if (!projectReady) return;
+  if (refreshPromise) {
+    refreshRequested = true;
+    return refreshPromise;
+  }
+  refreshPromise = refreshOnce();
+  try { await refreshPromise; }
+  finally {
+    refreshPromise = null;
+    if (refreshRequested) { refreshRequested = false; setTimeout(refresh, 0); }
+  }
+}
+
+async function refreshOnce() {
   try {
     renderSnapshot(await api("/api/snapshot?cursor=" + cursor));
-    loadProviderSettings();
-    for (const id of [...pending]) {
+    await loadProviderSettings();
+    for (const id of new Set([...pending, ...replyQueries])) {
       const job = await api("/api/operations/" + id);
-      if (["completed", "failed", "cancelled", "reconciliation_needed"].includes(job.phase)) {
-        pending.delete(id);
-        if (job.reply) message("agent", job.reply);
-        if (job.phase !== "completed") notice(job.phase === "failed" ? operationFailure(job.error_code) :
-          "Operation " + job.phase.replaceAll("_", " ") + ". Review its saved state before another request.");
+      if (terminalPhases.has(job.phase)) {
+        inspectedReplies.add(id);
+        replyQueries.delete(id);
       }
+      reconcileOperation(job);
     }
+    if (systemMessages.has("notice:connection")) notice("Connected. Saved project state is current; no operation was retried.", "connection");
   } catch (error) {
-    notice("Connection unavailable. Reconnect will read the saved project state; no operation is retried.");
+    notice("Connection unavailable. Reconnect will read the saved project state; no operation is retried.", "connection");
   }
 }
 
@@ -683,13 +859,13 @@ elements["chat-form"].addEventListener("submit", async event => {
       {message: value, client_operation_id: id, expected_revision: state.revision,
         attachment: selectedAttachment, kind: elements["chat-kind"].value, intent: "feature"});
     message("user", value);
+    displayedUserOperations.add(job.id);
     elements["chat-input"].value = "";
     selectedAttachment = null;
-    pending.add(job.id);
-    notice("Design Lead operation submitted. Its state will survive a page refresh.");
+    reconcileOperation(job);
     refresh();
   } catch (error) {
-    notice("Request was not accepted. Refresh the project state and review permissions.");
+    notice("The request could not be confirmed. Reconnect and inspect the operation state before submitting again; no request was retried.");
   }
 });
 
@@ -722,12 +898,11 @@ elements["simulation-run-button"].addEventListener("click", async () => {
   try {
     const job = await post("/api/simulations", {client_operation_id: crypto.randomUUID().replaceAll("-", ""),
       expected_revision: simulationPlan.revision, plan_digest: simulationPlan.plan_digest});
-    pending.add(job.id);
+    reconcileOperation(job);
     simulationPlan = null;
     elements["simulation-run-button"].hidden = true;
-    notice("Simulation submitted for the displayed source and runtime configuration.");
     refresh();
-  } catch (error) { notice("Simulation was not accepted. Review the current revision and runtime again."); }
+  } catch (error) { notice("The simulation submission could not be confirmed. Inspect the saved operation before submitting another run."); }
 });
 
 elements["simulation-recover-button"].addEventListener("click", async () => {
@@ -854,6 +1029,7 @@ async function bootstrap() {
       return;
     }
     loadProviderSettings(true);
+    await loadConversation();
     refresh();
   } catch (error) { notice("Project service unavailable. Reconnect will inspect saved state."); }
 }

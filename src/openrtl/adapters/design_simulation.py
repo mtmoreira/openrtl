@@ -4,21 +4,26 @@ from __future__ import annotations
 
 import asyncio
 import base64
+from contextvars import ContextVar
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import stat
+import uuid
 import xml.etree.ElementTree as ET
 from typing import TYPE_CHECKING
 
 from openrtl.adapters.design_session_store import safe_root
+from openrtl.adapters.design_telemetry import event_sink, private_capture
 from openrtl.domain.design_session import JsonObject, canonical, content_digest, object_value, require, source_path
 from openrtl.domain.simulation_runtime import PROFILE_SCHEMA, resource_arguments, validate_profile
 
 if TYPE_CHECKING:
+    from agentrig.core import RunContext
     from openrtl.adapters.workload_transport import WorkloadTransport
+    from openrtl.application.design_agent import DesignTraceRecorder
 
 
 def parse_test_results(data: bytes, expected: list[str]) -> list[str]:
@@ -37,11 +42,28 @@ def parse_test_results(data: bytes, expected: list[str]) -> list[str]:
     return names
 
 
+def _trace_output(data: bytes) -> tuple[str, bool]:
+    """Do not retain base64 artifact bodies that bypass ordinary text redaction."""
+    rendered = data.decode("utf-8", errors="replace")
+    try:
+        payload = json.loads(rendered)
+    except (ValueError, TypeError, RecursionError):
+        return rendered, False
+    if isinstance(payload, dict) and isinstance(payload.get("artifacts"), dict):
+        payload["artifacts"] = {name: "[omitted: encoded artifact; inspect saved evidence]"
+                                for name in payload["artifacts"]}
+        return json.dumps(payload, sort_keys=True), True
+    return rendered, False
+
+
 class IsolatedDesignSimulator:
+    trace_store: DesignTraceRecorder | None = None
+
     def __init__(self, project: Path, profile: object,
                  workload_transport: WorkloadTransport | None = None) -> None:
         self.project = safe_root(project)
         self.workload_transport = workload_transport
+        self._trace_context: ContextVar[RunContext | None] = ContextVar("design_simulation_trace", default=None)
         if isinstance(profile, dict) and profile.get("schema") == PROFILE_SCHEMA:
             from openrtl.adapters.runtime_selection import verify_local_identity
             self.profile = validate_profile(profile)
@@ -67,6 +89,45 @@ class IsolatedDesignSimulator:
 
     async def _process(self, argv: list[str], config: Path, timeout: int,
                        bound: int = 48 * 1024 * 1024) -> tuple[int, bytes]:
+        variable = getattr(self, "_trace_context", None)
+        root = variable.get() if variable is not None else None
+        capture = root.private_trace_capture if root is not None else None
+        if capture is None or not capture.include_process:
+            return await self._execute_process(argv, config, timeout, bound)
+        assert root is not None
+        context = root.derive_child(correlation={"process_id": uuid.uuid4().hex})
+        capture.record(context, kind="process.request", metadata={}, content={
+            "argv": list(argv), "cwd": str(self.project), "timeout_seconds": timeout,
+            "max_output_bytes": bound, "shell": False, "environment": "not captured",
+            "stderr_mode": "merged_into_stdout", "execution_boundary": "host_subprocess",
+            "guest_transport": "not instrumented", "inner_process_argv": "unavailable",
+        })
+        started = context.clock.monotonic()
+        try:
+            code, output = await self._execute_process(argv, config, timeout, bound)
+        except (Exception, asyncio.CancelledError) as error:
+            failure = ("simulation_process_cancelled" if isinstance(error, asyncio.CancelledError) else
+                       "simulation_process_timeout" if isinstance(error, TimeoutError) else
+                       "simulation_process_failed")
+            capture.record(context, kind="process.response", metadata={}, content={
+                "status": "cancelled" if isinstance(error, asyncio.CancelledError) else "failed",
+                "failure_code": failure, "exit_code": None, "stdout": None, "stderr": None,
+                "stderr_mode": "merged_into_stdout", "output_availability": "unavailable_after_failure",
+                "elapsed_ms": max(0, int((context.clock.monotonic() - started) * 1000)),
+            })
+            raise
+        rendered, artifacts_omitted = _trace_output(output)
+        capture.record(context, kind="process.response", metadata={}, content={
+            "status": "completed", "exit_code": code,
+            "stdout": rendered, "stderr": None, "encoded_artifact_bodies_omitted": artifacts_omitted,
+            "stderr_mode": "merged_into_stdout", "output_bytes": len(output),
+            "elapsed_ms": max(0, int((context.clock.monotonic() - started) * 1000)),
+        })
+        return code, output
+
+    async def _execute_process(self, argv: list[str], config: Path, timeout: int,
+                               bound: int = 48 * 1024 * 1024) -> tuple[int, bytes]:
+        """Keep the approved host subprocess lifecycle independent of capture."""
         if self.profile.get("schema") == PROFILE_SCHEMA:
             from openrtl.adapters.runtime_selection import verify_local_identity
             verify_local_identity(self.profile)
@@ -97,6 +158,31 @@ class IsolatedDesignSimulator:
 
     async def simulate(self, files: dict[str, str], manifest: JsonObject,
                        input_digest: str, operation_id: str) -> JsonObject:
+        from agentrig.core import CancellationSource, RunContext, RunId, SystemClock, Uuid4IdGenerator
+
+        require(re.fullmatch(r"[a-f0-9]{32}", operation_id) is not None, "simulation_operation_invalid")
+        variable = getattr(self, "_trace_context", None)
+        if variable is None:
+            # Some isolated test and recovery fixtures construct this adapter without __init__.
+            variable = self._trace_context = ContextVar("design_simulation_trace", default=None)
+        capture = private_capture(self.trace_store, operation_id)
+        context = None
+        if capture is not None:
+            context = RunContext.create_root(
+                clock=SystemClock(), id_generator=Uuid4IdGenerator(RunId),
+                cancellation=CancellationSource().token,
+                event_sink=event_sink(self.trace_store, operation_id), private_trace_capture=capture,
+                labels={"openrtl_operation": "design_simulation"},
+                correlation={"operation_id": operation_id},
+            )
+        token = variable.set(context)
+        try:
+            return await self._simulate(files, manifest, input_digest, operation_id)
+        finally:
+            variable.reset(token)
+
+    async def _simulate(self, files: dict[str, str], manifest: JsonObject,
+                        input_digest: str, operation_id: str) -> JsonObject:
         require(re.fullmatch(r"[a-f0-9]{32}", operation_id) is not None, "simulation_operation_invalid")
         parent = safe_root(self.project / "runs")
         parent.mkdir(mode=0o700, exist_ok=True)
@@ -179,6 +265,19 @@ class IsolatedDesignSimulator:
                 decoded[filename] = data
                 artifact_digests[filename] = {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data),
                                                "path": "runs/" + operation_id + "/evidence/" + filename}
+            variable = getattr(self, "_trace_context", None)
+            context = variable.get() if variable is not None else None
+            capture = context.private_trace_capture if context is not None else None
+            if capture is not None and capture.include_process and "runner.log" in decoded:
+                artifact = artifact_digests["runner.log"]
+                capture.record(context.derive_child(correlation={"artifact_path": artifact["path"]}),
+                               kind="process.response", metadata={}, content={
+                    "evidence_kind": "decoded_runner_log", "artifact": artifact,
+                    "stdout": decoded["runner.log"].decode("utf-8", errors="replace"),
+                    "stderr": None, "stderr_mode": "merged_in_runner_log",
+                    "exit_code": None, "elapsed_ms": None,
+                    "inner_process_argv": "unavailable", "guest_transport": "not instrumented",
+                })
             tests: list[str] = []
             if payload["status"] == "passed":
                 require(set(decoded) == allowed, "isolated_evidence_missing")

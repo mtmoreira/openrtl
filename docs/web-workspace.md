@@ -5,11 +5,22 @@ It reuses the same DesignAgent operations and SQLite session as the CLI. W1
 provider-free tests exercise the interface contract; they do not qualify a
 provider, simulator or newly designed RTL. M46 and M47 remain pending.
 
+Detailed telemetry requires the local AgentRig `0.3.1.dev13` candidate, which
+adds its opt-in private trace API. This candidate has not been published. Its
+bootstrap wheel hash, size and source provenance must come from the actual
+reviewed owner build; the launcher stops while those pins are pending. Once the
+reviewed wheel directory has been supplied, the normal launcher can prepare it
+with `--allow-install --offline --wheelhouse <provided-directory>`. That is a
+command shape: replace `<provided-directory>` with the supplied directory, and
+do not substitute a dev12 wheel or assume the candidate release URL is live.
+The offline setup does not install provider SDKs, start Ollama, or make a call.
+
 From a checked-out clone with the pinned application dependency prepared, serve
 a fixed project path:
 
 ```sh
-./openrtl ui --project /absolute/new-project
+mkdir -p "$HOME/OpenRTL-projects"
+./openrtl ui --project "$HOME/OpenRTL-projects/circuit"
 ```
 
 The launcher prints `http://127.0.0.1:8765`. Open that address in a desktop
@@ -18,7 +29,7 @@ selected at launch; its parent must already exist. Reopen it with the same
 command:
 
 ```sh
-./openrtl ui --project /absolute/new-project
+./openrtl ui --project "$HOME/OpenRTL-projects/circuit"
 ```
 
 `--create` is an optional launcher shortcut that creates the selected project
@@ -46,16 +57,41 @@ model, no API key and no OpenRTL USD ceiling:
 ```
 
 These command shapes are documentation, not authorization to run a provider call.
-The credential value never belongs in the browser, command arguments or project
-files. Each launch selects authority anew. An OpenAI-backed turn may transmit
+Never put a credential in chat, command arguments or project files. The dedicated
+password field in Provider settings can replace the running server's key;
+the server does not return or persist it. Each launch selects authority anew.
+An OpenAI-backed turn may transmit
 bounded context under OpenAI's retention policy. Ollama remains at
 `http://127.0.0.1:11434`; OpenRTL neither starts that service nor pulls models.
 
-The browser shows an ephemeral conversation plus saved engineering facts,
+The browser shows a conversation plus saved engineering facts,
 specification revisions, review cards and bounded operation events. It saves
 structured proposed requirements, assumptions, decisions and questions with
-stable IDs and attribution. It does not persist raw prompt or reply text. A
-refresh or restart reconstructs engineering state rather than replaying a turn.
+stable IDs and attribution. Prompt and reply text remain ephemeral by default.
+A refresh or restart reconstructs engineering state without replaying a turn.
+
+Use `--timeout-seconds 240` on `ui` or change **Request deadline (seconds)** in
+Provider settings to allow a longer request. The accepted range is 1–300 seconds;
+the default is 120. Earlier attempts ending at roughly 120 seconds could appear
+as a generic provider failure: typed deadline/cancellation failures had no
+provider error code, and a second equal application timeout could race the
+adapter's timeout. The adapter now owns the deadline and OpenRTL reports typed
+timeout/cancellation outcomes. A timed-out remote attempt can still have an
+unknown external outcome; changing the deadline does not reconcile or replay it.
+
+For explicit local capture, launch `ui` with `--capture-details` or select
+**Capture detailed operation records locally** and save Provider settings.
+Capture stores submitted text, model requests and outputs, provider-returned
+reasoning when supplied, and available artifact, process, tool, runtime and
+usage records in private local session tables. This may include sensitive
+design content. Credentials are excluded; ordinary events remain bounded and
+content-free. Capture consent is not restored by a saved project: a restart
+defaults to off unless the flag is explicitly supplied again. Turning capture
+off stops new capture without erasing prior records. Captured conversation can
+be shown again on reopen and is labeled **Saved local capture**. Older attempts
+without capture cannot have their missing prompts, replies or reasoning
+reconstructed afterward. Model internals the provider does not expose remain
+unavailable. Private trace tables are excluded from ordinary session exports.
 The Design Lead reviews existing engineering memory before asking anything new.
 It batches at most three high-information questions in a round, aims to produce
 a reviewable specification after one round and normally stops clarifying by the
@@ -66,15 +102,20 @@ more than three materially new or refined questions. Routine choices are stated
 as reviewable assumptions, and a permission-only question does not delay a ready
 specification.
 
-History and Activity rows are clickable. Their saved execution detail shows the
+Operation notices, progress and errors appear in Conversation with a **System**
+identity. Updates reconcile the same operation, and reconnect never resubmits
+it. History and Activity rows inspect details without switching the workbench's
+source revision; use the explicit source-revision buttons when needed.
+Expandable capture records display untrusted content as text. Saved detail shows the
 selected event, related operation timeline, provider and model identity, prompt
 and context schema versions, token use, elapsed time, bounded cost fields,
 failure codes and matching simulation diagnostics when those fields were
-persisted. The detail states when data is unavailable: raw prompts and replies
-are not persisted, hidden model reasoning is not collected, and Design Lead
-turns have no tool or shell authority. Simulation shell evidence is limited to
-the bounded diagnostics retained in a run record. The interface never invents
-tool calls or reconstructs a private transcript from engineering state.
+persisted. Missing usage, cost, reasoning or tool/process records are labeled
+unavailable, rather than zero or a fabricated transcript. Design Lead turns
+have no tool or shell authority; real process activity is shown only when
+recorded by the simulation/provider adapter. Simulation evidence retains its
+exact run and source identity. Captured reasoning is provider-returned text,
+not access to hidden internal computation or proof of engineering correctness.
 
 The browser sends a unique operation ID and expected revision. Retrying that ID
 with the same request returns the saved state; a changed request or stale tab is
@@ -96,7 +137,8 @@ claim. Change review shows the complete saved proposal and uses the same
 revision- and digest-bound approval as the CLI. Approved changes invalidate
 the current manifest and simulation evidence through the existing design state
 machine. Post-discovery questions can attach a checked source revision and
-bounded line range without persisting the question or source excerpt.
+bounded line range. Raw question and context text are retained only with
+explicit detailed capture.
 
 An actual elaborated instance hierarchy requires a compiler-produced index.
 The Verilator 5.046 JSON adapter can ingest bounded `.tree.json` and
@@ -165,8 +207,8 @@ digest, selected signal names and time interval in that browser's local
 storage. Reload restores it only if the retained trace digest still matches.
 **Attach run and interval to conversation** sends that bounded, exact run
 selection with the next question. OpenRTL rechecks the run and trace before
-constructing the expert's context; it does not persist the raw question or
-waveform excerpt. The current viewer uses a bounded VCD adapter. It does not
+constructing the expert's context; raw question and context text are retained
+only with explicit detailed capture. The current viewer uses a bounded VCD adapter. It does not
 claim FST support, a live viewer performance target, or a precise failure
 source/time link without corresponding evidence.
 

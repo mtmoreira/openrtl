@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 import http.client
 from http.server import ThreadingHTTPServer
 import json
@@ -13,8 +14,8 @@ import uuid
 
 from openrtl.adapters.design_web import WorkspaceRuntime, handler
 from openrtl.adapters.design_session_store import DesignSessionStore
-from openrtl.application.design_agent import DesignPolicy
-from openrtl.domain.design_session import COACHING_SESSION_SCHEMA, SESSION_SCHEMA, canonical, coaching_initial_state
+from openrtl.application.design_agent import DesignPolicy, ExpertReply
+from openrtl.domain.design_session import COACHING_SESSION_SCHEMA, SESSION_SCHEMA, JsonObject, canonical, coaching_initial_state
 from tests.test_design_agent import FakeExpert
 
 
@@ -184,7 +185,7 @@ class DesignWebTest(unittest.TestCase):
     def test_provider_settings_are_redacted_and_unknown_models_fail_closed(self) -> None:
         provider_project = Path(self.temporary.name).resolve() / "provider-settings"
         runtime = WorkspaceRuntime(provider_project, create=True, expert_factory=lambda: None,
-                                   provider_builder=lambda provider, model, key: self.expert,
+                                   provider_builder=lambda provider, model, key, timeout: self.expert,
                                    policy=DesignPolicy())
         server = ThreadingHTTPServer(("127.0.0.1", 0), handler(runtime))
         thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -268,6 +269,111 @@ class DesignWebTest(unittest.TestCase):
             server.server_close()
             thread.join(timeout=5)
             runtime.close()
+
+    def test_timeout_and_capture_settings_validate_before_changing_runtime(self) -> None:
+        built: list[tuple[str, str, int]] = []
+
+        def build(provider: str, model: str, key: str | None, timeout: int) -> FakeExpert:
+            built.append((provider, model, timeout))
+            return self.expert
+
+        # Inject the same provider-construction capability used by the launcher.
+        self.runtime.provider_builder = build
+        code, initial = self.request("GET", "/api/provider")
+        self.assertEqual(code, 200)
+        self.assertEqual(initial["timeout_seconds"], 120)
+        self.assertFalse(initial["detailed_capture"])
+        settings: dict[str, object] = {
+            "provider": "ollama", "model": "fixture:local", "max_spend_usd": None,
+            "api_key": None, "enabled": True, "timeout_seconds": 240,
+            "detailed_capture": True,
+        }
+        code, configured = self.request("POST", "/api/provider", settings)
+        self.assertEqual(code, 200)
+        self.assertEqual(built, [("ollama", "fixture:local", 240)])
+        self.assertEqual(configured["timeout_seconds"], 240)
+        self.assertTrue(configured["detailed_capture"])
+        _, baseline = self.request("GET", "/api/provider")
+        _, before = self.request("GET", "/api/snapshot")
+        for field, values in (("timeout_seconds", [0, 301, True, 1.5, "240"]),
+                              ("detailed_capture", [1, "true", []])):
+            for value in values:
+                with self.subTest(field=field, value=value):
+                    code, rejected = self.request("POST", "/api/provider", {**settings, field: value})
+                    self.assertEqual(code, 409)
+                    self.assertIn("error", rejected)
+                    _, current = self.request("GET", "/api/provider")
+                    _, snapshot = self.request("GET", "/api/snapshot")
+                    self.assertEqual(current, baseline)
+                    self.assertEqual(snapshot["state"], before["state"])
+                    self.assertEqual(len(built), 1)
+        settings.update(timeout_seconds=300, detailed_capture=False)
+        code, disabled = self.request("POST", "/api/provider", settings)
+        self.assertEqual(code, 200)
+        self.assertFalse(disabled["detailed_capture"])
+        self.assertEqual(built[-1], ("ollama", "fixture:local", 300))
+        code, conversation = self.request("GET", "/api/conversation")
+        self.assertEqual(code, 200)
+        self.assertFalse(conversation["capture"]["enabled"])
+        self.assertEqual(conversation["messages"], [])
+        # Legacy clients omit the new fields; omission preserves their current values.
+        settings.pop("timeout_seconds")
+        settings.pop("detailed_capture")
+        code, preserved = self.request("POST", "/api/provider", settings)
+        self.assertEqual(code, 200)
+        self.assertEqual(preserved["timeout_seconds"], 300)
+        self.assertFalse(preserved["detailed_capture"])
+
+    def test_captured_conversation_reopens_without_restoring_capture_consent(self) -> None:
+        expert = self.expert
+
+        class SelectedExpert:
+            async def generate(self, stage: str, context: JsonObject, operation_id: str) -> ExpertReply:
+                reply = await expert.generate(stage, context, operation_id)
+                return replace(reply, provider="ollama", model="fixture:local")
+
+        self.runtime.provider_builder = lambda provider, model, key, timeout: SelectedExpert()
+        code, _ = self.request("POST", "/api/provider", {
+            "provider": "ollama", "model": "fixture:local", "max_spend_usd": None,
+            "api_key": None, "enabled": True, "timeout_seconds": 180, "detailed_capture": True,
+        })
+        self.assertEqual(code, 200)
+        _, snapshot = self.request("GET", "/api/snapshot")
+        identifier = uuid.uuid4().hex
+        code, _ = self.request("POST", "/api/discussions", {
+            "message": "Synthetic captured circuit request", "client_operation_id": identifier,
+            "expected_revision": snapshot["state"]["revision"],
+        })
+        self.assertEqual(code, 202)
+        import time
+        for _ in range(50):
+            code, operation = self.request("GET", "/api/operations/" + identifier)
+            if operation["phase"] in ("completed", "failed", "cancelled", "reconciliation_needed"):
+                break
+            time.sleep(0.01)
+        self.assertEqual(operation["phase"], "completed", operation)
+        code, captured = self.request("GET", "/api/conversation")
+        self.assertEqual(code, 200)
+        self.assertEqual([row["kind"] for row in captured["messages"]], ["user", "agent"])
+        self.assertEqual(captured["messages"][0]["text"], "Synthetic captured circuit request")
+        self.assertEqual(captured["messages"][1]["text"], "What width should it use?")
+        self.assertEqual(len(self.expert.seen), 1)
+        _, snapshot = self.request("GET", "/api/snapshot")
+        self.assertNotIn("Synthetic captured circuit request", json.dumps(snapshot))
+        self.runtime.close()
+        reopened = WorkspaceRuntime(self.project, create=False, expert_factory=lambda: None,
+                                    policy=DesignPolicy())
+        try:
+            restored = reopened.call(lambda workspace: workspace.conversation())
+            self.assertEqual(restored["messages"], captured["messages"])
+            self.assertFalse(restored["capture"]["enabled"])
+            self.assertTrue(restored["capture"]["available"])
+            self.assertEqual(reopened.provider_settings()["timeout_seconds"], 120)
+            self.assertEqual(reopened.call(lambda workspace: workspace.operation(identifier))["reply"],
+                             "What width should it use?")
+            self.assertEqual(len(self.expert.seen), 1)
+        finally:
+            reopened.close()
 
 
 if __name__ == "__main__":

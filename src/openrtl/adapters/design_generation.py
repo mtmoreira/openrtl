@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from collections.abc import Mapping
 from importlib import import_module
 import re
@@ -26,7 +25,8 @@ from agentrig.integrations.openai import (
 )
 from openrtl.adapters.provider_invocation import (EnvironmentOpenAIAuthenticationSource,
                                                   MemoryOpenAIAuthenticationSource, RejectingArtifactResolver)
-from openrtl.application.design_agent import DESIGN_PROMPT_VERSION, ExpertReply
+from openrtl.adapters.design_telemetry import private_capture as _private_capture, event_sink as _event_sink
+from openrtl.application.design_agent import DESIGN_PROMPT_VERSION, DesignTraceRecorder, ExpertReply
 from openrtl.domain.design_session import JsonObject, MAX_CONTEXT_BYTES, STAGES, canonical, require, text
 
 
@@ -138,6 +138,7 @@ class AgentRigDesignExpert:
         require(type(timeout_seconds) is int and 1 <= timeout_seconds <= 300, "expert_timeout_invalid")
         require(type(max_output_tokens) is int and 256 <= max_output_tokens <= 32768, "output_budget_invalid")
         self.timeout_seconds, self.max_output_tokens = timeout_seconds, max_output_tokens
+        self.trace_store: DesignTraceRecorder | None = None
         descriptor = generator.descriptor
         require(descriptor.kind is CapabilityKind.STRUCTURED_GENERATION and
                 descriptor.capability_id == "openai.responses.structured_generation" and
@@ -161,16 +162,29 @@ class AgentRigDesignExpert:
         request.require_supported_by(self.generator.descriptor)
         cancellation = CancellationSource()
         context_root = RunContext.create_root(clock=SystemClock(), id_generator=Uuid4IdGenerator(RunId),
-                                              cancellation=cancellation.token)
+                                              cancellation=cancellation.token,
+                                              event_sink=_event_sink(self.trace_store, operation_id),
+                                              private_trace_capture=_private_capture(self.trace_store, operation_id))
         child = context_root.derive_child(timeout_seconds=self.timeout_seconds,
                                           labels={"openrtl_operation": "design_expert"},
                                           correlation={"operation_id": operation_id})
-        result = await asyncio.wait_for(self.generator.generate(request, child), timeout=self.timeout_seconds)
+        # The AgentRig adapter owns the deadline. A second equal wait_for races its
+        # normalized timeout with cancellation and hides the actual failure kind.
+        result = await self.generator.generate(request, child)
+        if self.trace_store is not None:
+            self.trace_store.record(operation_id, "provider_metrics", {
+                "input_tokens": result.usage.input_tokens,
+                "output_tokens": result.usage.output_tokens,
+                "cached_input_tokens": result.usage.cached_input_tokens,
+                "reasoning_tokens": result.usage.reasoning_tokens,
+                "provider_metadata": dict(result.provider_metadata),
+            })
         require(result.finish_reason is TextGenerationFinishReason.COMPLETED and
                 result.model.provider == "openai" and result.model.model_id == self.model,
                 "expert_result_identity_or_finish_invalid")
         return ExpertReply(_decode_output(result.output), result.model.provider, result.model.model_id,
-                           result.usage.input_tokens, result.usage.output_tokens)
+                           result.usage.input_tokens, result.usage.output_tokens,
+                           result.usage.cached_input_tokens, result.usage.reasoning_tokens)
 
 
 class OllamaDesignExpert:
@@ -186,6 +200,7 @@ class OllamaDesignExpert:
         require(type(max_output_tokens) is int and 256 <= max_output_tokens <= 32768,
                 "output_budget_invalid")
         self.timeout_seconds, self.max_output_tokens = timeout_seconds, max_output_tokens
+        self.trace_store: DesignTraceRecorder | None = None
 
     async def generate(self, stage: str, context: JsonObject, operation_id: str) -> ExpertReply:
         require(stage in _INSTRUCTIONS, "expert_stage_invalid")
@@ -208,12 +223,19 @@ class OllamaDesignExpert:
         )
         cancellation = CancellationSource()
         root = RunContext.create_root(clock=SystemClock(), id_generator=Uuid4IdGenerator(RunId),
-                                     cancellation=cancellation.token)
+                                     cancellation=cancellation.token,
+                                     event_sink=_event_sink(self.trace_store, operation_id),
+                                     private_trace_capture=_private_capture(self.trace_store, operation_id))
         child = root.derive_child(timeout_seconds=self.timeout_seconds,
                                   labels={"openrtl_operation": "design_expert"},
                                   correlation={"operation_id": operation_id})
-        execution = await asyncio.wait_for(self.runtime.execute(request, child),
-                                           timeout=self.timeout_seconds)
+        execution = await self.runtime.execute(request, child)
+        if self.trace_store is not None:
+            self.trace_store.record(operation_id, "provider_metrics", {
+                "input_tokens": execution.usage.input_tokens,
+                "output_tokens": execution.usage.output_tokens,
+                "provider_metadata": dict(execution.provider_metadata),
+            })
         output = execution.result.unwrap()
         require(execution.provider_metadata.get("provider") == "ollama" and
                 execution.provider_metadata.get("model") == self.model and

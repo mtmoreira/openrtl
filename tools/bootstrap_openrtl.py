@@ -76,12 +76,14 @@ def load_pin(filename: Path = LOCK) -> WheelPin:
             and document["schema"] == "openrtl.bootstrap-dependencies.v1", "dependency_lock_invalid")
     row = document["agentrig"]
     require(type(row) is dict and set(row) == {"filename", "sha256", "size_bytes", "url"}, "dependency_pin_invalid")
+    require(row["sha256"] is not None and row["size_bytes"] is not None,
+            "dependency_pin_awaiting_owner_build")
     pin = WheelPin(**row)
-    require(pin.filename == "agentrig-0.3.1.dev12-py3-none-any.whl" and
+    require(pin.filename == "agentrig-0.3.1.dev13-py3-none-any.whl" and
             type(pin.sha256) is str and re.fullmatch(r"[a-f0-9]{64}", pin.sha256) is not None and
             type(pin.size_bytes) is int and 0 < pin.size_bytes <= MAX_WHEEL_BYTES,
             "dependency_pin_invalid")
-    require(pin.url == "https://github.com/mtmoreira/agentrig/releases/download/v0.3.1.dev12/" + pin.filename,
+    require(pin.url == "https://github.com/mtmoreira/agentrig/releases/download/v0.3.1.dev13/" + pin.filename,
             "dependency_origin_invalid")
     return pin
 
@@ -103,7 +105,7 @@ def verify_wheel(data: bytes, pin: WheelPin) -> None:
             require(not relative.is_absolute() and
                     all(part not in ("", ".", "..") for part in normalized.split("/")) and
                     "\\" not in item.filename and "\x00" not in item.filename and
-                    relative.parts[0] in ("agentrig", "agentrig-0.3.1.dev12.dist-info") and
+                    relative.parts[0] in ("agentrig", "agentrig-0.3.1.dev13.dist-info") and
                     not any(part.startswith(".") for part in relative.parts) and
                     not item.filename.endswith((".pth", ".so", ".dylib", ".dll", ".pyd", ".key", ".pem", ".p12", ".pfx")) and
                     valid_kind and normalized not in names,
@@ -112,12 +114,12 @@ def verify_wheel(data: bytes, pin: WheelPin) -> None:
             total += item.file_size
             require(0 <= item.file_size <= MAX_WHEEL_BYTES and total <= MAX_EXPANDED_BYTES,
                     "wheel_expansion_limit")
-        metadata = BytesParser().parsebytes(archive.read("agentrig-0.3.1.dev12.dist-info/METADATA"))
-        require(metadata["Name"] == "agentrig" and metadata["Version"] == "0.3.1.dev12",
+        metadata = BytesParser().parsebytes(archive.read("agentrig-0.3.1.dev13.dist-info/METADATA"))
+        require(metadata["Name"] == "agentrig" and metadata["Version"] == "0.3.1.dev13",
                 "wheel_identity_mismatch")
         require(all("extra ==" in requirement for requirement in metadata.get_all("Requires-Dist", [])),
                 "unexpected_base_dependency")
-        wheel = archive.read("agentrig-0.3.1.dev12.dist-info/WHEEL")
+        wheel = archive.read("agentrig-0.3.1.dev13.dist-info/WHEEL")
         require(b"Root-Is-Purelib: true" in wheel and b"Tag: py3-none-any" in wheel,
                 "pure_python_wheel_required")
         require("agentrig/__init__.py" in names, "wheel_package_missing")
@@ -336,7 +338,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         if selected is None:
             consent = options.allow_install
             interactive = not forwarded and sys.stdin.isatty() and sys.stdout.isatty()
-            print("OpenRTL needs the pinned AgentRig 0.3.1.dev12 application dependency (" + str(pin.size_bytes) + " bytes).")
+            print("OpenRTL needs the pinned AgentRig 0.3.1.dev13 application dependency (" + str(pin.size_bytes) + " bytes).")
             print("Setup keeps the verified wheel in private OpenRTL state. No package hooks, provider calls or simulation run during setup.")
             if not consent and interactive:
                 effect = "Copy the selected local wheel" if options.wheelhouse else "Download the pinned public wheel from GitHub"
@@ -354,6 +356,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("Setup interrupted. Verified cached dependencies remain reusable; execution permissions are not saved.")
         return 130
     except BootstrapError as error:
+        if str(error) == "dependency_pin_awaiting_owner_build":
+            print("OpenRTL setup stopped: the local AgentRig candidate wheel has not been built and pinned. "
+                  "Wait for the reviewed wheel and its exact hash/size; no dependency was downloaded or installed.")
+            return 2
         hint = next((hint for code, hint in DOWNLOAD_FAILURES.values() if code == str(error)), None)
         if hint is not None:
             print(f"OpenRTL setup stopped: {error}. {hint}")

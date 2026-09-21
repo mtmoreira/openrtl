@@ -12,6 +12,7 @@ PROVIDER_FAILURE_CODES = frozenset({
     "provider_connection_failed",
     "provider_response_invalid",
     "provider_timeout",
+    "provider_cancelled",
     "provider_result_invalid",
 })
 

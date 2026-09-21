@@ -28,10 +28,10 @@ from tools import bootstrap_openrtl as bootstrap
 from openrtl.onboarding import SetupError
 
 
-FILENAME = "agentrig-0.3.1.dev12-py3-none-any.whl"
-ORIGIN = "https://github.com/mtmoreira/agentrig/releases/download/v0.3.1.dev12/" + FILENAME
-METADATA_PATH = "agentrig-0.3.1.dev12.dist-info/METADATA"
-WHEEL_PATH = "agentrig-0.3.1.dev12.dist-info/WHEEL"
+FILENAME = "agentrig-0.3.1.dev13-py3-none-any.whl"
+ORIGIN = "https://github.com/mtmoreira/agentrig/releases/download/v0.3.1.dev13/" + FILENAME
+METADATA_PATH = "agentrig-0.3.1.dev13.dist-info/METADATA"
+WHEEL_PATH = "agentrig-0.3.1.dev13.dist-info/WHEEL"
 
 
 def wheel_bytes(*, extra: tuple[tuple[str, bytes, int], ...] = (),
@@ -41,10 +41,10 @@ def wheel_bytes(*, extra: tuple[tuple[str, bytes, int], ...] = (),
     entries = (
         ("agentrig/__init__.py", initializer, stat.S_IFREG | 0o644),
         (METADATA_PATH, metadata if metadata is not None else
-         b"Metadata-Version: 2.1\nName: agentrig\nVersion: 0.3.1.dev12\n\n", stat.S_IFREG | 0o644),
+         b"Metadata-Version: 2.1\nName: agentrig\nVersion: 0.3.1.dev13\n\n", stat.S_IFREG | 0o644),
         (WHEEL_PATH, wheel if wheel is not None else
          b"Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: py3-none-any\n", stat.S_IFREG | 0o644),
-        ("agentrig-0.3.1.dev12.dist-info/RECORD", b"", stat.S_IFREG | 0o644),
+        ("agentrig-0.3.1.dev13.dist-info/RECORD", b"", stat.S_IFREG | 0o644),
         *extra,
     )
     stream = io.BytesIO()
@@ -71,8 +71,8 @@ class BootstrapWheelValidationTest(unittest.TestCase):
     def test_safe_package_and_metadata_directories_are_compatible_with_real_wheels(self) -> None:
         data = wheel_bytes(extra=(
             ("agentrig/", b"", stat.S_IFDIR | 0o755),
-            ("agentrig-0.3.1.dev12.dist-info/", b"", stat.S_IFDIR | 0o755),
-            ("agentrig-0.3.1.dev12.dist-info/licenses/", b"", stat.S_IFDIR | 0o755),
+            ("agentrig-0.3.1.dev13.dist-info/", b"", stat.S_IFDIR | 0o755),
+            ("agentrig-0.3.1.dev13.dist-info/licenses/", b"", stat.S_IFDIR | 0o755),
             ("agentrig/helpers/", b"", stat.S_IFDIR | 0o755),
             ("agentrig/helpers/local.py", b"VALUE = 1\n", stat.S_IFREG | 0o644),
         ))
@@ -119,7 +119,7 @@ class BootstrapWheelValidationTest(unittest.TestCase):
             ("agentrig/native.dll", stat.S_IFREG | 0o644),
             ("agentrig/native.pyd", stat.S_IFREG | 0o644),
             ("agentrig/startup.pth", stat.S_IFREG | 0o644),
-            ("agentrig-0.3.1.dev12.data/scripts/install", stat.S_IFREG | 0o755),
+            ("agentrig-0.3.1.dev13.data/scripts/install", stat.S_IFREG | 0o755),
             ("agentrig/linked.py", stat.S_IFLNK | 0o777),
             ("agentrig/pipe.py", stat.S_IFIFO | 0o600),
             ("agentrig/subdirectory/", stat.S_IFDIR | 0o755),
@@ -133,9 +133,9 @@ class BootstrapWheelValidationTest(unittest.TestCase):
 
     def test_identity_unconditional_dependency_and_nonpure_wheel_fail_closed(self) -> None:
         for metadata, wheel, expected in (
-            (b"Name: different-package\nVersion: 0.3.1.dev12\n", None, "identity_mismatch"),
+            (b"Name: different-package\nVersion: 0.3.1.dev13\n", None, "identity_mismatch"),
             (b"Name: agentrig\nVersion: 0.3.1\n", None, "identity_mismatch"),
-            (b"Name: agentrig\nVersion: 0.3.1.dev12\nRequires-Dist: unapproved-package\n", None, "unexpected_base_dependency"),
+            (b"Name: agentrig\nVersion: 0.3.1.dev13\nRequires-Dist: unapproved-package\n", None, "unexpected_base_dependency"),
             (None, b"Root-Is-Purelib: false\nTag: cp312-macosx_arm64\n", "pure_python_wheel_required"),
         ):
             with self.subTest(expected=expected):
@@ -374,7 +374,7 @@ class BootstrapLocalStateTest(unittest.TestCase):
             self.assertEqual(bootstrap.main(["--state-dir", str(self.state), "doctor", "--json", "--require-local"]), 0)
         report = json.loads(output.getvalue())
         self.assertTrue(report["local_review_ready"])
-        self.assertEqual(report["packages"]["agentrig"], "0.3.1.dev12")
+        self.assertEqual(report["packages"]["agentrig"], "0.3.1.dev13")
         self.assertFalse(report["provider_authorized"])
         self.assertFalse(report["credential_resolution"])
         self.assertFalse(report["simulation_performed"])
@@ -392,6 +392,11 @@ class BootstrapLocalStateTest(unittest.TestCase):
         lock = self.root / "dependencies.json"
         lock.write_text(json.dumps(document))
         self.assertEqual(bootstrap.load_pin(lock), self.pin)
+        pending = {"filename": self.pin.filename, "sha256": None,
+                   "size_bytes": None, "url": self.pin.url}
+        lock.write_text(json.dumps({**document, "agentrig": pending}))
+        with self.assertRaisesRegex(bootstrap.BootstrapError, "dependency_pin_awaiting_owner_build"):
+            bootstrap.load_pin(lock)
         for key, value in (("url", "https://example.invalid/package.whl"), ("filename", "../package.whl"),
                            ("sha256", "invalid"), ("size_bytes", True), ("size_bytes", 0)):
             with self.subTest(key=key, value=value):

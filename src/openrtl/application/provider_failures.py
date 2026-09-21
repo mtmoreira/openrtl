@@ -4,14 +4,22 @@ from __future__ import annotations
 
 import asyncio
 
-from agentrig.core.errors import AgentRigError
+from agentrig.core.errors import AgentRigError, FailureKind
+from agentrig.core.deadline import DeadlineExceeded
+from agentrig.core.cancellation import RunCancelled
 
 
-def classify_provider_failure(error: Exception) -> str:
-    if isinstance(error, asyncio.TimeoutError):
+def classify_provider_failure(error: BaseException) -> str:
+    if isinstance(error, (asyncio.TimeoutError, DeadlineExceeded)):
         return "provider_timeout"
+    if isinstance(error, RunCancelled):
+        return "provider_cancelled"
     if isinstance(error, AgentRigError):
         failure = error.failure
+        if failure.kind is FailureKind.DEADLINE_EXCEEDED:
+            return "provider_timeout"
+        if failure.kind is FailureKind.CANCELLED:
+            return "provider_cancelled"
         if failure.code == "openai.responses.authentication_resolution_failed":
             return "provider_credential_unavailable"
         if failure.code == "openai.responses.client_creation_failed":

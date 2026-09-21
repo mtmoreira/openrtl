@@ -48,10 +48,20 @@ class ExpertReply:
     model: str
     input_tokens: int | None = None
     output_tokens: int | None = None
+    cached_input_tokens: int | None = None
+    reasoning_tokens: int | None = None
 
 
 class DesignExpert(Protocol):
     async def generate(self, stage: str, context: JsonObject, operation_id: str) -> ExpertReply: ...
+
+
+class DesignTraceRecorder(Protocol):
+    """Explicit private project capture, separate from standardized events."""
+
+    def record(self, operation_id: str, category: str, payload: JsonObject) -> None: ...
+    def records(self, operation_ids: set[str]) -> list[JsonObject]: ...
+    def status(self) -> JsonObject: ...
 
 
 class DesignSimulator(Protocol):
@@ -92,10 +102,12 @@ def design_input_digest(state: JsonObject) -> str:
 class DesignAgent:
     def __init__(self, store: SessionStore, expert: DesignExpert | None = None,
                  simulator: DesignSimulator | None = None, policy: DesignPolicy = DesignPolicy(),
-                 recovery: DesignRecovery | None = None, progress: Callable[[JsonObject], None] | None = None) -> None:
+                 recovery: DesignRecovery | None = None, progress: Callable[[JsonObject], None] | None = None,
+                 trace_store: DesignTraceRecorder | None = None) -> None:
         self.store, self.expert, self.simulator, self.policy = store, expert, simulator, policy
         self.recovery = recovery
         self.progress = progress
+        self.trace_store = trace_store
 
     def configure_provider(self, model: str, limit_nano_usd: int | None) -> JsonObject:
         from openrtl.domain.provider_controls import selector_provider, validate_provider_selector
@@ -523,23 +535,33 @@ class DesignAgent:
             updated["provider"]["pending"] = {"operation_id": operation,
                                                 "reserved_nano_usd": reserve,
                                                 "model": self.policy.provider_model}
-        started = self.store.save(state, updated, "operation.started",
-                                  {"operation_id": operation, "role": ROLES[stage],
+        start_fields: JsonObject = {"operation_id": operation, "role": ROLES[stage],
                                    "context_digest": content_digest(pack),
                                    "context_schema": DESIGN_CONTEXT_SCHEMA,
                                    "prompt_version": DESIGN_PROMPT_VERSION,
-                                   "tool_calls": 0, "shell_commands": 0})
+                                   "tool_calls": 0, "shell_commands": 0}
+        clients = [identifier for identifier, row in state["workspace_operations"].items()
+                   if row["phase"] == "active"]
+        if len(clients) == 1:
+            start_fields["client_operation_id"] = clients[0]
+        started = self.store.save(state, updated, "operation.started", start_fields)
         assert self.expert is not None
         clock_start = time.monotonic()
         try:
+            if self.trace_store is not None:
+                self.trace_store.record(operation, "user_input", {"message": message, "stage": stage})
             from openrtl.application.design_diagnostics import observed
             reply = await observed(self.expert.generate(stage, pack, operation), started, self.progress)
             require(isinstance(reply, ExpertReply), "expert_reply_invalid")
+            if self.trace_store is not None:
+                self.trace_store.record(operation, "assistant_output", {"output": reply.output})
             require(len(canonical(reply.output)) <= MAX_CONTEXT_BYTES, "expert_output_exceeds_bound")
             metrics: JsonObject = {"operation_id": operation, "provider": text(reply.provider, maximum=128),
                                     "model": text(reply.model, maximum=128),
                                     "elapsed_ms": int((time.monotonic() - clock_start) * 1000)}
-            for field, count in (("input_tokens", reply.input_tokens), ("output_tokens", reply.output_tokens)):
+            for field, count in (("input_tokens", reply.input_tokens), ("output_tokens", reply.output_tokens),
+                                 ("cached_input_tokens", reply.cached_input_tokens),
+                                 ("reasoning_tokens", reply.reasoning_tokens)):
                 require(count is None or type(count) is int and count >= 0, "expert_usage_invalid")
                 if count is not None:
                     metrics[field] = count
@@ -566,16 +588,24 @@ class DesignAgent:
                 code = classify_provider_failure(error)
             else:
                 code = "expert_invocation_failed"
-            self._failed(started, code)
+            elapsed_ms = int((time.monotonic() - clock_start) * 1000)
+            if self.trace_store is not None:
+                self.trace_store.record(operation, "provider_failure",
+                                        {"error_code": code, "elapsed_ms": elapsed_ms,
+                                         "stage": stage})
+            self._failed(started, code, elapsed_ms=elapsed_ms)
             raise ValueError(code) from None
 
-    def _failed(self, started: JsonObject, code: str) -> None:
+    def _failed(self, started: JsonObject, code: str, *, elapsed_ms: int | None = None) -> None:
         updated = copy.deepcopy(started)
         updated.update(active=None, last_error=code)
         if updated["provider"]["pending"] is not None:
             updated["provider"]["pending"] = None
             updated["provider"]["uncertain"] = True
-        self.store.save(started, updated, "operation.failed", {"error_code": code})
+        fields: JsonObject = {"error_code": code}
+        if elapsed_ms is not None:
+            fields["elapsed_ms"] = elapsed_ms
+        self.store.save(started, updated, "operation.failed", fields)
 
     async def advance(self) -> JsonObject:
         state = self._idle()
@@ -648,7 +678,12 @@ class DesignAgent:
         operation = uuid.uuid4().hex
         updated = copy.deepcopy(state)
         updated["active"] = {"id": operation, "kind": "simulation", "stage": "simulation"}
-        started = self.store.save(state, updated, "operation.started", {"operation_id": operation})
+        start_fields: JsonObject = {"operation_id": operation, "role": "simulation"}
+        clients = [identifier for identifier, row in state["workspace_operations"].items()
+                   if row["phase"] == "active"]
+        if len(clients) == 1:
+            start_fields["client_operation_id"] = clients[0]
+        started = self.store.save(state, updated, "operation.started", start_fields)
         assert self.simulator is not None
         clock_start = time.monotonic()
         try:

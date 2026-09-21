@@ -15,6 +15,7 @@ from typing import Any, Callable, cast
 from urllib.parse import parse_qs, urlsplit
 
 from openrtl.adapters.design_session_store import DesignSessionStore, safe_root
+from openrtl.adapters.design_trace_store import DesignTraceStore
 from openrtl.application.design_agent import DesignAgent, DesignExpert, DesignPolicy, DesignRecovery, DesignSimulator
 from openrtl.application.design_workspace import DesignWorkspace
 from openrtl.domain.design_session import JsonObject, SESSION_SCHEMA, canonical, require
@@ -29,10 +30,11 @@ class WorkspaceRuntime:
 
     def __init__(self, project: Path, *, create: bool, expert_factory: Callable[[], DesignExpert | None],
                  policy: DesignPolicy,
-                 provider_builder: Callable[[str, str, str | None], DesignExpert] | None = None,
+                 provider_builder: Callable[[str, str, str | None, int], DesignExpert] | None = None,
                  initial_provider: str = "openai",
                  initial_model: str | None = None, initial_limit_nano: int | None = None,
                  initial_key: str | None = None,
+                 timeout_seconds: int = 120, detailed_capture: bool = False,
                  simulator_factory: Callable[[], DesignSimulator | None] | None = None) -> None:
         self.project = safe_root(project)
         self.expert_factory = expert_factory
@@ -42,6 +44,10 @@ class WorkspaceRuntime:
         self.initial_provider = initial_provider
         self.initial_model = initial_model
         self.initial_limit_nano = initial_limit_nano
+        require(type(timeout_seconds) is int and 1 <= timeout_seconds <= 300, "expert_timeout_invalid")
+        require(type(detailed_capture) is bool, "trace_capture_invalid")
+        self.timeout_seconds, self.detailed_capture = timeout_seconds, detailed_capture
+        self.trace_store: DesignTraceStore | None = None
         self._key = initial_key
         self.loop = asyncio.new_event_loop()
         self.ready = threading.Event()
@@ -64,12 +70,18 @@ class WorkspaceRuntime:
 
     def _activate_project(self) -> None:
         require(self.store is not None and self.workspace is None, "project_activation_invalid")
-        expert = (self.provider_builder(self.initial_provider, self.initial_model, self._key)
+        self.trace_store = DesignTraceStore(self.store, enabled=self.detailed_capture)
+        expert = (self.provider_builder(self.initial_provider, self.initial_model, self._key, self.timeout_seconds)
                   if self.provider_builder is not None and self.initial_model is not None
                   else self.expert_factory())
         simulator = self.simulator_factory()
+        from openrtl.adapters.design_simulation import IsolatedDesignSimulator
+        if isinstance(simulator, IsolatedDesignSimulator):
+            simulator.trace_store = self.trace_store
         recovery = cast(DesignRecovery | None, simulator if hasattr(simulator, "abandon") else None)
-        agent = DesignAgent(self.store, expert, simulator, policy=self.policy, recovery=recovery)
+        self._bind_trace(expert)
+        agent = DesignAgent(self.store, expert, simulator, policy=self.policy, recovery=recovery,
+                            trace_store=self.trace_store)
         if self.initial_model is not None:
             selector = provider_selector(self.initial_provider, self.initial_model)
             selected = self.store.read()["provider"]
@@ -77,6 +89,11 @@ class WorkspaceRuntime:
                 agent.configure_provider(selector, self.initial_limit_nano)
         self.workspace = DesignWorkspace(agent)
         self.workspace.reconcile_interrupted()
+
+    def _bind_trace(self, expert: DesignExpert | None) -> None:
+        from openrtl.adapters.design_generation import AgentRigDesignExpert, OllamaDesignExpert
+        if isinstance(expert, (AgentRigDesignExpert, OllamaDesignExpert)):
+            expert.trace_store = self.trace_store
 
     def provider_settings(self) -> JsonObject:
         async def invoke() -> JsonObject:
@@ -96,6 +113,7 @@ class WorkspaceRuntime:
                     "uncertain": provider["uncertain"],
                     "prior_unpriced_calls": provider["prior_unpriced_calls"],
                     "enabled": self.workspace is not None and self.workspace.agent.expert is not None,
+                    "timeout_seconds": self.timeout_seconds, "detailed_capture": self.detailed_capture,
                     "key_present": selected_provider == "openai" and self._key is not None,
                     "editable": self.provider_builder is not None and self.workspace is not None}
         return self._await(invoke())
@@ -113,13 +131,18 @@ class WorkspaceRuntime:
         return self._await(invoke())
 
     def configure_provider(self, provider: object, model: object, max_spend_usd: object,
-                           api_key: object, enabled: object) -> JsonObject:
+                           api_key: object, enabled: object, timeout_seconds: object = None,
+                           detailed_capture: object = None) -> JsonObject:
         async def invoke() -> JsonObject:
             require(self.workspace is not None and self.provider_builder is not None,
                     "provider_settings_unavailable")
             selection = provider_selector(provider, model)
             selected_provider = selector_provider(selection)
             selected_model = selector_model(selection)
+            timeout = self.timeout_seconds if timeout_seconds is None else timeout_seconds
+            capture = self.detailed_capture if detailed_capture is None else detailed_capture
+            require(type(timeout) is int and 1 <= timeout <= 300, "expert_timeout_invalid")
+            require(type(capture) is bool, "trace_capture_invalid")
             require(type(enabled) is bool and (api_key is None or type(api_key) is str),
                     "provider_settings_invalid")
             candidate_key = self._key
@@ -131,15 +154,20 @@ class WorkspaceRuntime:
             else:
                 require(max_spend_usd is None and api_key is None, "provider_spend_not_applicable")
                 limit = None
-            candidate = (self.provider_builder(selected_provider, selected_model, candidate_key)
+            candidate = (self.provider_builder(selected_provider, selected_model, candidate_key, cast(int, timeout))
                          if enabled else None)
             self.workspace.agent.configure_provider(selection, limit)
+            assert self.trace_store is not None
+            self.trace_store.set_enabled(cast(bool, capture))
+            self.timeout_seconds, self.detailed_capture = cast(int, timeout), cast(bool, capture)
+            self._bind_trace(candidate)
             self._key = candidate_key
             self.workspace.agent.expert = candidate
             return {"selected_provider": selected_provider, "selected_model": selected_model,
                     "max_spend_usd": dollars(limit) if limit is not None else None,
                     "estimated_spend_usd": dollars(self.workspace.agent.store.read()["provider"]["spent_nano_usd"]),
                     "enabled": enabled,
+                    "timeout_seconds": self.timeout_seconds, "detailed_capture": self.detailed_capture,
                     "key_present": selected_provider == "openai" and candidate_key is not None}
         return self._await(invoke())
 
@@ -269,7 +297,7 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
         def _json(self, code: int, value: object) -> None:
             self._send(code, canonical(value), "application/json; charset=utf-8")
 
-        def _body(self, keys: set[str]) -> JsonObject:
+        def _body(self, keys: set[str], optional: set[str] | frozenset[str] = frozenset()) -> JsonObject:
             require(self.headers.get("Content-Type") == "application/json", "web_content_type_invalid")
             size = self.headers.get("Content-Length")
             require(size is not None and size.isascii() and size.isdecimal() and 1 <= int(size) <= 20_000,
@@ -277,7 +305,7 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
             raw = self.rfile.read(int(size))
             require(len(raw) == int(size), "web_request_incomplete")
             value = json.loads(raw)
-            require(isinstance(value, dict) and set(value) == keys, "web_request_fields_invalid")
+            require(isinstance(value, dict) and keys <= set(value) <= keys | optional, "web_request_fields_invalid")
             return cast(JsonObject, value)
 
         def _perform(self, action: Callable[[], None]) -> None:
@@ -321,6 +349,10 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
                     require(set(query) in (set(), {"cursor"}), "web_query_invalid")
                     cursor = int(query.get("cursor", ["0"])[0])
                     self._json(200, runtime.call(lambda workspace: workspace.snapshot(cursor)))
+                    return
+                if parsed.path == "/api/conversation":
+                    require(not parsed.query, "web_query_invalid")
+                    self._json(200, runtime.call(lambda workspace: workspace.conversation()))
                     return
                 if parsed.path == "/api/project":
                     self._json(200, runtime.project_state())
@@ -418,10 +450,12 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
                     self._json(201, runtime.create_project())
                     return
                 if parsed.path == "/api/provider":
-                    body = self._body({"provider", "model", "max_spend_usd", "api_key", "enabled"})
+                    body = self._body({"provider", "model", "max_spend_usd", "api_key", "enabled"},
+                                      {"timeout_seconds", "detailed_capture"})
                     self._json(200, runtime.configure_provider(
                         body["provider"], body["model"], body["max_spend_usd"],
-                        body["api_key"], body["enabled"]))
+                        body["api_key"], body["enabled"], body.get("timeout_seconds"),
+                        body.get("detailed_capture")))
                     return
                 if parsed.path == "/api/provider/reconcile":
                     body = self._body({"expected_revision", "decision"})
@@ -450,16 +484,18 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
 
 def serve(project: Path, *, create: bool, port: int, expert_factory: Callable[[], DesignExpert | None],
           policy: DesignPolicy,
-          provider_builder: Callable[[str, str, str | None], DesignExpert] | None = None,
+          provider_builder: Callable[[str, str, str | None, int], DesignExpert] | None = None,
           initial_provider: str = "openai",
           initial_model: str | None = None, initial_limit_nano: int | None = None,
           initial_key: str | None = None,
+          timeout_seconds: int = 120, detailed_capture: bool = False,
           simulator_factory: Callable[[], DesignSimulator | None] | None = None) -> None:
     require(type(port) is int and 0 <= port <= 65535, "web_port_invalid")
     runtime = WorkspaceRuntime(project, create=create, expert_factory=expert_factory, policy=policy,
                                provider_builder=provider_builder, initial_provider=initial_provider,
                                initial_model=initial_model,
                                initial_limit_nano=initial_limit_nano, initial_key=initial_key,
+                               timeout_seconds=timeout_seconds, detailed_capture=detailed_capture,
                                simulator_factory=simulator_factory)
     try:
         server = ThreadingHTTPServer(("127.0.0.1", port), handler(runtime))

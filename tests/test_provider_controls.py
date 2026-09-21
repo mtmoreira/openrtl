@@ -51,6 +51,20 @@ class RejectedLocalExpert(LocalExpert):
 
 
 class ProviderControlsTest(unittest.TestCase):
+    def test_portable_deadline_and_cancellation_keep_distinct_failure_categories(self) -> None:
+        for kind, expected in ((FailureKind.DEADLINE_EXCEEDED, "provider_timeout"),
+                               (FailureKind.CANCELLED, "provider_cancelled")):
+            with self.subTest(kind=kind):
+                error = AgentRigError(Failure(kind=kind, message="synthetic private detail"))
+                self.assertEqual(classify_provider_failure(error), expected)
+        self.assertEqual(classify_provider_failure(asyncio.TimeoutError()), "provider_timeout")
+
+    def test_ui_timeout_and_capture_are_explicit_cli_options(self) -> None:
+        options = parser().parse_args(["ui", "--project", "/tmp/synthetic-project",
+                                       "--timeout-seconds", "300", "--capture-details"])
+        self.assertEqual(options.timeout_seconds, 300)
+        self.assertTrue(options.capture_details)
+
     def test_cli_accepts_explicit_local_provider_and_model(self) -> None:
         arguments = parser().parse_args(["ui", "--project", "/unit/project", "--allow-provider",
                                          "--provider", "ollama", "--model", "qwen3:8b"])
