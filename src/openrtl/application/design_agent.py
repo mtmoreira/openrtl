@@ -17,9 +17,10 @@ from openrtl.domain.design_session import (
 from openrtl.domain.design_delegation import specification_warnings, validate_delegated_spec, warning
 from openrtl.domain.design_imports import baseline_plan, digest_value, validate_change_plan
 from openrtl.domain.design_coaching import analysis_input_digest, validate_analysis, validate_intent, validate_proposal
+from openrtl.domain.discovery_validation import DiscoveryValidationError
 
 DESIGN_CONTEXT_SCHEMA = "openrtl.design-context.v6"
-DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v2"
+DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v3"
 PREFERRED_CLARIFICATION_ROUNDS = 3
 MAX_QUESTIONS_PER_ROUND = 3
 
@@ -280,9 +281,10 @@ class DesignAgent:
                 updated["spec"] = spec
                 self._record_spec_warnings(updated)
                 saved = self.store.save(started, updated, "spec.proposed", {"spec_digest": content_digest(spec)})
-        except (ValueError, TypeError, KeyError):
-            self._failed(started, "expert_output_invalid")
-            raise ValueError("expert_output_invalid") from None
+        except (ValueError, TypeError, KeyError) as error:
+            failure = DiscoveryValidationError(str(error) if type(error) is ValueError else None)
+            self._failed(started, "expert_output_invalid", validation_code=failure.validation_code)
+            raise failure from None
         if reply is not None and emit_reply is not None:
             emit_reply(reply)
         return saved
@@ -596,13 +598,16 @@ class DesignAgent:
             self._failed(started, code, elapsed_ms=elapsed_ms)
             raise ValueError(code) from None
 
-    def _failed(self, started: JsonObject, code: str, *, elapsed_ms: int | None = None) -> None:
+    def _failed(self, started: JsonObject, code: str, *, elapsed_ms: int | None = None,
+                validation_code: str | None = None) -> None:
         updated = copy.deepcopy(started)
         updated.update(active=None, last_error=code)
         if updated["provider"]["pending"] is not None:
             updated["provider"]["pending"] = None
             updated["provider"]["uncertain"] = True
         fields: JsonObject = {"error_code": code}
+        if validation_code is not None:
+            fields["validation_code"] = validation_code
         if elapsed_ms is not None:
             fields["elapsed_ms"] = elapsed_ms
         self.store.save(started, updated, "operation.failed", fields)

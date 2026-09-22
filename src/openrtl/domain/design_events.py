@@ -15,7 +15,7 @@ FIELDS = frozenset(("operation_id role context_digest output_digest error_code i
     "delegation_digest requirements_digest artifacts_digest client_operation_id "
     "request_digest limit_nano_usd estimated_cost_nano_usd retained_nano_usd prompt_version "
     "context_schema tool_calls shell_commands clarification_round question_count "
-    "cached_input_tokens reasoning_tokens").split())
+    "cached_input_tokens reasoning_tokens validation_code").split())
 
 
 def event(value: object, sequence: int) -> JsonObject:

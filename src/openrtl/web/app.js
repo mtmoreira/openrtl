@@ -68,7 +68,12 @@ const providerFailureGuidance = Object.freeze({
   provider_spend_budget_exhausted: "The project ceiling cannot cover another full call reservation.",
   provider_spend_uncertain: "A previous call's cost is still uncertain.",
   expert_call_budget_exhausted: "The project's call budget is exhausted.",
-  expert_output_invalid: "The response failed local validation."
+  expert_output_invalid: "The response failed local validation. Open the failed operation in History for the saved rule; your previous answers remain saved.",
+  expert_output_readiness_invalid: "The proposal's readiness checklist failed local validation. Open History for the exact rule; your answers remain saved.",
+  expert_output_questions_invalid: "The proposal repeated or mislinked a clarification question. Open History for the exact rule; your answers remain saved.",
+  expert_output_specification_invalid: "The proposal's requirements or interface failed local validation. Open History for the exact rule; your answers remain saved.",
+  expert_output_memory_invalid: "The proposal's engineering memory failed local validation. Open History for the exact rule; your answers remain saved.",
+  expert_output_shape_invalid: "The proposal's structured fields failed local validation. Open History for the exact rule; your answers remain saved."
 });
 function operationFailure(code) {
   return providerFailureGuidance[code] ? providerFailureGuidance[code] +

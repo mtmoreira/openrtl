@@ -132,8 +132,8 @@ class DesignGenerationTest(unittest.TestCase):
         self.assertEqual(request.contract.allowed_tools, ())
         self.assertEqual(request.contract.permissions["workspace"], "denied")
         self.assertEqual(request.contract.permissions["network"], "allowed")
-        self.assertEqual(request.contract.output_schema, "openrtl.design.discovery.v5")
-        self.assertEqual(request.contract.prompt_version, "openrtl.design.instructions.v2")
+        self.assertEqual(request.contract.output_schema, "openrtl.design.discovery.v6")
+        self.assertEqual(request.contract.prompt_version, "openrtl.design.instructions.v3")
         self.assertEqual(request.contract.limits.max_tool_calls, 0)
         self.assertIn("Never ask for permission to proceed", request.instructions)
         self.assertIn("at most conversation_policy.max_questions_this_round", request.instructions)
@@ -151,6 +151,20 @@ class DesignGenerationTest(unittest.TestCase):
                          "array")
         self.assertEqual(response_schema("change_planning")["properties"]["specification"]["type"],
                          "object")
+
+    def test_discovery_schema_expresses_local_bounds_before_provider_generation(self) -> None:
+        schema = response_schema("discovery")["properties"]
+        spec = schema["specification"]["anyOf"][0]["properties"]
+        self.assertEqual(schema["questions_asked"]["maxItems"], 3)
+        self.assertEqual(schema["engineering_memory"]["maxItems"], 64)
+        self.assertEqual(spec["questions"]["maxItems"], 3)
+        self.assertEqual(spec["readiness"]["properties"]["items"]["minItems"], 7)
+        self.assertEqual(spec["readiness"]["properties"]["items"]["maxItems"], 7)
+        self.assertEqual(spec["ports"]["items"]["properties"]["width"]["minimum"], 1)
+        self.assertEqual(spec["requirements"]["items"]["properties"]["id"]["pattern"],
+                         "^[A-Za-z][A-Za-z0-9_.-]*$")
+        self.assertEqual(response_schema("change_planning")["properties"]["specification"]
+                         ["properties"]["questions"]["maxItems"], 32)
 
 
 if __name__ == "__main__":

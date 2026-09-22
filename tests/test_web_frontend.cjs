@@ -85,6 +85,14 @@ test("notices and operation progress reconcile as identified System messages", (
   assert.doesNotMatch(app.element("conversation-list").textContent, /6000 ms elapsed/);
 });
 
+test("discovery validation category appears in Conversation without raw provider text", () => {
+  const app = browser();
+  app.context.reconcileOperation({id: "b".repeat(32), phase: "failed",
+    error_code: "expert_output_readiness_invalid", result_revision: 7});
+  assert.match(app.element("conversation-list").textContent, /readiness checklist failed local validation/);
+  assert.match(app.element("conversation-list").textContent, /Open History for the exact rule/);
+});
+
 test("history navigation inspects details without changing the workbench revision", async () => {
   const app = browser();
   app.run("state = {spec: null}");

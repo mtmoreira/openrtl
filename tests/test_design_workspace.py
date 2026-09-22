@@ -65,6 +65,29 @@ class DesignWorkspaceTest(unittest.TestCase):
             self.assertNotIn("What width should", str(self.store.events()))
         asyncio.run(scenario())
 
+    def test_discovery_validation_reports_safe_rule_without_persisting_response(self) -> None:
+        self.expert.responses["discovery"] = {
+            "reply": "A proposal is ready", "specification": {
+                "title": "PRIVATE SYNTHETIC RESPONSE", "top": "counter", "behavior": "Count",
+                "clock_reset": "Reset", "requirements": [{"id": "count", "text": "Count",
+                    "acceptance": "Check the count"}], "ports": [], "questions": [],
+                "assumptions": [], "readiness": {"schema": "openrtl.design-readiness.v1", "items": []}},
+            "questions_asked": [], "engineering_memory": [],
+        }
+        async def scenario() -> None:
+            identifier = uuid.uuid4().hex
+            await self.workspace.submit_discussion("Synthetic request", client_operation_id=identifier,
+                                                   expected_revision=0)
+            await self.workspace._tasks[identifier]
+            self.assertEqual(self.workspace.operation(identifier)["error_code"],
+                             "expert_output_readiness_invalid")
+            self.assertEqual(self.store.read()["last_error"], "expert_output_invalid")
+            self.assertNotIn("PRIVATE SYNTHETIC RESPONSE", str(self.store.read()) + str(self.store.events()))
+            detail = self.workspace.history(self.store.read()["revision"])
+            failed = next(row for row in detail["trace"] if row["event"] == "operation.failed")
+            self.assertEqual(failed["fields"]["validation_code"], "readiness_categories_missing")
+        asyncio.run(scenario())
+
     def test_cancellation_retains_uncertain_provider_intent(self) -> None:
         class SlowExpert:
             async def generate(self, stage: str, context: dict[str, object], operation_id: str) -> ExpertReply:

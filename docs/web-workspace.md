@@ -102,6 +102,15 @@ more than three materially new or refined questions. Routine choices are stated
 as reviewable assumptions, and a permission-only question does not delay a ready
 specification.
 
+If a completed model response fails deterministic discovery validation, the
+System message in Conversation identifies whether the proposed readiness,
+questions, specification, memory or structured fields failed. The matching
+failed operation in History includes an allowlisted `validation_code` for the
+exact rule. The rejected proposal does not replace the saved specification or
+erase earlier answers, and the request is never replayed automatically. These
+codes describe local checks, not raw model output; detailed capture remains
+subject to its separate opt-in.
+
 Operation notices, progress and errors appear in Conversation with a **System**
 identity. Updates reconcile the same operation, and reconnect never resubmits
 it. History and Activity rows inspect details without switching the workbench's

@@ -58,6 +58,7 @@ def diagnostic(error: object) -> JsonObject:
 
 def safe_event(row: JsonObject) -> JsonObject:
     from openrtl.domain.design_events import EVENTS
+    from openrtl.domain.discovery_validation import DISCOVERY_VALIDATION_CATEGORIES
     fields: JsonObject = {}
     for key, value in row["fields"].items():
         if key in ("input_tokens", "output_tokens", "elapsed_ms", "artifact_count") and type(value) is int and 0 <= value < 2**63:
@@ -68,6 +69,8 @@ def safe_event(row: JsonObject) -> JsonObject:
             fields[key] = value
         elif key == "role" and value in ROLES.values(): fields[key] = value
         elif key == "error_code" and value in HINTS: fields[key] = value
+        elif key == "validation_code" and value in DISCOVERY_VALIDATION_CATEGORIES:
+            fields[key] = value
         elif key == "retained_nano_usd" and type(value) is int and 0 <= value < 2**63: fields[key] = value
     return {"sequence": row["sequence"], "event": row["event"] if row["event"] in EVENTS else "unrecognized", "fields": fields}
 

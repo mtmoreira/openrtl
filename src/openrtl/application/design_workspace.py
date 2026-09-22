@@ -487,7 +487,9 @@ class DesignWorkspace:
         except asyncio.CancelledError:
             self._finish(identifier, "reconciliation_needed", "operation_cancelled_uncertain")
         except ValueError as error:
-            code = str(error) if str(error) in EXPERT_OPERATION_ERROR_CODES else "operation_failed"
+            category = getattr(error, "category_code", None)
+            code = category if category in EXPERT_OPERATION_ERROR_CODES else (
+                str(error) if str(error) in EXPERT_OPERATION_ERROR_CODES else "operation_failed")
             self._finish(identifier, "failed", code)
         except Exception:
             self._finish(identifier, "failed", "operation_failed")
@@ -518,7 +520,9 @@ class DesignWorkspace:
         except asyncio.CancelledError:
             self._finish(identifier, "reconciliation_needed", "operation_cancelled_uncertain")
         except ValueError as error:
-            code = str(error) if str(error) in EXPERT_OPERATION_ERROR_CODES else "operation_failed"
+            category = getattr(error, "category_code", None)
+            code = category if category in EXPERT_OPERATION_ERROR_CODES else (
+                str(error) if str(error) in EXPERT_OPERATION_ERROR_CODES else "operation_failed")
             self._finish(identifier, "failed", code)
         except Exception:
             # Arbitrary exception text is never persisted.

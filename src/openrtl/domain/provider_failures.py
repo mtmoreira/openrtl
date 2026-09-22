@@ -18,6 +18,9 @@ PROVIDER_FAILURE_CODES = frozenset({
 
 EXPERT_OPERATION_ERROR_CODES = PROVIDER_FAILURE_CODES | {
     "expert_invocation_failed", "expert_output_invalid",
+    "expert_output_readiness_invalid", "expert_output_questions_invalid",
+    "expert_output_specification_invalid", "expert_output_memory_invalid",
+    "expert_output_shape_invalid",
     "provider_spend_budget_exhausted", "provider_spend_uncertain",
     "expert_call_budget_exhausted",
 }
