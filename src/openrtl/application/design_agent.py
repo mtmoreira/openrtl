@@ -20,7 +20,7 @@ from openrtl.domain.design_coaching import analysis_input_digest, validate_analy
 from openrtl.domain.discovery_validation import DiscoveryValidationError
 
 DESIGN_CONTEXT_SCHEMA = "openrtl.design-context.v6"
-DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v3"
+DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v4"
 PREFERRED_CLARIFICATION_ROUNDS = 3
 MAX_QUESTIONS_PER_ROUND = 3
 
@@ -219,6 +219,16 @@ class DesignAgent:
         existing = {w["id"] for w in updated["warnings"]}
         updated["warnings"].extend(w for w in specification_warnings(seed, updated["spec"]) if w["id"] not in existing)
 
+    @staticmethod
+    def _linked_questions(asked: list[str], current: dict[str, str], prior: dict[str, str]) -> list[str]:
+        if all(identifier in current for identifier in asked):
+            return asked
+        prior_texts = {value.casefold().strip() for value in prior.values()}
+        new_ids = [identifier for identifier, value in current.items()
+                   if prior.get(identifier) != value and value.casefold().strip() not in prior_texts]
+        require(bool(asked) and len(asked) == len(new_ids), "expert_clarification_question_unknown")
+        return new_ids
+
     async def discuss(self, message: str, *, emit_reply: Callable[[str], None] | None = None) -> JsonObject:
         state = self._idle()
         require(state["status"] == "discovery", "use_explain_or_explicit_revision")
@@ -261,8 +271,8 @@ class DesignAgent:
                 current_questions = {row["id"]: row["text"] for row in memory
                                      if row["kind"] == "question"}
                 prior_rounds = self._clarification_rounds()
-                require(all(identifier in current_questions for identifier in asked_question_ids),
-                        "expert_clarification_question_unknown")
+                asked_question_ids = self._linked_questions(
+                    asked_question_ids, current_questions, previous_questions)
                 require(all(previous_questions.get(identifier) != current_questions[identifier]
                             for identifier in asked_question_ids),
                         "expert_clarification_repeated")
@@ -273,14 +283,28 @@ class DesignAgent:
                                          "question_count": len(asked_question_ids)})
             else:
                 spec = validate_spec(proposal)
+                if asked_question_ids and not all(identifier in {row["id"] for row in spec["questions"]}
+                                                  for identifier in asked_question_ids) and not spec["questions"]:
+                    memory_questions = {row["id"]: row["text"] for row in memory if row["kind"] == "question"}
+                    if all(identifier in memory_questions for identifier in asked_question_ids):
+                        candidate = copy.deepcopy(spec)
+                        candidate["questions"] = [{"id": identifier, "text": memory_questions[identifier]}
+                                                  for identifier in asked_question_ids]
+                        spec = validate_spec(candidate)
                 require(len(spec["questions"]) <= MAX_QUESTIONS_PER_ROUND,
                         "expert_clarification_question_limit")
-                require(all(identifier in {row["id"] for row in spec["questions"]}
-                            for identifier in asked_question_ids),
-                        "expert_clarification_question_unknown")
+                previous_spec = state["spec"] or {"questions": []}
+                asked_question_ids = self._linked_questions(
+                    asked_question_ids,
+                    {row["id"]: row["text"] for row in spec["questions"]},
+                    {row["id"]: row["text"] for row in previous_spec["questions"]})
                 updated["spec"] = spec
                 self._record_spec_warnings(updated)
-                saved = self.store.save(started, updated, "spec.proposed", {"spec_digest": content_digest(spec)})
+                saved = self.store.save(started, updated, "spec.proposed",
+                                        {"spec_digest": content_digest(spec), "role": ROLES["discovery"],
+                                         "clarification_round": self._clarification_rounds() +
+                                         (1 if asked_question_ids else 0),
+                                         "question_count": len(asked_question_ids)})
         except (ValueError, TypeError, KeyError) as error:
             failure = DiscoveryValidationError(str(error) if type(error) is ValueError else None)
             self._failed(started, "expert_output_invalid", validation_code=failure.validation_code)
@@ -291,7 +315,7 @@ class DesignAgent:
 
     def _clarification_rounds(self) -> int:
         return sum(1 for row in self.store.events()
-                   if row["event"] == "operation.completed" and
+                   if row["event"] in ("operation.completed", "spec.proposed") and
                    row["fields"].get("role") == ROLES["discovery"] and
                    ("question_count" not in row["fields"] or row["fields"]["question_count"] > 0))
 

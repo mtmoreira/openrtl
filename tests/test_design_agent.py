@@ -214,6 +214,62 @@ class DesignAgentTest(unittest.TestCase):
         asyncio.run(self.agent.discuss("The reset domains are independent"))
         self.assertEqual(self.expert.seen[-1][1]["conversation_policy"]["clarification_round"], 2)
 
+    def test_discovery_relinks_one_unambiguous_question_id_without_losing_memory(self) -> None:
+        self.expert.responses["discovery"] = {
+            "reply": "What width should the FIFO use?", "specification": None,
+            "engineering_memory": [{"id": "fifo.width", "kind": "question",
+                "text": "Choose the FIFO width", "provenance": "agent_proposal"}],
+            "questions_asked": ["Q1"],
+        }
+        asyncio.run(self.agent.discuss("I need an asynchronous FIFO"))
+        self.assertEqual(self.store.read()["engineering_memory"][0]["id"], "fifo.width")
+        completed = [row for row in self.store.events() if row["event"] == "operation.completed"][-1]
+        self.assertEqual(completed["fields"]["question_count"], 1)
+        self.expert.responses["discovery"]["questions_asked"] = ["Q2"]
+        with self.assertRaisesRegex(ValueError, "expert_output_invalid"):
+            asyncio.run(self.agent.discuss("Please continue"))
+        failed = [row for row in self.store.events() if row["event"] == "operation.failed"][-1]
+        self.assertEqual(failed["fields"]["validation_code"], "expert_clarification_question_unknown")
+
+    def test_discovery_relinks_spec_question_or_preserves_memory_question(self) -> None:
+        spec = specification()
+        spec["questions"] = [{"id": "fifo.width", "text": "Choose the FIFO width"}]
+        self.expert.responses["discovery"] = {
+            "reply": "What width should the FIFO use?", "specification": spec,
+            "engineering_memory": [], "questions_asked": ["Q1"],
+        }
+        asyncio.run(self.agent.discuss("I need an asynchronous FIFO"))
+        self.assertEqual(self.store.read()["spec"]["questions"], spec["questions"])
+        self.assertNotIn("Q1", canonical(self.store.read()).decode())
+        proposed = [row for row in self.store.events() if row["event"] == "spec.proposed"][-1]
+        self.assertEqual(proposed["fields"]["question_count"], 1)
+        self.assertEqual(self.agent.context(self.store.read(), "discovery", "continue")
+                         ["conversation_policy"]["clarification_round"], 2)
+
+    def test_discovery_adds_a_referenced_memory_question_missing_from_spec(self) -> None:
+        self.expert.responses["discovery"] = {
+            "reply": "What width should the FIFO use?", "specification": specification(),
+            "engineering_memory": [{"id": "fifo.width", "kind": "question",
+                "text": "Choose the FIFO width", "provenance": "agent_proposal"}],
+            "questions_asked": ["fifo.width"],
+        }
+        asyncio.run(self.agent.discuss("I need an asynchronous FIFO"))
+        self.assertEqual(self.store.read()["spec"]["questions"],
+                         [{"id": "fifo.width", "text": "Choose the FIFO width"}])
+
+    def test_discovery_does_not_guess_an_ambiguous_question_link(self) -> None:
+        spec = specification()
+        spec["questions"] = [{"id": "fifo.width", "text": "Choose the FIFO width"},
+                             {"id": "fifo.depth", "text": "Choose the FIFO depth"}]
+        self.expert.responses["discovery"] = {
+            "reply": "Which parameter should change?", "specification": spec,
+            "engineering_memory": [], "questions_asked": ["Q1"],
+        }
+        with self.assertRaisesRegex(ValueError, "expert_output_invalid"):
+            asyncio.run(self.agent.discuss("I need an asynchronous FIFO"))
+        failed = [row for row in self.store.events() if row["event"] == "operation.failed"][-1]
+        self.assertEqual(failed["fields"]["validation_code"], "expert_clarification_question_unknown")
+
     def test_memory_rejects_verbatim_prompt_and_fabricated_confirmation(self) -> None:
         self.expert.responses["discovery"] = {"reply": "Tell me more.", "specification": None,
             "engineering_memory": [{"id": "request", "kind": "requirement",

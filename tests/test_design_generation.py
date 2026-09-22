@@ -133,10 +133,11 @@ class DesignGenerationTest(unittest.TestCase):
         self.assertEqual(request.contract.permissions["workspace"], "denied")
         self.assertEqual(request.contract.permissions["network"], "allowed")
         self.assertEqual(request.contract.output_schema, "openrtl.design.discovery.ollama.v1")
-        self.assertEqual(request.contract.prompt_version, "openrtl.design.instructions.v3")
+        self.assertEqual(request.contract.prompt_version, "openrtl.design.instructions.v4")
         self.assertEqual(request.contract.limits.max_tool_calls, 0)
         self.assertIn("Never ask for permission to proceed", request.instructions)
         self.assertIn("at most conversation_policy.max_questions_this_round", request.instructions)
+        self.assertIn("same stable ID for each open question", request.instructions)
 
     def test_schemas_are_closed_and_role_specific(self) -> None:
         for stage in ("discovery", "architecture", "dv", "signoff", "explain"):
