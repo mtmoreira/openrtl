@@ -119,6 +119,16 @@ _INSTRUCTIONS = {
     "change_planning": "Propose a complete reviewable change, never apply it. Return full proposed requirements, assumptions, per-stage writable paths and simulation manifest. Preserve stable IDs. Explain impact and tradeoffs in summary. For intent dv: retain exact specification and allow writes only to verification_plan and dv, never model or RTL. For optimization: retain exact specification and manifest and allow writes only in rtl stage; propose simulation-level experiments, never PPA or equivalence claims. Empty stage path lists retain existing files. Every change still requires exact user review; no broad acceptance can be inferred from the message.",
 }
 
+_PORT_WIDTH_INSTRUCTION = (
+    " Every specification port width must be a JSON integer from 1 through 65536 inclusive."
+    " Never use zero as an unknown, inferred, parameterized or placeholder width."
+    " If a material width is unresolved, keep it as an open question and either retain an existing"
+    " valid width or state a positive proposed width as a reviewable assumption."
+)
+
+_INSTRUCTIONS["discovery"] += _PORT_WIDTH_INSTRUCTION
+_INSTRUCTIONS["change_planning"] += _PORT_WIDTH_INSTRUCTION
+
 _INSTRUCTIONS["discovery"] += (
     " Before returning a proposal, check all seven readiness categories occur exactly once. "
     "Every readiness requirement_ids entry must cite an ID in the proposed requirements and every "

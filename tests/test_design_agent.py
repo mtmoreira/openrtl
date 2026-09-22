@@ -183,6 +183,29 @@ class DesignAgentTest(unittest.TestCase):
         self.assertEqual(self.store.read()["engineering_memory"][0]["kind"], "decision")
         self.assertIsNone(self.store.read()["approved_spec"])
 
+    def test_discovery_rejects_captured_zero_width_shape_without_normalization(self) -> None:
+        captured_spec = specification()
+        captured_spec["ports"] = json.loads(
+            '[{"name":"data_in","direction":"input","width":0},'
+            '{"name":"data_out","direction":"output","width":0}]'
+        )
+        self.assertEqual([type(row["width"]) for row in captured_spec["ports"]], [int, int])
+        self.expert.responses["discovery"] = {
+            "reply": "A FIFO proposal is ready for review.",
+            "specification": captured_spec,
+            "engineering_memory": [],
+            "questions_asked": [],
+        }
+
+        with self.assertRaisesRegex(ValueError, "expert_output_invalid"):
+            asyncio.run(self.agent.discuss("Continue the FIFO design"))
+
+        self.assertIsNone(self.store.read()["spec"])
+        self.assertNotIn("data_in", canonical(self.store.read()).decode())
+        failed = [row for row in self.store.events() if row["event"] == "operation.failed"][-1]
+        self.assertEqual(failed["fields"]["error_code"], "expert_output_invalid")
+        self.assertEqual(failed["fields"]["validation_code"], "port_width_invalid")
+
     def test_discovery_rejects_repeated_or_excessive_question_rounds(self) -> None:
         question = {"id": "fifo.width", "kind": "question",
                     "text": "Choose the FIFO data width", "provenance": "agent_proposal"}
