@@ -151,13 +151,34 @@ def _decode_output(value: object) -> JsonObject:
     return cast(JsonObject, result)
 
 
-def _schema(stage: str, context: JsonObject) -> tuple[str, JsonObject]:
+_OLLAMA_AVOIDED_CONSTRAINTS = frozenset({
+    "pattern", "minLength", "maxLength", "minItems", "maxItems", "minimum", "maximum",
+})
+
+
+def _ollama_schema(value: Any) -> Any:
+    """Keep Ollama's format grammar structural; local validation owns value bounds."""
+    if isinstance(value, dict):
+        return {key: _ollama_schema(item) for key, item in value.items()
+                if key not in _OLLAMA_AVOIDED_CONSTRAINTS}
+    if isinstance(value, list):
+        return [_ollama_schema(item) for item in value]
+    return value
+
+
+def _schema(stage: str, context: JsonObject, *, ollama: bool = False) -> tuple[str, JsonObject]:
     include_readiness = stage != "change_planning" or "readiness" in (context.get("specification") or {})
-    schema_version = (".v6" if stage == "discovery" else
-                      (".v3" if include_readiness else ".v2") if stage == "change_planning"
-                      else ".v1")
+    if ollama:
+        schema_version = (".ollama.v2" if include_readiness else ".ollama.v1")
+        if stage != "change_planning":
+            schema_version = ".ollama.v1"
+    else:
+        schema_version = (".v6" if stage == "discovery" else
+                          (".v3" if include_readiness else ".v2") if stage == "change_planning"
+                          else ".v1")
+    schema = response_schema(stage, include_readiness=include_readiness)
     return ("openrtl.design." + stage + schema_version,
-            response_schema(stage, include_readiness=include_readiness))
+            _ollama_schema(schema) if ollama else schema)
 
 
 class AgentRigDesignExpert:
@@ -233,7 +254,7 @@ class OllamaDesignExpert:
 
     async def generate(self, stage: str, context: JsonObject, operation_id: str) -> ExpertReply:
         require(stage in _INSTRUCTIONS, "expert_stage_invalid")
-        schema_id, _ = _schema(stage, context)
+        schema_id, _ = _schema(stage, context, ollama=True)
         payload: JsonObject = {"context": context}
         require(len(canonical(payload)) <= MAX_CONTEXT_BYTES, "expert_input_exceeds_bound")
         contract: AgentContract[object, object] = AgentContract(
@@ -325,7 +346,7 @@ def ollama_design_expert(*, authorized: bool, model: str, timeout_seconds: int =
         if stage == "change_planning":
             contexts = ({}, {"specification": {"readiness": {}}})
         for context in contexts:
-            schema_id, schema = _schema(stage, context)
+            schema_id, schema = _schema(stage, context, ollama=True)
             schemas[schema_id] = schema
     runtime = OllamaAgentRuntime(
         client_factory=bridge.OllamaSdkClientFactory(host=OLLAMA_HOST), model=model,

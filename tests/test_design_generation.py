@@ -14,7 +14,7 @@ from agentrig.capabilities import (
 )
 from agentrig.testing import ScriptedStructuredGeneration, ScriptedStructuredGenerator
 from openrtl.adapters.design_generation import (
-    AgentRigDesignExpert, OllamaDesignExpert, ollama_design_expert, openai_design_expert,
+    AgentRigDesignExpert, OllamaDesignExpert, _schema, ollama_design_expert, openai_design_expert,
     response_schema,
 )
 from openrtl.domain.design_session import JsonObject
@@ -132,7 +132,7 @@ class DesignGenerationTest(unittest.TestCase):
         self.assertEqual(request.contract.allowed_tools, ())
         self.assertEqual(request.contract.permissions["workspace"], "denied")
         self.assertEqual(request.contract.permissions["network"], "allowed")
-        self.assertEqual(request.contract.output_schema, "openrtl.design.discovery.v6")
+        self.assertEqual(request.contract.output_schema, "openrtl.design.discovery.ollama.v1")
         self.assertEqual(request.contract.prompt_version, "openrtl.design.instructions.v3")
         self.assertEqual(request.contract.limits.max_tool_calls, 0)
         self.assertIn("Never ask for permission to proceed", request.instructions)
@@ -165,6 +165,31 @@ class DesignGenerationTest(unittest.TestCase):
                          "^[A-Za-z][A-Za-z0-9_.-]*$")
         self.assertEqual(response_schema("change_planning")["properties"]["specification"]
                          ["properties"]["questions"]["maxItems"], 32)
+
+    def test_ollama_format_schema_omits_value_constraints_but_retains_structure(self) -> None:
+        unsupported = {"pattern", "minLength", "maxLength", "minItems", "maxItems",
+                       "minimum", "maximum"}
+
+        def check(value: object) -> None:
+            if isinstance(value, dict):
+                self.assertFalse(unsupported.intersection(value))
+                for child in value.values():
+                    check(child)
+            elif isinstance(value, list):
+                for child in value:
+                    check(child)
+
+        for stage in ("discovery", "change_planning"):
+            with self.subTest(stage=stage):
+                _, schema = _schema(stage, {}, ollama=True)
+                check(schema)
+                self.assertEqual(schema["type"], "object")
+                self.assertFalse(schema["additionalProperties"])
+        _, rich = _schema("discovery", {})
+        self.assertEqual(rich["properties"]["questions_asked"]["maxItems"], 3)
+        self.assertNotEqual(_schema("change_planning", {}, ollama=True)[0],
+                            _schema("change_planning", {"specification": {"readiness": {}}},
+                                    ollama=True)[0])
 
 
 if __name__ == "__main__":
