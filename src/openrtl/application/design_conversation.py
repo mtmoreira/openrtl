@@ -50,6 +50,26 @@ def render_spec(spec: JsonObject, emit: Callable[[str], None]) -> None:
     emit(spec["title"] + " — top: " + spec["top"])
     emit("Behavior: " + spec["behavior"])
     emit("Clock/reset: " + spec["clock_reset"])
+    if "hardware_specification" not in spec:
+        emit("Specification format: legacy; completeness was not recorded.")
+    else:
+        from openrtl.domain.hardware_specification import specification_completeness
+        document = spec["hardware_specification"]
+        completeness, unresolved = specification_completeness(spec)
+        suffix = (" (" + ", ".join(unresolved) + ")") if unresolved else ""
+        emit("Specification format: " + document["schema"] +
+             "; completeness: " + completeness + suffix)
+        if document["parameters"]:
+            for row in document["parameters"]:
+                emit("Parameter " + row["name"] + ": " + row["type"] +
+                     " | Default: " + row["default"] +
+                     " | Legal values: " + row["legal_values"] +
+                     " | " + row["description"])
+        else:
+            emit("Parameters: none.")
+        for row in document["sections"]:
+            emit("Section " + row["id"].replace("_", " ") + " [" + row["status"] +
+                 "]: " + row["content"])
     for port in spec["ports"]:
         emit("Port " + port["name"] + ": " + port["direction"] + ", " + str(port["width"]) + " bits")
     for row in spec["requirements"]:
@@ -124,7 +144,8 @@ def show_review(agent: DesignAgent, emit: Callable[[str], None]) -> ShownReview 
         try:
             require_ready(spec)
         except ValueError:
-            emit("Readiness review is incomplete. Resolve the questions and all seven decision categories before approval.")
+            emit("Readiness review is incomplete. Resolve open questions, all seven decision categories, "
+                 "and every versioned specification section before approval.")
             return None
         emit("Readiness decisions are explicit; review their adequacy. This checklist does not prove completeness.")
     phrase = {"specification": "approve this specification", "change": "approve this change", "acceptance": "accept this design"}[kind]

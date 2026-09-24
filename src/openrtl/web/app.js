@@ -432,13 +432,60 @@ function renderSpecification(spec) {
   elements.specification.append(node("h2", spec.title + " · " + spec.top));
   elements.specification.append(node("p", spec.behavior));
   elements.specification.append(node("p", "Clock/reset: " + spec.clock_reset));
-  for (const section of [["Requirements", spec.requirements], ["Questions", spec.questions],
-                         ["Assumptions", spec.assumptions]]) {
+  const hardwareDocument = spec.hardware_specification;
+  if (!hardwareDocument) {
+    elements.specification.append(node("p", "Specification format: legacy · completeness not recorded", "muted"));
+  } else {
+    const unresolved = hardwareDocument.sections.filter(row => row.status === "unresolved").map(row => row.id);
+    if (!spec.ports.length) unresolved.push("ports");
+    if (spec.questions.length) unresolved.push("open_questions");
+    if (!spec.readiness) unresolved.push("readiness");
+    else for (const row of spec.readiness.items) {
+      if (row.status === "unresolved") unresolved.push("readiness." + row.category);
+    }
+    elements.specification.append(node("p", "Specification format: " + hardwareDocument.schema +
+      " · completeness: " + (unresolved.length ? "unresolved (" + unresolved.join(", ") + ")" : "complete"),
+      unresolved.length ? "warning" : "muted"));
+    elements.specification.append(node("h3", "Parameters"));
+    if (!hardwareDocument.parameters.length) elements.specification.append(node("p", "No configurable parameters.", "muted"));
+    else {
+      const parameters = document.createElement("ul");
+      for (const row of hardwareDocument.parameters) parameters.append(node("li", row.name + " · " + row.type +
+        " · default " + row.default + " · legal values " + row.legal_values + " — " + row.description));
+      elements.specification.append(parameters);
+    }
+    elements.specification.append(node("h3", "Specification sections"));
+    const sections = document.createElement("ul");
+    for (const row of hardwareDocument.sections) sections.append(node("li", row.id.replaceAll("_", " ") +
+      " [" + row.status + "]: " + row.content));
+    elements.specification.append(sections);
+  }
+  const ports = document.createElement("ul");
+  for (const row of spec.ports) ports.append(node("li", row.name + " · " + row.direction +
+    " · " + row.width + " bits"));
+  elements.specification.append(node("h3", "Ports"));
+  if (spec.ports.length) elements.specification.append(ports);
+  else elements.specification.append(node("p", "No ports specified.", "muted"));
+  for (const section of [["Requirements", spec.requirements, row => row.id + ": " + row.text +
+                            " · Acceptance: " + row.acceptance],
+                         ["Questions", spec.questions, row => row.id + ": " + row.text],
+                         ["Assumptions", spec.assumptions, row => row.id + ": " + row.text +
+                            " · Rationale: " + row.rationale]]) {
     if (!section[1].length) continue;
     elements.specification.append(node("h3", section[0]));
     const list = document.createElement("ul");
-    for (const row of section[1]) list.append(node("li", row.id + ": " + row.text));
+    for (const row of section[1]) list.append(node("li", section[2](row)));
     elements.specification.append(list);
+  }
+  elements.specification.append(node("h3", "Readiness"));
+  if (!spec.readiness) {
+    elements.specification.append(node("p", "Legacy specification: readiness decisions were not recorded.", "muted"));
+  } else {
+    const readiness = document.createElement("ul");
+    for (const row of spec.readiness.items) readiness.append(node("li", row.category.replaceAll("_", " ") +
+      " [" + row.status + "]: " + row.decision + " · Requirements: " +
+      (row.requirement_ids.join(", ") || "none") + " · Ports: " + (row.ports.join(", ") || "none")));
+    elements.specification.append(readiness);
   }
 }
 

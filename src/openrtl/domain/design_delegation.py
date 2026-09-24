@@ -46,7 +46,8 @@ def specification_warnings(seed: JsonObject | None, spec: JsonObject) -> list[Js
     digest = content_digest(spec)
     result = [warning("assumption", a["id"], digest, a["text"], a["rationale"]) for a in spec["assumptions"]]
     if seed is not None:
-        for field in ("title", "top", "behavior", "clock_reset", "requirements", "ports", "readiness"):
+        for field in ("title", "top", "behavior", "clock_reset", "hardware_specification",
+                      "requirements", "ports", "readiness"):
             if seed.get(field) == spec.get(field):
                 continue
             if field in ("requirements", "ports"):

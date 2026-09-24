@@ -44,3 +44,6 @@ def require_ready(spec: JsonObject) -> None:
     result = validate_readiness(spec["readiness"], spec)
     require(all(row["status"] != "unresolved" for row in result["items"]) and
             not spec["questions"] and bool(spec["ports"]), "readiness_decisions_unresolved")
+    if "hardware_specification" in spec:
+        from openrtl.domain.hardware_specification import require_hardware_specification_complete
+        require_hardware_specification_complete(spec)

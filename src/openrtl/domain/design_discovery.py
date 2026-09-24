@@ -30,7 +30,7 @@ def discovery_memory(state: JsonObject) -> list[JsonObject]:
     Specification questions can be longer than persisted memory entries. Keep their
     full text in this context projection; do not truncate it into a new decision.
     """
-    memory = copy.deepcopy(state.get("engineering_memory", []))
+    memory = copy.deepcopy(validate_engineering_memory(state.get("engineering_memory", [])))
     identifiers = {row["id"] for row in memory}
     for row in (state.get("spec") or {}).get("questions", []):
         if row["id"] not in identifiers:
@@ -128,7 +128,8 @@ def _check_plan(value: object, asked: list[str], aliases: dict[str, str], rounds
 def validate_discovery(result: object, state: JsonObject, message: str, *,
                        clarification_rounds: int = 0,
                        question_history: list[JsonObject] | None = None,
-                       require_plan: bool = False) -> DiscoveryCandidate:
+                       require_plan: bool = False,
+                       require_hardware_specification: bool = False) -> DiscoveryCandidate:
     """Accept a coherent proposal without treating model text as user authority.
 
     Reconciliation preserves omitted saved facts and unresolved questions. Only
@@ -156,7 +157,9 @@ def validate_discovery(result: object, state: JsonObject, message: str, *,
         resolutions = sequence(result.get("resolved_questions", []), maximum=32)
     else:
         proposal = result
-    specification = copy.deepcopy(validate_spec(proposal)) if proposal is not None else None
+    specification = (copy.deepcopy(validate_spec(
+        proposal, require_hardware_specification=require_hardware_specification))
+        if proposal is not None else None)
     require(specification is not None or reply is not None, "expert_discussion_reply_missing")
 
     prior_memory = copy.deepcopy(validate_engineering_memory(state.get("engineering_memory", [])))
@@ -259,7 +262,8 @@ def validate_discovery(result: object, state: JsonObject, message: str, *,
         require(all(row["id"] in questions for row in incoming if row["kind"] == "question"),
                 "expert_question_memory_conflict")
         specification["questions"] = list(questions.values())
-        specification = validate_spec(specification)
+        specification = validate_spec(
+            specification, require_hardware_specification=require_hardware_specification)
         _question_map(list(merged.values()), specification)
     # Keep spec-only questions in the saved memory when its established bounds
     # permit it. Longer legacy questions remain represented in the specification.
@@ -280,6 +284,7 @@ def validate_discovery(result: object, state: JsonObject, message: str, *,
         reply = ("I help turn circuit requirements into reviewable RTL and tests. "
                  "Tell me what circuit you want to design, including its intended behavior and interfaces.")
     if asked:
+        assert reply is not None
         prefix = (reply + "\n\n") if specification is not None else "Please clarify these design decisions:\n\n"
         reply = prefix + "\n".join(f"{index}. {current[identifier]}"
                                      for index, identifier in enumerate(asked, 1))

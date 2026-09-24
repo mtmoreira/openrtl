@@ -102,6 +102,12 @@ more than three materially new or refined questions. Routine choices are stated
 as reviewable assumptions, and a permission-only question does not delay a ready
 specification.
 
+New proposals follow the versioned hardware specification format documented in
+[`hardware-specification.md`](hardware-specification.md). The current specification
+panel displays its completeness, parameters, all fixed narrative sections, ports,
+acceptance criteria, open questions, assumption rationale, and readiness anchors.
+Older saved projects are labeled legacy and are not silently rewritten.
+
 If a completed model response fails deterministic discovery validation, the
 System message in Conversation identifies whether the proposed readiness,
 questions, specification, memory or structured fields failed. The matching

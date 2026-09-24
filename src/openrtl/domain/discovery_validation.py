@@ -20,6 +20,11 @@ DISCOVERY_VALIDATION_CATEGORIES = {
         "requirements_missing", "requirement_ids_duplicate", "port_direction_invalid",
         "port_width_invalid", "port_names_duplicate", "decision_ids_duplicate",
         "specification_too_large", "identifier_invalid", "stable_id_invalid",
+        "hardware_specification_required", "hardware_specification_schema_invalid",
+        "hardware_specification_sections_missing", "hardware_specification_section_invalid",
+        "hardware_specification_section_status_invalid", "hardware_specification_section_order_invalid",
+        "hardware_specification_purpose_missing", "hardware_specification_parameter_section_invalid",
+        "parameter_type_invalid", "parameter_names_duplicate",
     ), "specification"),
     **dict.fromkeys((
         "engineering_memory_id_duplicate", "engineering_memory_kind_invalid",
@@ -41,6 +46,7 @@ class DiscoveryValidationError(ValueError):
 
     def __init__(self, code: str | None) -> None:
         super().__init__("expert_output_invalid")
-        self.validation_code = code if code in DISCOVERY_VALIDATION_CATEGORIES else None
-        self.category_code = ("expert_output_" + DISCOVERY_VALIDATION_CATEGORIES[code] + "_invalid"
-                              if self.validation_code else "expert_output_invalid")
+        selected = code if code is not None and code in DISCOVERY_VALIDATION_CATEGORIES else None
+        self.validation_code = selected
+        self.category_code = ("expert_output_" + DISCOVERY_VALIDATION_CATEGORIES[selected] + "_invalid"
+                              if selected is not None else "expert_output_invalid")

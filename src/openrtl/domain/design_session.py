@@ -94,10 +94,12 @@ def sequence(value: object, *, maximum: int = 64) -> list[Any]:
     return cast(list[Any], value)
 
 
-def validate_spec(value: object) -> JsonObject:
+def validate_spec(value: object, *, require_hardware_specification: bool = False) -> JsonObject:
     fields = {"title", "top", "behavior", "clock_reset", "requirements", "ports", "questions", "assumptions"}
     if isinstance(value, dict) and "readiness" in value:
         fields.add("readiness")
+    if isinstance(value, dict) and "hardware_specification" in value:
+        fields.add("hardware_specification")
     spec = object_value(value, fields)
     text(spec["title"], maximum=256)
     name(spec["top"])
@@ -133,6 +135,11 @@ def validate_spec(value: object) -> JsonObject:
     if "readiness" in spec:
         from openrtl.domain.design_readiness import validate_readiness
         validate_readiness(spec["readiness"], spec)
+    if "hardware_specification" in spec:
+        from openrtl.domain.hardware_specification import validate_hardware_specification
+        validate_hardware_specification(spec["hardware_specification"])
+    require(not require_hardware_specification or "hardware_specification" in spec,
+            "hardware_specification_required")
     require(len(canonical(spec)) <= MAX_CONTEXT_BYTES, "specification_too_large")
     return spec
 
@@ -264,7 +271,8 @@ def validate_engineering_memory(value: object) -> list[JsonObject]:
 
 def validate_workspace_operations(value: object, revision: int) -> None:
     require(isinstance(value, dict) and len(value) <= 128, "workspace_operations_invalid")
-    for identifier, value in value.items():
+    operations = cast(dict[object, object], value)
+    for identifier, value in operations.items():
         require(isinstance(identifier, str) and re.fullmatch(r"[a-f0-9]{32}", identifier) is not None,
                 "workspace_operation_id_invalid")
         row = object_value(value, {"request_digest", "phase", "result_revision", "error_code"})

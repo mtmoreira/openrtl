@@ -93,6 +93,38 @@ test("discovery validation category appears in Conversation without raw provider
   assert.match(app.element("conversation-list").textContent, /Open History for the exact rule/);
 });
 
+test("full specification review renders authoritative fields and safe structured sections", () => {
+  const app = browser();
+  const marker = "<img src=x onerror=throw-new-error>";
+  const sectionIds = ["purpose_scope", "parameters", "interfaces", "clock_reset_cdc",
+    "functional_operation", "timing_performance", "exceptional_behavior", "integration"];
+  const ports = [{name: "clk", direction: "input", width: 1},
+    {name: "data", direction: "input", width: 32}];
+  const requirement = {id: "req.transfer", text: "Transfer accepted data",
+    acceptance: "A scoreboard checks every accepted word"};
+  const spec = {title: "Review fixture", top: "review_top", behavior: "Move data", clock_reset: "One clock",
+    hardware_specification: {schema: "openrtl.hardware-specification.v1",
+      parameters: [{name: "WIDTH", type: "integer", default: "32", legal_values: "1 through 64",
+        description: "Data width"}],
+      sections: sectionIds.map((id, index) => ({id, status: id === "integration" ? "not_applicable" : "specified",
+        content: index === 0 ? marker : "Reviewed " + id}))},
+    requirements: [requirement], ports, questions: [{id: "q.mode", text: "Select mode"}],
+    assumptions: [{id: "a.sync", text: "Single domain", rationale: "No CDC was requested"}],
+    readiness: {schema: "openrtl.design-readiness.v1", items: [
+      {category: "interfaces", status: "specified", decision: "Ports are explicit",
+        requirement_ids: [requirement.id], ports: ports.map(row => row.name)},
+      {category: "widths_signedness", status: "specified", decision: "All values are unsigned",
+        requirement_ids: [requirement.id], ports: ports.map(row => row.name)},
+      ...["clock_reset", "timing_latency", "handshake", "exceptional_behavior", "acceptance"].map(category =>
+        ({category, status: "specified", decision: "Reviewed " + category,
+          requirement_ids: [requirement.id], ports: []}))]}};
+  app.context.renderSpecification(spec);
+  const rendered = app.element("specification").textContent;
+  for (const expected of ["openrtl.hardware-specification.v1", "completeness: unresolved (open_questions)", "WIDTH", "1 through 64",
+    marker, "clk · input · 1 bits", "Acceptance: A scoreboard", "Rationale: No CDC",
+    "interfaces [specified]", "Ports: clk, data"]) assert.ok(rendered.includes(expected), expected);
+});
+
 test("history navigation inspects details without changing the workbench revision", async () => {
   const app = browser();
   app.run("state = {spec: null}");

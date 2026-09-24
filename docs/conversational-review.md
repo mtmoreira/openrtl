@@ -23,6 +23,11 @@ handshake, exceptional behavior and acceptance decisions. Each category cites
 existing requirements and relevant ports. Not-applicable choices need an explicit
 explanation; unresolved choices block approval. Ports must all be covered by
 interface and width/signedness decisions, and acceptance covers every requirement.
+New provider proposals also use the fixed, versioned
+[`openrtl.hardware-specification.v1`](hardware-specification.md) document structure.
+It records parameters plus purpose/scope, interface, clock/reset/CDC, functional,
+timing/performance, exceptional-behavior, and integration sections. The complete
+saved document—not a brief generated summary—is shown for review.
 Read the decisions and assumptions: a populated checklist does not guarantee
 engineering completeness or correctness.
 
@@ -56,8 +61,11 @@ inventing readiness evidence; ask the authorized design lead to complete the
 checklist before using normal conversational approval or the normal batch route.
 Readiness is a versioned extension (`openrtl.design-readiness.v1`); previous
 stored specs and their approval hashes are not rewritten. Role context is now
-`openrtl.design-context.v7`, with v7 OpenAI and v2 Ollama discovery response schemas. Change-planning
-schemas preserve legacy spec shape when evolving an older baseline.
+`openrtl.design-context.v8`, with v8 OpenAI and v3 Ollama discovery response schemas.
+Provider-proposed feature changes use the new document format; DV-only and
+optimization proposals retain their exact specification, including a legacy
+shape. An older baseline remains unchanged unless a complete feature proposal is
+explicitly reviewed and approved.
 
 ## Discovery continuity and bounded correction
 

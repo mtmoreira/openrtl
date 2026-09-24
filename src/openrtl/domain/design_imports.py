@@ -56,11 +56,12 @@ def baseline_plan(spec: object, imports: JsonObject, manifest: object) -> JsonOb
             "manifest": chosen, "evidence": "unverified_requires_fresh_simulation"}
 
 
-def validate_change_plan(value: object) -> JsonObject:
+def validate_change_plan(value: object, *, require_hardware_specification: bool = False) -> JsonObject:
     plan = object_value(value, {"schema", "base_input_digest", "base_files", "specification", "stage_paths", "manifest"})
     require(plan["schema"] == "openrtl.design-change.v1", "change_schema_invalid")
     digest_value(plan["base_input_digest"])
-    spec = validate_spec(plan["specification"])
+    spec = validate_spec(plan["specification"],
+                         require_hardware_specification=require_hardware_specification)
     require(not spec["questions"] and bool(spec["ports"]), "change_spec_incomplete")
     require(isinstance(plan["base_files"], dict) and 0 < len(plan["base_files"]) <= 128, "change_base_invalid")
     for path, digest in plan["base_files"].items():

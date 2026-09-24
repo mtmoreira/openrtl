@@ -55,6 +55,12 @@ questions (`id`, `text`) and assumptions (`id`, `text`, `rationale`). An empty
 questions list is required for approval. Missing design facts must be questions
 or explicit assumptions, not hidden defaults.
 
+New Design Lead proposals additionally require the versioned
+[`hardware_specification`](hardware-specification.md) block. Explicit `/spec`
+inputs may retain the legacy shape so existing project digests remain stable;
+when the new block is present, all fixed sections and parameter records are
+strictly validated and unresolved sections block approval.
+
 ## Isolated simulation
 
 Use both `--allow-simulation` and `--simulation-profile <absolute-JSON-path>`.

@@ -20,8 +20,8 @@ from openrtl.domain.design_coaching import analysis_input_digest, validate_analy
 from openrtl.domain.discovery_validation import DiscoveryValidationError
 from openrtl.domain.design_discovery import discovery_memory, validate_discovery
 
-DESIGN_CONTEXT_SCHEMA = "openrtl.design-context.v7"
-DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v7"
+DESIGN_CONTEXT_SCHEMA = "openrtl.design-context.v8"
+DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v8"
 PREFERRED_CLARIFICATION_ROUNDS = 3
 MAX_QUESTIONS_PER_ROUND = 3
 
@@ -246,7 +246,9 @@ class DesignAgent:
             try:
                 candidate = validate_discovery(result, state, message,
                     clarification_rounds=prior_rounds, question_history=question_history,
-                    require_plan=getattr(self.expert, "discovery_contract_version", None) == "v7")
+                    require_plan=getattr(self.expert, "discovery_contract_version", None) == "v8",
+                    require_hardware_specification=(
+                        getattr(self.expert, "specification_contract_version", None) == "v1"))
             except (ValueError, TypeError, KeyError) as error:
                 failure = DiscoveryValidationError(str(error) if type(error) is ValueError else None)
                 self._failed(started, "expert_output_invalid", validation_code=failure.validation_code)
@@ -425,7 +427,11 @@ class DesignAgent:
             output = object_value(result, {"summary", "specification", "stage_paths", "manifest"})
             plan = validate_change_plan({"schema": "openrtl.design-change.v1", "base_input_digest": design_input_digest(state),
                                          "base_files": state["files"], "specification": output["specification"],
-                                         "stage_paths": output["stage_paths"], "manifest": output["manifest"]})
+                                        "stage_paths": output["stage_paths"], "manifest": output["manifest"]},
+                                        require_hardware_specification=(
+                                            getattr(self.expert, "specification_contract_version", None) == "v1" and
+                                            (intent == "feature" or
+                                             "hardware_specification" in state["spec"])))
             validate_intent(plan, intent, state)
             proposal = validate_proposal({"schema": "openrtl.design-change-proposal.v1", "intent": intent,
                                           "summary": output["summary"], "plan": plan, "status": "awaiting_review"})

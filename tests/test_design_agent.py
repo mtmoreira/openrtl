@@ -138,7 +138,7 @@ class DesignAgentTest(unittest.TestCase):
         self.generate_files()
         self.assertEqual([s for s, _ in self.expert.seen], list(STAGES))
         for stage, pack in self.expert.seen:
-            self.assertEqual(pack["schema"], "openrtl.design-context.v7")
+            self.assertEqual(pack["schema"], "openrtl.design-context.v8")
             if stage in ("reference_model", "dv"):
                 self.assertFalse(any(p.startswith("rtl/") for p in pack["artifacts"]))
         receipts = [e for e in self.store.events() if e["event"] == "operation.received"]

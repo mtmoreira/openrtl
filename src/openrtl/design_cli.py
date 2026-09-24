@@ -16,6 +16,7 @@ from openrtl.adapters.design_session_store import DesignSessionStore, safe_root
 from openrtl.adapters.design_imports import import_design_files
 from openrtl.application.design_agent import DesignAgent, DesignExpert, DesignPolicy, design_input_digest
 from openrtl.application.design_batch import bind_delegation, run_batch
+from openrtl.application.design_conversation import render_spec
 from openrtl.domain.design_session import JsonObject, MAX_CONTEXT_BYTES, STAGES, canonical, content_digest, require, object_value
 from openrtl.domain.design_coaching import analysis_input_digest
 
@@ -105,19 +106,15 @@ def show(state: JsonObject, emit: Callable[[str], None]) -> None:
         emit("PROPOSED " + row["kind"].upper() + " " + row["id"] + ": " + row["text"])
     if state["spec"] is not None:
         spec = state["spec"]
-        emit(spec["title"] + " — top: " + spec["top"])
-        emit(spec["behavior"])
-        emit("Clock/reset: " + spec["clock_reset"])
-        for port in spec["ports"]:
-            emit("Port: " + port["direction"] + " " + port["name"] + " [" + str(port["width"]) + " bits]")
-        for row in spec["requirements"]:
-            emit(row["id"] + ": " + row["text"] + " | Acceptance: " + row["acceptance"])
-        for row in spec["assumptions"]:
-            emit("REVIEW ASSUMPTION " + row["id"] + ": " + row["text"] + " — " + row["rationale"])
-        for row in spec["questions"]:
-            emit("QUESTION " + row["id"] + ": " + row["text"])
-        if state["status"] == "discovery" and not spec["questions"] and spec["ports"]:
-            emit("Review all requirements, ports and assumptions above, then: /approve " + content_digest(spec))
+        render_spec(spec, emit)
+        if state["status"] == "discovery":
+            try:
+                from openrtl.domain.design_readiness import require_ready
+                require_ready(spec)
+            except ValueError:
+                pass
+            else:
+                emit("Review all requirements, ports and assumptions above, then: /approve " + content_digest(spec))
     if state["simulation"]:
         emit("Simulation: " + state["simulation"]["status"] + " (" + state["simulation"]["evidence_kind"] + ")")
     if state["review"]:
@@ -352,6 +349,7 @@ async def conversation(agent: DesignAgent, *, read: Callable[[str], str] = input
                      "comparison_requires_passing_run": "Retained run evidence is not a verified passing run. Use /export-sources to explicitly exclude it, or resolve the run first.",
                      "readiness_review_required_for_legacy_specification": "Ask to complete the readiness review for this older specification.",
                      "readiness_decisions_unresolved": "Resolve the readiness decisions and questions before approval.",
+                     "hardware_specification_unresolved": "Resolve every versioned specification section before approval.",
                      "expert_not_configured": "Provider permission is unavailable. Restart with explicit provider options to enable calls.",
                      "change_requires_complete_baseline": "Finish the baseline first, or explicitly revise the specification."}
             hint = hints.get(str(error)) if type(error) is ValueError else None
