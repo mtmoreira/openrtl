@@ -129,6 +129,17 @@ _PORT_WIDTH_INSTRUCTION = (
 _INSTRUCTIONS["discovery"] += _PORT_WIDTH_INSTRUCTION
 _INSTRUCTIONS["change_planning"] += _PORT_WIDTH_INSTRUCTION
 
+_READINESS_PORT_ANCHOR_INSTRUCTION = (
+    " When a specification includes readiness, first form the complete ordered list of every name"
+    " in specification.ports. For both interfaces and widths_signedness, when status is specified,"
+    " copy that exact complete list into the readiness ports array, including every clock, reset,"
+    " valid, ready, control and one-bit port rather than only multi-bit data ports. Do not mark either"
+    " category specified if any proposed port name is absent from its readiness ports array."
+)
+
+_INSTRUCTIONS["discovery"] += _READINESS_PORT_ANCHOR_INSTRUCTION
+_INSTRUCTIONS["change_planning"] += _READINESS_PORT_ANCHOR_INSTRUCTION
+
 _INSTRUCTIONS["discovery"] += (
     " Before returning a proposal, check all seven readiness categories occur exactly once. "
     "Every readiness requirement_ids entry must cite an ID in the proposed requirements and every "

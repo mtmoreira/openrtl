@@ -133,13 +133,15 @@ class DesignGenerationTest(unittest.TestCase):
         self.assertEqual(request.contract.permissions["workspace"], "denied")
         self.assertEqual(request.contract.permissions["network"], "allowed")
         self.assertEqual(request.contract.output_schema, "openrtl.design.discovery.ollama.v1")
-        self.assertEqual(request.contract.prompt_version, "openrtl.design.instructions.v5")
+        self.assertEqual(request.contract.prompt_version, "openrtl.design.instructions.v6")
         self.assertEqual(request.contract.limits.max_tool_calls, 0)
         self.assertIn("Never ask for permission to proceed", request.instructions)
         self.assertIn("at most conversation_policy.max_questions_this_round", request.instructions)
         self.assertIn("same stable ID for each open question", request.instructions)
         self.assertIn("port width must be a JSON integer from 1 through 65536", request.instructions)
         self.assertIn("Never use zero", request.instructions)
+        self.assertIn("copy that exact complete list", request.instructions)
+        self.assertIn("including every clock, reset", request.instructions)
 
     def test_every_specification_prompt_carries_the_local_port_width_contract(self) -> None:
         for stage in ("discovery", "change_planning"):
@@ -150,6 +152,8 @@ class DesignGenerationTest(unittest.TestCase):
                 instructions = runtime.requests[0].instructions
                 self.assertIn("port width must be a JSON integer from 1 through 65536", instructions)
                 self.assertIn("Never use zero", instructions)
+                self.assertIn("copy that exact complete list", instructions)
+                self.assertIn("rather than only multi-bit data ports", instructions)
 
     def test_schemas_are_closed_and_role_specific(self) -> None:
         for stage in ("discovery", "architecture", "dv", "signoff", "explain"):

@@ -13,6 +13,7 @@ from openrtl.adapters.design_session_store import DesignSessionStore
 from openrtl.adapters.design_simulation import parse_test_results
 from openrtl.application.design_agent import DesignAgent, DesignPolicy, ExpertReply, design_input_digest
 from openrtl.design_cli import conversation
+from openrtl.domain.design_readiness import CATEGORIES
 from openrtl.domain.design_session import (
     JsonObject, STAGES, canonical, content_digest, source_path, validate_manifest, validate_spec, validate_state,
 )
@@ -205,6 +206,47 @@ class DesignAgentTest(unittest.TestCase):
         failed = [row for row in self.store.events() if row["event"] == "operation.failed"][-1]
         self.assertEqual(failed["fields"]["error_code"], "expert_output_invalid")
         self.assertEqual(failed["fields"]["validation_code"], "port_width_invalid")
+
+    def test_discovery_rejects_captured_partial_readiness_port_anchors(self) -> None:
+        captured_spec = specification()
+        captured_spec["top"] = "async_fifo"
+        captured_spec["ports"] = json.loads(
+            '[{"name":"clk_wr","direction":"input","width":1},'
+            '{"name":"rst_n","direction":"input","width":1},'
+            '{"name":"wr_data","direction":"input","width":32},'
+            '{"name":"wr_valid","direction":"input","width":1},'
+            '{"name":"wr_ready","direction":"output","width":1},'
+            '{"name":"clk_rd","direction":"input","width":1},'
+            '{"name":"rd_data","direction":"output","width":32},'
+            '{"name":"rd_valid","direction":"output","width":1},'
+            '{"name":"rd_ready","direction":"input","width":1}]'
+        )
+        port_names = [row["name"] for row in captured_spec["ports"]]
+        captured_spec["readiness"] = {"schema": "openrtl.design-readiness.v1", "items": [
+            {"category": category, "status": "specified", "decision": "Captured decision",
+             "requirement_ids": ["wire.transfer"],
+             "ports": ["wr_data", "rd_data"] if category == "widths_signedness" else port_names}
+            for category in CATEGORIES
+        ]}
+        captured_width_ports = captured_spec["readiness"]["items"][1]["ports"]
+        self.assertEqual(captured_width_ports, ["wr_data", "rd_data"])
+        self.assertTrue(all(type(value) is str for value in captured_width_ports))
+        self.expert.responses["discovery"] = {
+            "reply": "An asynchronous FIFO proposal is ready for review.",
+            "specification": captured_spec,
+            "engineering_memory": [],
+            "questions_asked": [],
+        }
+
+        with self.assertRaisesRegex(ValueError, "expert_output_invalid"):
+            asyncio.run(self.agent.discuss("Continue the FIFO design"))
+
+        self.assertIsNone(self.store.read()["spec"])
+        self.assertNotIn("wr_data", canonical(self.store.read()).decode())
+        failed = [row for row in self.store.events() if row["event"] == "operation.failed"][-1]
+        self.assertEqual(failed["fields"]["error_code"], "expert_output_invalid")
+        self.assertEqual(failed["fields"]["validation_code"],
+                         "readiness_port_decisions_missing")
 
     def test_discovery_rejects_repeated_or_excessive_question_rounds(self) -> None:
         question = {"id": "fifo.width", "kind": "question",

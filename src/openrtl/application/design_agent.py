@@ -20,7 +20,7 @@ from openrtl.domain.design_coaching import analysis_input_digest, validate_analy
 from openrtl.domain.discovery_validation import DiscoveryValidationError
 
 DESIGN_CONTEXT_SCHEMA = "openrtl.design-context.v6"
-DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v5"
+DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v6"
 PREFERRED_CLARIFICATION_ROUNDS = 3
 MAX_QUESTIONS_PER_ROUND = 3
 
