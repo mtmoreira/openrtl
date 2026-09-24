@@ -44,7 +44,8 @@ class DesignWorkspaceTest(unittest.TestCase):
             await self.workspace._tasks[identifier]
             completed = self.workspace.operation(identifier)
             self.assertEqual(completed["phase"], "completed")
-            self.assertEqual(completed["reply"], "What width should the counter have?")
+            self.assertEqual(completed["reply"],
+                             "Please clarify these design decisions:\n\n1. Counter width is unresolved")
             self.assertEqual(len(self.expert.seen), 1)
             reopened = DesignWorkspace(self.agent)
             retried = await reopened.submit_discussion("Design a counter", client_operation_id=identifier,

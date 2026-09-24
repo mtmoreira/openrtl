@@ -138,7 +138,7 @@ class DesignAgentTest(unittest.TestCase):
         self.generate_files()
         self.assertEqual([s for s, _ in self.expert.seen], list(STAGES))
         for stage, pack in self.expert.seen:
-            self.assertEqual(pack["schema"], "openrtl.design-context.v6")
+            self.assertEqual(pack["schema"], "openrtl.design-context.v7")
             if stage in ("reference_model", "dv"):
                 self.assertFalse(any(p.startswith("rtl/") for p in pack["artifacts"]))
         receipts = [e for e in self.store.events() if e["event"] == "operation.received"]
@@ -279,13 +279,21 @@ class DesignAgentTest(unittest.TestCase):
         asyncio.run(self.agent.discuss("The reset domains are independent"))
         self.assertEqual(self.expert.seen[-1][1]["conversation_policy"]["clarification_round"], 2)
 
-    def test_discovery_relinks_one_unambiguous_question_id_without_losing_memory(self) -> None:
+    def test_discovery_rejects_count_only_question_alias_then_accepts_explicit_id(self) -> None:
         self.expert.responses["discovery"] = {
             "reply": "What width should the FIFO use?", "specification": None,
             "engineering_memory": [{"id": "fifo.width", "kind": "question",
                 "text": "Choose the FIFO width", "provenance": "agent_proposal"}],
             "questions_asked": ["Q1"],
         }
+        with self.assertRaisesRegex(ValueError, "expert_output_invalid"):
+            asyncio.run(self.agent.discuss("I need an asynchronous FIFO"))
+        self.assertEqual(self.store.read()["engineering_memory"], [])
+        failed = [row for row in self.store.events() if row["event"] == "operation.failed"]
+        self.assertEqual(len(failed), 3)
+        self.assertTrue(all(row["fields"]["validation_code"] == "expert_clarification_question_unknown"
+                            for row in failed))
+        self.expert.responses["discovery"]["questions_asked"] = ["fifo.width"]
         asyncio.run(self.agent.discuss("I need an asynchronous FIFO"))
         self.assertEqual(self.store.read()["engineering_memory"][0]["id"], "fifo.width")
         completed = [row for row in self.store.events() if row["event"] == "operation.completed"][-1]
@@ -296,12 +304,14 @@ class DesignAgentTest(unittest.TestCase):
         failed = [row for row in self.store.events() if row["event"] == "operation.failed"][-1]
         self.assertEqual(failed["fields"]["validation_code"], "expert_clarification_question_unknown")
 
-    def test_discovery_relinks_spec_question_or_preserves_memory_question(self) -> None:
+    def test_discovery_links_matching_question_text_to_spec_id(self) -> None:
         spec = specification()
         spec["questions"] = [{"id": "fifo.width", "text": "Choose the FIFO width"}]
         self.expert.responses["discovery"] = {
             "reply": "What width should the FIFO use?", "specification": spec,
-            "engineering_memory": [], "questions_asked": ["Q1"],
+            "engineering_memory": [{"id": "Q1", "kind": "question",
+                "text": "Choose the FIFO width", "provenance": "agent_proposal"}],
+            "questions_asked": ["Q1"],
         }
         asyncio.run(self.agent.discuss("I need an asynchronous FIFO"))
         self.assertEqual(self.store.read()["spec"]["questions"], spec["questions"])

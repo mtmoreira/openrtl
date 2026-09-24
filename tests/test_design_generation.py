@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import copy
+import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from agentrig.agents import AgentExecutionRequest, AgentExecutionResult, AgentRuntimeUsage
 from agentrig.capabilities import (
@@ -39,9 +42,11 @@ def generator(*, tools: bool = False, model: str = "test-model",
 class ScriptedOllamaRuntime:
     def __init__(self) -> None:
         self.requests: list[AgentExecutionRequest] = []
+        self.contexts: list[object] = []
 
     async def execute(self, request: AgentExecutionRequest, context: object) -> AgentExecutionResult:
         self.requests.append(request)
+        self.contexts.append(context)
         return AgentExecutionResult.succeeded(
             specification(), usage=AgentRuntimeUsage(input_tokens=21, output_tokens=43),
             provider_metadata={"provider": "ollama", "model": "qwen3:8b", "finish_reason": "stop"})
@@ -103,6 +108,7 @@ class DesignGenerationTest(unittest.TestCase):
 
     def test_one_tool_free_structured_turn_returns_usage_and_untrusted_output(self) -> None:
         adapter = AgentRigDesignExpert(generator(), model="test-model")
+        self.assertEqual(adapter.discovery_contract_version, "v7")
         reply = asyncio.run(adapter.generate("discovery", {"schema": "unit_context"}, "a" * 32))
         self.assertEqual(reply.output, specification())
         self.assertEqual(reply.input_tokens, 12)
@@ -124,6 +130,7 @@ class DesignGenerationTest(unittest.TestCase):
     def test_native_ollama_turn_uses_a_tool_free_schema_contract(self) -> None:
         runtime = ScriptedOllamaRuntime()
         adapter = OllamaDesignExpert(runtime, model="qwen3:8b")
+        self.assertEqual(adapter.discovery_contract_version, "v7")
         reply = asyncio.run(adapter.generate("discovery", {"schema": "unit_context"}, "b" * 32))
         self.assertEqual(reply.provider, "ollama")
         self.assertEqual(reply.model, "qwen3:8b")
@@ -132,8 +139,8 @@ class DesignGenerationTest(unittest.TestCase):
         self.assertEqual(request.contract.allowed_tools, ())
         self.assertEqual(request.contract.permissions["workspace"], "denied")
         self.assertEqual(request.contract.permissions["network"], "allowed")
-        self.assertEqual(request.contract.output_schema, "openrtl.design.discovery.ollama.v1")
-        self.assertEqual(request.contract.prompt_version, "openrtl.design.instructions.v6")
+        self.assertEqual(request.contract.output_schema, "openrtl.design.discovery.ollama.v2")
+        self.assertEqual(request.contract.prompt_version, "openrtl.design.instructions.v7")
         self.assertEqual(request.contract.limits.max_tool_calls, 0)
         self.assertIn("Never ask for permission to proceed", request.instructions)
         self.assertIn("at most conversation_policy.max_questions_this_round", request.instructions)
@@ -169,12 +176,124 @@ class DesignGenerationTest(unittest.TestCase):
         self.assertEqual(response_schema("change_planning")["properties"]["specification"]["type"],
                          "object")
 
+    def test_discovery_contract_exposes_question_plans_and_explicit_resolutions(self) -> None:
+        for ollama in (False, True):
+            with self.subTest(ollama=ollama):
+                schema_id, schema = _schema("discovery", {}, ollama=ollama)
+                self.assertEqual(schema_id, "openrtl.design.discovery" +
+                                 (".ollama.v2" if ollama else ".v7"))
+                self.assertIn("question_plan", schema["required"])
+                self.assertIn("resolved_questions", schema["required"])
+                plan = schema["properties"]["question_plan"]["items"]
+                self.assertEqual(plan["required"], ["id", "topic", "reason"])
+                self.assertFalse(plan["additionalProperties"])
+                self.assertEqual(plan["properties"]["topic"]["enum"],
+                                 ["interface", "clock_reset", "behavior", "acceptance", "configuration"])
+                resolution = schema["properties"]["resolved_questions"]["items"]
+                self.assertEqual(resolution["required"], ["id", "resolution_id"])
+                self.assertFalse(resolution["additionalProperties"])
+        properties = response_schema("discovery")["properties"]
+        self.assertEqual(properties["question_plan"]["maxItems"], 3)
+        self.assertEqual(properties["resolved_questions"]["maxItems"], 32)
+
+    def test_discovery_prompt_uses_persistent_decisions_and_a_consolidated_question_plan(self) -> None:
+        runtime = ScriptedOllamaRuntime()
+        adapter = OllamaDesignExpert(runtime, model="qwen3:8b")
+        asyncio.run(adapter.generate("discovery", {}, "b" * 32))
+        instructions = runtime.requests[0].instructions
+        for rule in ("Omitted saved facts are retained", "omission does not resolve a question",
+                     "Preserve pending specification.questions without asking them again",
+                     "Never repeat any existing open or resolved question",
+                     "Read question_history", "Never reopen a settled topic as a new question ID",
+                     "resolution_id naming a non-question engineering_memory entry",
+                     "Its IDs must exactly equal questions_asked in the same order",
+                     "After three clarification rounds", "configuration questions are not permitted",
+                     "All user-facing questions are rendered by the application",
+                     "Keep reply explanatory", "complete updated specification, never null",
+                     "ephemeral rejected, untrusted output", "exact deterministic validation_code",
+                     "Do not invent choices, grant approvals, weaken validation"):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, instructions)
+
+    def test_shared_deadline_caps_each_provider_attempt_without_serializing_local_timing(self) -> None:
+        for ollama in (False, True):
+            for now, expected in ((100.0, 12.0), (117.5, 2.5)):
+                with self.subTest(ollama=ollama, now=now):
+                    runtime = ScriptedOllamaRuntime() if ollama else generator()
+                    adapter = (OllamaDesignExpert(runtime, model="qwen3:8b", timeout_seconds=12)
+                               if ollama else AgentRigDesignExpert(runtime, model="test-model",
+                                                                    timeout_seconds=12))
+                    context = {"discovery_deadline": 120.0,
+                               "discovery_correction": {"attempt": 1,
+                                   "validation_code": "expert_clarification_repeated",
+                                   "candidate": {"reply": "synthetic rejected candidate"}}}
+                    original = copy.deepcopy(context)
+                    with patch("openrtl.adapters.design_generation.time.monotonic", return_value=now):
+                        asyncio.run(adapter.generate("discovery", context, "a" * 32))
+                    child = runtime.contexts[0] if ollama else runtime.calls[0].context
+                    self.assertEqual(child.deadline.monotonic_deadline, now + expected)
+                    payload = (runtime.requests[0].input if ollama else
+                               json.loads(runtime.calls[0].request.input.prompt))
+                    self.assertNotIn("discovery_deadline", payload["context"])
+                    self.assertEqual(payload["context"]["discovery_correction"],
+                                     context["discovery_correction"])
+                    self.assertEqual(context, original)
+
+    def test_exhausted_shared_deadline_fails_normalized_before_any_provider_dispatch(self) -> None:
+        from agentrig.core.errors import AgentRigError
+        from openrtl.application.provider_failures import classify_provider_failure
+
+        for ollama in (False, True):
+            with self.subTest(ollama=ollama):
+                runtime = ScriptedOllamaRuntime() if ollama else generator()
+                adapter = (OllamaDesignExpert(runtime, model="qwen3:8b") if ollama else
+                           AgentRigDesignExpert(runtime, model="test-model"))
+                with patch("openrtl.adapters.design_generation.time.monotonic", return_value=120.0):
+                    with self.assertRaises(AgentRigError) as caught:
+                        asyncio.run(adapter.generate("discovery", {"discovery_deadline": 120.0}, "a" * 32))
+                self.assertEqual(classify_provider_failure(caught.exception), "provider_timeout")
+                self.assertEqual(len(runtime.requests if ollama else runtime.calls), 0)
+
+    def test_correction_context_is_only_retained_by_opted_in_private_capture(self) -> None:
+        from openrtl.adapters.design_session_store import DesignSessionStore
+        from openrtl.adapters.design_trace_store import DesignTraceStore
+
+        class CapturingRuntime(ScriptedOllamaRuntime):
+            async def execute(self, request: AgentExecutionRequest, context: object) -> AgentExecutionResult:
+                if context.private_trace_capture is not None:
+                    context.private_trace_capture.record(context, kind="provider.request",
+                        content=request.input, metadata={"provider": "ollama", "model": "qwen3:8b"})
+                return await super().execute(request, context)
+
+        marker = "synthetic rejected candidate for private correction"
+        with tempfile.TemporaryDirectory() as temporary:
+            store = DesignSessionStore(Path(temporary).resolve() / "project", create=True)
+            try:
+                trace = DesignTraceStore(store, enabled=True)
+                runtime = CapturingRuntime()
+                adapter = OllamaDesignExpert(runtime, model="qwen3:8b")
+                adapter.trace_store = trace
+                context = {"discovery_deadline": 120.0,
+                           "discovery_correction": {"attempt": 1,
+                               "validation_code": "expert_clarification_repeated",
+                               "candidate": {"reply": marker}}}
+                for enabled, operation_id in ((True, "d" * 32), (False, "e" * 32)):
+                    trace.set_enabled(enabled)
+                    with patch("openrtl.adapters.design_generation.time.monotonic", return_value=100.0):
+                        asyncio.run(adapter.generate("discovery", context, operation_id))
+                    records = str(trace.records({operation_id}))
+                    self.assertEqual(marker in records, enabled)
+                    self.assertNotIn("discovery_deadline", records)
+                    self.assertNotIn(marker, str(store.events()) + str(store.read()))
+            finally:
+                store.close()
+
     def test_discovery_schema_expresses_local_bounds_before_provider_generation(self) -> None:
         schema = response_schema("discovery")["properties"]
         spec = schema["specification"]["anyOf"][0]["properties"]
         self.assertEqual(schema["questions_asked"]["maxItems"], 3)
         self.assertEqual(schema["engineering_memory"]["maxItems"], 64)
-        self.assertEqual(spec["questions"]["maxItems"], 3)
+        self.assertEqual(spec["questions"]["maxItems"], 32)
         self.assertEqual(spec["readiness"]["properties"]["items"]["minItems"], 7)
         self.assertEqual(spec["readiness"]["properties"]["items"]["maxItems"], 7)
         self.assertEqual(spec["ports"]["items"]["properties"]["width"]["minimum"], 1)

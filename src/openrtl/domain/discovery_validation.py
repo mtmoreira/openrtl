@@ -12,6 +12,9 @@ DISCOVERY_VALIDATION_CATEGORIES = {
     **dict.fromkeys((
         "expert_clarification_question_duplicate", "expert_clarification_question_unknown",
         "expert_clarification_repeated", "expert_clarification_question_limit",
+        "expert_question_memory_conflict", "expert_question_resolution_invalid",
+        "expert_question_plan_invalid", "expert_clarification_late_topic",
+        "expert_specification_refinement_missing",
     ), "questions"),
     **dict.fromkeys((
         "requirements_missing", "requirement_ids_duplicate", "port_direction_invalid",
@@ -23,6 +26,7 @@ DISCOVERY_VALIDATION_CATEGORIES = {
         "engineering_memory_provenance_invalid", "engineering_memory_too_large",
         "expert_cannot_confirm_user_memory", "raw_prompt_in_engineering_memory",
         "raw_reply_in_engineering_memory",
+        "expert_memory_confirmation_changed",
     ), "memory"),
     **dict.fromkeys((
         "object_fields_invalid", "list_invalid", "text_type_invalid", "text_size_invalid",

@@ -56,8 +56,36 @@ inventing readiness evidence; ask the authorized design lead to complete the
 checklist before using normal conversational approval or the normal batch route.
 Readiness is a versioned extension (`openrtl.design-readiness.v1`); previous
 stored specs and their approval hashes are not rewritten. Role context is now
-`openrtl.design-context.v4`, with v2 discovery response schemas. Change-planning
+`openrtl.design-context.v7`, with v7 OpenAI and v2 Ollama discovery response schemas. Change-planning
 schemas preserve legacy spec shape when evolving an older baseline.
+
+## Discovery continuity and bounded correction
+
+The Design Lead plans at most three material questions in one numbered round.
+The displayed questions come from validated structured entries, not a second
+unlinked list in model prose. Saved decisions and unresolved questions survive
+omission from a later response. An explicit question-to-decision link closes an
+open question; omission alone does not. Pending questions remain visible in the
+draft without being asked again. Routine choices should be documented as
+reviewable assumptions; after three rounds new questions are limited to concrete
+interface, clock/reset, behavioral or acceptance blockers. This does not imply
+that deterministic checks can recognize every semantic paraphrase.
+
+A locally invalid discovery proposal can receive at most two model correction
+attempts within the original request deadline. Every attempt consumes the normal
+call budget and, where applicable, a separate provider spend reservation. Each
+has its own operation ID and ordinary safe validation code, correlated to the
+same workspace request. Only a fully validated candidate updates the saved draft
+and decisions. Widths, readiness anchors and answers are never guessed by the
+decoder. The rejected candidate is transient correction context; full text is
+retained only when explicit private capture is enabled. Ordinary events remain
+content-free. Transport failures, cancellation, authority/memory violations and
+unknown validation failures are not automatically retried. Restart never replays
+a correction. Persistent invalid output still fails closed and leaves the last
+validated state unchanged.
+
+These are offline-tested lifecycle guarantees, not live model qualification.
+M46 engineering qualification and M47 release remain pending.
 
 The [import/evolution guide](import-evolution.md) covers explicit multiple file
 selection, source-anchored explanations in discovery, baseline/completion reviews

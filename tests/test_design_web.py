@@ -115,8 +115,8 @@ class DesignWebTest(unittest.TestCase):
         self.assertEqual(detail["visibility"]["hidden_reasoning"], "not_collected")
         self.assertEqual(detail["visibility"]["tool_calls"], 0)
         started = next(row for row in detail["trace"] if row["event"] == "operation.started")
-        self.assertEqual(started["fields"]["prompt_version"], "openrtl.design.instructions.v6")
-        self.assertEqual(started["fields"]["context_schema"], "openrtl.design-context.v6")
+        self.assertEqual(started["fields"]["prompt_version"], "openrtl.design.instructions.v7")
+        self.assertEqual(started["fields"]["context_schema"], "openrtl.design-context.v7")
         self.assertNotIn("A counter", json.dumps(detail))
         self.assertNotIn("What width should", json.dumps(detail))
         code, idle = self.request("GET", "/api/snapshot?cursor=" + str(fresh["next_cursor"]))
@@ -356,7 +356,8 @@ class DesignWebTest(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertEqual([row["kind"] for row in captured["messages"]], ["user", "agent"])
         self.assertEqual(captured["messages"][0]["text"], "Synthetic captured circuit request")
-        self.assertEqual(captured["messages"][1]["text"], "What width should it use?")
+        expected_reply = "Please clarify these design decisions:\n\n1. Width is unresolved"
+        self.assertEqual(captured["messages"][1]["text"], expected_reply)
         self.assertEqual(len(self.expert.seen), 1)
         _, snapshot = self.request("GET", "/api/snapshot")
         self.assertNotIn("Synthetic captured circuit request", json.dumps(snapshot))
@@ -370,7 +371,7 @@ class DesignWebTest(unittest.TestCase):
             self.assertTrue(restored["capture"]["available"])
             self.assertEqual(reopened.provider_settings()["timeout_seconds"], 120)
             self.assertEqual(reopened.call(lambda workspace: workspace.operation(identifier))["reply"],
-                             "What width should it use?")
+                             expected_reply)
             self.assertEqual(len(self.expert.seen), 1)
         finally:
             reopened.close()

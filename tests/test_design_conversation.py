@@ -136,7 +136,7 @@ class ConversationTest(unittest.TestCase):
         output = self.chat(["Design a four-bit wire"])
         self.assertEqual(self.store.read()["status"], "discovery")
         self.assertEqual(self.store.read()["spec"], ready_spec())
-        self.assertTrue(any("draft for your review" in line for line in output))
+        self.assertTrue(any("Updated the draft specification" in line for line in output))
         self.assertTrue(any("Review for specification" in line for line in output))
 
     def test_stale_shown_review_is_refused_and_new_review_can_be_approved(self) -> None:

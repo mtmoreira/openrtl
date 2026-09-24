@@ -11,16 +11,17 @@ import time
 
 from openrtl.domain.design_session import (
     JsonObject, MAX_CONTEXT_BYTES, ROLES, STAGES, SESSION_SCHEMA, canonical, content_digest,
-    object_value, require, sequence, text, validate_engineering_memory,
+    object_value, require, sequence, text,
     validate_files, validate_manifest, validate_spec,
 )
 from openrtl.domain.design_delegation import specification_warnings, validate_delegated_spec, warning
 from openrtl.domain.design_imports import baseline_plan, digest_value, validate_change_plan
 from openrtl.domain.design_coaching import analysis_input_digest, validate_analysis, validate_intent, validate_proposal
 from openrtl.domain.discovery_validation import DiscoveryValidationError
+from openrtl.domain.design_discovery import discovery_memory, validate_discovery
 
-DESIGN_CONTEXT_SCHEMA = "openrtl.design-context.v6"
-DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v6"
+DESIGN_CONTEXT_SCHEMA = "openrtl.design-context.v7"
+DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v7"
 PREFERRED_CLARIFICATION_ROUNDS = 3
 MAX_QUESTIONS_PER_ROUND = 3
 
@@ -80,10 +81,13 @@ class DesignPolicy:
     max_repairs: int = 2
     provider_model: str | None = None
     max_output_tokens: int = 16000
+    max_discovery_corrections: int = 2
 
     def __post_init__(self) -> None:
         require(type(self.max_calls) is int and 1 <= self.max_calls <= 200, "call_budget_invalid")
         require(type(self.max_repairs) is int and 0 <= self.max_repairs <= 5, "repair_budget_invalid")
+        require(type(self.max_discovery_corrections) is int and
+                0 <= self.max_discovery_corrections <= 2, "discovery_correction_budget_invalid")
         require(type(self.max_output_tokens) is int and 256 <= self.max_output_tokens <= 32768,
                 "output_budget_invalid")
         if self.provider_model is not None:
@@ -210,6 +214,12 @@ class DesignAgent:
         spec = validate_spec(specification)
         updated = copy.deepcopy(state)
         updated["spec"] = spec
+        # An explicit user-supplied draft can reopen a decision. Its question
+        # records take precedence over stale memory at the same IDs; immutable
+        # snapshots retain the earlier decision and its provenance.
+        reopened = {row["id"] for row in spec["questions"]}
+        updated["engineering_memory"] = [row for row in updated["engineering_memory"]
+                                         if row["id"] not in reopened]
         self._record_spec_warnings(updated)
         return self.store.save(state, updated, "spec.proposed", {"spec_digest": content_digest(spec)})
 
@@ -219,98 +229,51 @@ class DesignAgent:
         existing = {w["id"] for w in updated["warnings"]}
         updated["warnings"].extend(w for w in specification_warnings(seed, updated["spec"]) if w["id"] not in existing)
 
-    @staticmethod
-    def _linked_questions(asked: list[str], current: dict[str, str], prior: dict[str, str]) -> list[str]:
-        if all(identifier in current for identifier in asked):
-            return asked
-        prior_texts = {value.casefold().strip() for value in prior.values()}
-        new_ids = [identifier for identifier, value in current.items()
-                   if prior.get(identifier) != value and value.casefold().strip() not in prior_texts]
-        require(bool(asked) and len(asked) == len(new_ids), "expert_clarification_question_unknown")
-        return new_ids
-
     async def discuss(self, message: str, *, emit_reply: Callable[[str], None] | None = None) -> JsonObject:
         state = self._idle()
         require(state["status"] == "discovery", "use_explain_or_explicit_revision")
-        result, started = await self._generate(state, "discovery", message)
-        try:
-            reply = None
-            proposal = result
-            asked_question_ids: list[str] = []
-            if isinstance(result, dict) and "specification" in result:
-                base_fields = {"reply", "specification"}
-                require(set(result) in (base_fields, base_fields | {"engineering_memory"},
-                                        base_fields | {"questions_asked"},
-                                        base_fields | {"engineering_memory", "questions_asked"}),
-                        "expert_discussion_fields_invalid")
-                reply = text(result["reply"], maximum=8000)
-                proposal = result["specification"]
-                if "questions_asked" in result:
-                    asked_question_ids = [text(value, maximum=128)
-                                          for value in sequence(result["questions_asked"], maximum=3)]
-                    require(len(asked_question_ids) == len(set(asked_question_ids)),
-                            "expert_clarification_question_duplicate")
-            updated = copy.deepcopy(started)
-            updated.update(active=None, last_error=None)
-            prior_memory = state.get("engineering_memory", [])
-            memory = prior_memory
-            if isinstance(result, dict) and "engineering_memory" in result:
-                memory = validate_engineering_memory(result["engineering_memory"])
-                require(all(row["provenance"] == "agent_proposal" for row in memory),
-                        "expert_cannot_confirm_user_memory")
-                require(all(message.casefold().strip() not in row["text"].casefold() for row in memory),
-                        "raw_prompt_in_engineering_memory")
-                if reply is not None:
-                    require(all(reply.casefold().strip() not in row["text"].casefold() for row in memory),
-                            "raw_reply_in_engineering_memory")
-                updated["engineering_memory"] = memory
-            if proposal is None:
-                require(reply is not None, "expert_discussion_reply_missing")
-                previous_questions = {row["id"]: row["text"] for row in prior_memory
-                                      if row["kind"] == "question"}
-                current_questions = {row["id"]: row["text"] for row in memory
-                                     if row["kind"] == "question"}
-                prior_rounds = self._clarification_rounds()
-                asked_question_ids = self._linked_questions(
-                    asked_question_ids, current_questions, previous_questions)
-                require(all(previous_questions.get(identifier) != current_questions[identifier]
-                            for identifier in asked_question_ids),
-                        "expert_clarification_repeated")
-                saved = self.store.save(started, updated, "operation.completed",
-                                        {"role": ROLES["discovery"],
-                                         "clarification_round": prior_rounds +
-                                         (1 if asked_question_ids else 0),
-                                         "question_count": len(asked_question_ids)})
-            else:
-                spec = validate_spec(proposal)
-                if asked_question_ids and not all(identifier in {row["id"] for row in spec["questions"]}
-                                                  for identifier in asked_question_ids) and not spec["questions"]:
-                    memory_questions = {row["id"]: row["text"] for row in memory if row["kind"] == "question"}
-                    if all(identifier in memory_questions for identifier in asked_question_ids):
-                        candidate = copy.deepcopy(spec)
-                        candidate["questions"] = [{"id": identifier, "text": memory_questions[identifier]}
-                                                  for identifier in asked_question_ids]
-                        spec = validate_spec(candidate)
-                require(len(spec["questions"]) <= MAX_QUESTIONS_PER_ROUND,
-                        "expert_clarification_question_limit")
-                previous_spec = state["spec"] or {"questions": []}
-                asked_question_ids = self._linked_questions(
-                    asked_question_ids,
-                    {row["id"]: row["text"] for row in spec["questions"]},
-                    {row["id"]: row["text"] for row in previous_spec["questions"]})
-                updated["spec"] = spec
-                self._record_spec_warnings(updated)
-                saved = self.store.save(started, updated, "spec.proposed",
-                                        {"spec_digest": content_digest(spec), "role": ROLES["discovery"],
-                                         "clarification_round": self._clarification_rounds() +
-                                         (1 if asked_question_ids else 0),
-                                         "question_count": len(asked_question_ids)})
-        except (ValueError, TypeError, KeyError) as error:
-            failure = DiscoveryValidationError(str(error) if type(error) is ValueError else None)
-            self._failed(started, "expert_output_invalid", validation_code=failure.validation_code)
-            raise failure from None
-        if reply is not None and emit_reply is not None:
-            emit_reply(reply)
+        timeout = getattr(self.expert, "timeout_seconds", 120)
+        deadline = time.monotonic() + timeout
+        correction = None
+        prior_rounds = self._clarification_rounds()
+        question_history = self._question_history()
+        for attempt in range(self.policy.max_discovery_corrections + 1):
+            # Every correction passes the normal accounting, provider-identity,
+            # capture and call-budget gates. Nothing replays after a restart.
+            result, started = await self._generate(
+                state, "discovery", message, discovery_correction=correction,
+                discovery_deadline=deadline)
+            try:
+                candidate = validate_discovery(result, state, message,
+                    clarification_rounds=prior_rounds, question_history=question_history,
+                    require_plan=getattr(self.expert, "discovery_contract_version", None) == "v7")
+            except (ValueError, TypeError, KeyError) as error:
+                failure = DiscoveryValidationError(str(error) if type(error) is ValueError else None)
+                self._failed(started, "expert_output_invalid", validation_code=failure.validation_code)
+                # Security-boundary violations and unclassified failures are not
+                # fed back as repair candidates. Transport errors never get here.
+                if (not failure.validation_code or failure.category_code == "expert_output_memory_invalid" or
+                        attempt == self.policy.max_discovery_corrections or time.monotonic() >= deadline):
+                    raise failure from None
+                correction = {"attempt": attempt + 1, "validation_code": failure.validation_code,
+                              "candidate": result}
+                state = self._idle()
+                continue
+            break
+        updated = copy.deepcopy(started)
+        updated.update(active=None, last_error=None, engineering_memory=candidate.memory)
+        fields: JsonObject = {"role": ROLES["discovery"],
+                              "clarification_round": prior_rounds + (1 if candidate.questions else 0),
+                              "question_count": len(candidate.questions)}
+        event = "operation.completed"
+        if candidate.specification is not None:
+            updated["spec"] = candidate.specification
+            self._record_spec_warnings(updated)
+            fields["spec_digest"] = content_digest(candidate.specification)
+            event = "spec.proposed"
+        saved = self.store.save(started, updated, event, fields)
+        if candidate.reply is not None and emit_reply is not None:
+            emit_reply(candidate.reply)
         return saved
 
     def _clarification_rounds(self) -> int:
@@ -318,6 +281,26 @@ class DesignAgent:
                    if row["event"] in ("operation.completed", "spec.proposed") and
                    row["fields"].get("role") == ROLES["discovery"] and
                    ("question_count" not in row["fields"] or row["fields"]["question_count"] > 0))
+
+    def _question_history(self) -> list[JsonObject]:
+        """Project only accepted question records, never private capture/transcripts.
+
+        A resolved question's original text remains in its immutable snapshot.
+        Reusing those snapshots avoids rewriting legacy states or losing exact
+        question identity when a memory entry becomes a decision.
+        """
+        questions: dict[tuple[str, str], JsonObject] = {}
+        for event in self.store.events():
+            if event["event"] != "spec.proposed" and not (
+                    event["event"] == "operation.completed" and
+                    event["fields"].get("role") == ROLES["discovery"]):
+                continue
+            state = self.store.historical_state(event["sequence"])
+            for row in discovery_memory(state):
+                if row["kind"] == "question":
+                    questions[(row["id"], row["text"])] = {"id": row["id"], "text": row["text"]}
+                    require(len(questions) <= 600, "expert_question_history_exceeds_bound")
+        return list(questions.values())
 
     def approve(self, digest: str, *, delegated: bool = False) -> JsonObject:
         state = self._idle()
@@ -508,7 +491,8 @@ class DesignAgent:
         prior_rounds = self._clarification_rounds() if stage == "discovery" else 0
         pack = {"schema": DESIGN_CONTEXT_SCHEMA, "role": ROLES[stage], "stage": stage,
                 "specification": state["spec"], "approved_spec_digest": state["approved_spec"],
-                "engineering_memory": state.get("engineering_memory", []),
+                "engineering_memory": discovery_memory(state) if stage == "discovery" else
+                                      state.get("engineering_memory", []),
                 "artifacts": files, "artifact_digests": state["files"], "manifest": state["manifest"],
                 "reference_artifacts": references, "reference_status": "untrusted_imports_not_run_evidence",
                 "change_scope": state["change_plan"],
@@ -516,11 +500,12 @@ class DesignAgent:
                 "simulation": state["simulation"], "detail": state["detail"],
                 "user_message": text(message, maximum=16000) if message else None}
         if stage == "discovery":
+            pack["question_history"] = self._question_history()
             pack["conversation_policy"] = {
                 "clarification_round": prior_rounds + 1,
                 "preferred_round_limit": PREFERRED_CLARIFICATION_ROUNDS,
                 "max_questions_this_round": MAX_QUESTIONS_PER_ROUND,
-                "existing_question_ids": [row["id"] for row in state.get("engineering_memory", [])
+                "existing_question_ids": [row["id"] for row in pack["engineering_memory"]
                                           if row["kind"] == "question"],
                 "after_preferred_limit": "ask_only_for_a_concrete_correctness_or_interface_blocker",
             }
@@ -528,11 +513,18 @@ class DesignAgent:
         return pack
 
     async def _generate(self, state: JsonObject, stage: str,
-                        message: str | None = None, *, intent: str | None = None) -> tuple[JsonObject, JsonObject]:
+                        message: str | None = None, *, intent: str | None = None,
+                        discovery_correction: JsonObject | None = None,
+                        discovery_deadline: float | None = None) -> tuple[JsonObject, JsonObject]:
         require(self.expert is not None, "expert_not_configured")
         state = self._limits(state)
         require(state["calls"] < state["limits"]["max_calls"], "expert_call_budget_exhausted")
         pack = self.context(state, stage, message, intent=intent)
+        if discovery_correction is not None:
+            pack["discovery_correction"] = discovery_correction
+        if discovery_deadline is not None:
+            pack["discovery_deadline"] = discovery_deadline
+        require(len(canonical(pack)) <= MAX_CONTEXT_BYTES, "expert_context_exceeds_bound")
         reserve = 0
         selected_provider = None
         selected_model = None
@@ -562,7 +554,9 @@ class DesignAgent:
                                                 "reserved_nano_usd": reserve,
                                                 "model": self.policy.provider_model}
         start_fields: JsonObject = {"operation_id": operation, "role": ROLES[stage],
-                                   "context_digest": content_digest(pack),
+                                   "context_digest": content_digest({
+                                       key: value for key, value in pack.items()
+                                       if key != "discovery_deadline"}),
                                    "context_schema": DESIGN_CONTEXT_SCHEMA,
                                    "prompt_version": DESIGN_PROMPT_VERSION,
                                    "tool_calls": 0, "shell_commands": 0}

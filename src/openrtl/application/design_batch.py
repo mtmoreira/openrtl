@@ -99,6 +99,9 @@ async def _step(agent: DesignAgent, *, reviewed_contracts: bool = False) -> None
                 "Return the complete specification with no open questions. Preserve all other scope unless "
                 "the explicit batch authorization allows requirement proposals. Authorization: " +
                 str(state["delegation"]["authorization"]["allow_requirement_proposals"]))
+            # Retaining unresolved questions is valid in interactive discovery,
+            # but it is not progress that authorizes another unattended call.
+            require(not agent.store.read()["spec"]["questions"], "delegated_spec_incomplete")
         else:
             if reviewed_contracts:
                 from openrtl.domain.design_readiness import require_ready

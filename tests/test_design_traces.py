@@ -117,9 +117,11 @@ class DesignTraceTest(unittest.TestCase):
         self.assertIsNone(detail["metrics"]["reasoning_tokens"])
         self.assertEqual(detail["visibility"]["raw_prompt"], "captured")
         reopened = DesignWorkspace(DesignAgent(self.store, trace_store=DesignTraceStore(self.store)))
-        self.assertEqual(reopened.operation(identifier)["reply"], "Choose a counter width.")
+        self.assertEqual(reopened.operation(identifier)["reply"],
+                         "Please clarify these design decisions:\n\n1. Counter width is unresolved")
         self.assertEqual([row["text"] for row in reopened.conversation()["messages"]],
-                         ["Synthetic counter prompt", "Choose a counter width."])
+                         ["Synthetic counter prompt",
+                          "Please clarify these design decisions:\n\n1. Counter width is unresolved"])
         self.assertNotIn("Synthetic counter prompt", str(workspace.snapshot()))
 
     def test_failed_call_remains_inspectable_with_unknown_usage(self) -> None:
