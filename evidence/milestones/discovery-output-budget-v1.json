@@ -1,0 +1,127 @@
+{
+  "schema": "openrtl.milestone-evidence.v1",
+  "milestone_id": "discovery-output-budget-v1",
+  "base_commit": "978492804ebb1fbb77b11726fd4e50a3aed1f216",
+  "qualified_commit": "1c151de68e6bfc1bb37750b4fc6c1f33c0b43942",
+  "review_state": "local-contracts-validated-live-provider-qualification-pending",
+  "qualification_lane": "owner-offline",
+  "milestone_complete": true,
+  "implementation_slice_complete": true,
+  "qualification_scope": "Compact Design Lead discovery reply transport, bounded correction context, and required specification after all saved questions resolve.",
+  "locator_roots": {
+    "openrtl-primary-checkout": {
+      "kind": "declared-external-checkout",
+      "repository": "openrtl",
+      "resolution": "Resolve relative to the retained primary checkout; collateral is not distributed with a clone."
+    }
+  },
+  "artifacts": [
+    {
+      "artifact_id": "discovery-output-budget.local.1",
+      "locator": "build/retained-evidence/discovery-output-budget-v1/run-lWthbT9t/source.sha256",
+      "locator_base": "openrtl-primary-checkout",
+      "media_type": "text/plain",
+      "sha256": "353b3f25cb02c759abff73841958a85d15d44e07ff8c6949c8ea5f83fedc8785",
+      "size_bytes": 915,
+      "producer": "owner-validation-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "discovery-output-budget.local.2",
+      "locator": "build/retained-evidence/discovery-output-budget-v1/run-lWthbT9t/focused.log",
+      "locator_base": "openrtl-primary-checkout",
+      "media_type": "text/plain",
+      "sha256": "d072d0eef103dd5c92eb1c654198906d2c3376f3572d3a9f8e29bff10ec27baa",
+      "size_bytes": 338,
+      "producer": "owner-validation-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "passed"
+    },
+    {
+      "artifact_id": "discovery-output-budget.local.3",
+      "locator": "build/retained-evidence/discovery-output-budget-v1/run-lWthbT9t/frontend.log",
+      "locator_base": "openrtl-primary-checkout",
+      "media_type": "text/plain",
+      "sha256": "3adf654508fcd01d121a32b1b60046660908c86eb4f38837fe5a018f7b2e7e62",
+      "size_bytes": 1004,
+      "producer": "owner-validation-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "passed"
+    },
+    {
+      "artifact_id": "discovery-output-budget.local.4",
+      "locator": "build/retained-evidence/discovery-output-budget-v1/run-lWthbT9t/typing.log",
+      "locator_base": "openrtl-primary-checkout",
+      "media_type": "text/plain",
+      "sha256": "71144743c83babea384888a735db0c4daba3d4d7b7942b6839984bd5c21b52bb",
+      "size_bytes": 43,
+      "producer": "owner-validation-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "passed"
+    },
+    {
+      "artifact_id": "discovery-output-budget.local.5",
+      "locator": "build/retained-evidence/discovery-output-budget-v1/run-lWthbT9t/full.log",
+      "locator_base": "openrtl-primary-checkout",
+      "media_type": "text/plain",
+      "sha256": "d29a367b567a048d98894f3c7a83a911f86f4ed5a2a2f1b21e443b28cf6d8a72",
+      "size_bytes": 1546,
+      "producer": "owner-validation-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "passed"
+    }
+  ],
+  "validation_outcomes": {
+    "focused": {
+      "tests": 191,
+      "exit_code": 0
+    },
+    "frontend": {
+      "tests": 10,
+      "exit_code": 0
+    },
+    "strict_typing": {
+      "files": 4,
+      "exit_code": 0
+    },
+    "full_suite": {
+      "tests": 604,
+      "exit_code": 0
+    },
+    "source_binding": {
+      "files": 9,
+      "unchanged_after_validation": true,
+      "committed_bytes_match_validated_source": true
+    },
+    "verilator_cocotb_canary": "not_selected"
+  },
+  "authorization_boundary": {
+    "local_implementation_and_commits": true,
+    "provider_calls": false,
+    "credential_values_handled": false,
+    "downloads": false,
+    "installation": false,
+    "publication": false,
+    "production_authorized": false
+  },
+  "qualification_limits": [
+    "The exact captured reply length, null specification type, memory count, and resolution count are covered with synthetic content; private captured text is not committed.",
+    "Schema and scripted-provider tests prove deterministic local handling, not live Ollama compliance, latency, or design quality.",
+    "No provider call, runtime installation, release, publication, or remote Git action was performed."
+  ],
+  "pending": [
+    "m46-live-rtl-qualification",
+    "m47-release"
+  ]
+}
