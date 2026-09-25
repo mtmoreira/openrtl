@@ -151,7 +151,7 @@ class HardwareSpecificationTest(unittest.TestCase):
         self.assertEqual(sections["minItems"], len(SECTION_IDS))
         self.assertEqual(sections["items"]["properties"]["id"]["enum"], list(SECTION_IDS))
         self.assertEqual(_schema("discovery", {}, ollama=True)[0],
-                         "openrtl.design.discovery.ollama.v3")
+                         "openrtl.design.discovery.ollama.v4")
 
     def test_live_discovery_contract_rejects_a_legacy_shaped_proposal(self) -> None:
         response = {"reply": "Prepared a reviewable draft.", "specification": specification(),
@@ -168,7 +168,7 @@ class HardwareSpecificationTest(unittest.TestCase):
 
     def test_design_agent_enforces_the_versioned_provider_contract(self) -> None:
         class VersionedFakeExpert(FakeExpert):
-            discovery_contract_version = "v8"
+            discovery_contract_version = "v9"
             specification_contract_version = "v1"
 
         response = {"reply": "Prepared a reviewable draft.", "specification": specification(),

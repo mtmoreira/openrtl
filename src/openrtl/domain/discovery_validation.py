@@ -24,7 +24,7 @@ DISCOVERY_VALIDATION_CATEGORIES = {
         "hardware_specification_sections_missing", "hardware_specification_section_invalid",
         "hardware_specification_section_status_invalid", "hardware_specification_section_order_invalid",
         "hardware_specification_purpose_missing", "hardware_specification_parameter_section_invalid",
-        "parameter_type_invalid", "parameter_names_duplicate",
+        "parameter_type_invalid", "parameter_names_duplicate", "expert_specification_required",
     ), "specification"),
     **dict.fromkeys((
         "engineering_memory_id_duplicate", "engineering_memory_kind_invalid",

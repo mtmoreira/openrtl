@@ -108,7 +108,7 @@ class DesignGenerationTest(unittest.TestCase):
 
     def test_one_tool_free_structured_turn_returns_usage_and_untrusted_output(self) -> None:
         adapter = AgentRigDesignExpert(generator(), model="test-model")
-        self.assertEqual(adapter.discovery_contract_version, "v8")
+        self.assertEqual(adapter.discovery_contract_version, "v9")
         self.assertEqual(adapter.specification_contract_version, "v1")
         reply = asyncio.run(adapter.generate("discovery", {"schema": "unit_context"}, "a" * 32))
         self.assertEqual(reply.output, specification())
@@ -131,7 +131,7 @@ class DesignGenerationTest(unittest.TestCase):
     def test_native_ollama_turn_uses_a_tool_free_schema_contract(self) -> None:
         runtime = ScriptedOllamaRuntime()
         adapter = OllamaDesignExpert(runtime, model="qwen3:8b")
-        self.assertEqual(adapter.discovery_contract_version, "v8")
+        self.assertEqual(adapter.discovery_contract_version, "v9")
         self.assertEqual(adapter.specification_contract_version, "v1")
         reply = asyncio.run(adapter.generate("discovery", {"schema": "unit_context"}, "b" * 32))
         self.assertEqual(reply.provider, "ollama")
@@ -141,8 +141,8 @@ class DesignGenerationTest(unittest.TestCase):
         self.assertEqual(request.contract.allowed_tools, ())
         self.assertEqual(request.contract.permissions["workspace"], "denied")
         self.assertEqual(request.contract.permissions["network"], "allowed")
-        self.assertEqual(request.contract.output_schema, "openrtl.design.discovery.ollama.v3")
-        self.assertEqual(request.contract.prompt_version, "openrtl.design.instructions.v8")
+        self.assertEqual(request.contract.output_schema, "openrtl.design.discovery.ollama.v4")
+        self.assertEqual(request.contract.prompt_version, "openrtl.design.instructions.v9")
         self.assertEqual(request.contract.limits.max_tool_calls, 0)
         self.assertIn("Never ask for permission to proceed", request.instructions)
         self.assertIn("at most conversation_policy.max_questions_this_round", request.instructions)
@@ -153,6 +153,7 @@ class DesignGenerationTest(unittest.TestCase):
         self.assertIn("including every clock, reset", request.instructions)
         self.assertIn("openrtl.hardware-specification.v1", request.instructions)
         self.assertIn("without creating duplicate inventories or links", request.instructions)
+        self.assertIn("Set reply exactly to 'structured'", request.instructions)
 
     def test_every_specification_prompt_carries_the_local_port_width_contract(self) -> None:
         for stage in ("discovery", "change_planning"):
@@ -176,6 +177,8 @@ class DesignGenerationTest(unittest.TestCase):
         self.assertEqual(response_schema("dv")["properties"]["manifest"]["type"], "object")
         self.assertEqual(response_schema("discovery")["properties"]["specification"]["anyOf"][1],
                          {"type": "null"})
+        self.assertEqual(response_schema("discovery")["properties"]["reply"],
+                         {"type": "string", "enum": ["structured"]})
         self.assertEqual(response_schema("discovery")["properties"]["questions_asked"]["type"],
                          "array")
         self.assertEqual(response_schema("change_planning")["properties"]["specification"]["type"],
@@ -186,7 +189,8 @@ class DesignGenerationTest(unittest.TestCase):
             with self.subTest(ollama=ollama):
                 schema_id, schema = _schema("discovery", {}, ollama=ollama)
                 self.assertEqual(schema_id, "openrtl.design.discovery" +
-                                 (".ollama.v3" if ollama else ".v8"))
+                                 (".ollama.v4" if ollama else ".v9"))
+                self.assertEqual(schema["properties"]["reply"]["enum"], ["structured"])
                 self.assertIn("question_plan", schema["required"])
                 self.assertIn("resolved_questions", schema["required"])
                 plan = schema["properties"]["question_plan"]["items"]

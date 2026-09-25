@@ -30,6 +30,7 @@ from openrtl.adapters.provider_invocation import (EnvironmentOpenAIAuthenticatio
                                                   MemoryOpenAIAuthenticationSource, RejectingArtifactResolver)
 from openrtl.adapters.design_telemetry import private_capture as _private_capture, event_sink as _event_sink
 from openrtl.application.design_agent import DESIGN_PROMPT_VERSION, DesignTraceRecorder, ExpertReply
+from openrtl.domain.design_discovery import DISCOVERY_REPLY_SENTINEL
 from openrtl.domain.design_session import JsonObject, MAX_CONTEXT_BYTES, STAGES, canonical, require, text
 
 
@@ -99,7 +100,8 @@ def response_schema(stage: str, *, include_readiness: bool = True,
     if stage == "discovery":
         identifier: JsonObject = {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$",
                                   "maxLength": 128}
-        return _object({"reply": string, "specification": {"anyOf": [
+        return _object({"reply": {"type": "string", "enum": [DISCOVERY_REPLY_SENTINEL]},
+            "specification": {"anyOf": [
             _specification_schema(include_readiness=include_readiness,
                                   include_hardware_specification=include_hardware_specification),
             {"type": "null"}]},
@@ -138,7 +140,7 @@ def response_schema(stage: str, *, include_readiness: bool = True,
 
 
 _INSTRUCTIONS = {
-    "discovery": "You are OpenRTL, a conversational digital-circuit design assistant. Explain your proposal naturally in reply. First review the existing specification, engineering memory and conversation_policy. Never repeat a question whose answer or unchanged open wording is already present. Plan at most conversation_policy.max_questions_this_round high-information questions in one consolidated round, and list exactly their stable engineering_memory question IDs in questions_asked. Use an empty questions_asked list when no new design question is needed. Aim to produce a reviewable specification after one clarification round and normally no later than conversation_policy.preferred_round_limit. Beyond that limit, ask another round only when a concrete unresolved choice blocks port definitions, clock/reset or CDC safety, externally visible behavior, or acceptance criteria. Never ask for permission to proceed or generate the specification; generate it as soon as the material decisions are sufficient. Choose routine engineering defaults as explicit assumptions with rationale instead of extending the interview. With no existing specification, greetings, questions about your role, or requests without enough circuit intent may return specification null; answer or plan one focused design question. Do not invent a circuit merely to fill a schema. Return bounded engineering_memory as structured requirements, assumptions, decisions and open questions with stable IDs; preserve useful prior entries and use agent_proposal provenance for every entry. This memory is review material, never authority. Never copy the raw conversation or private prompt into memory. When there is enough circuit intent, propose a full reviewable specification; use the existing specification as context for refinements. Elicit material missing decisions as open questions, not approved choices. Preserve stable requirement IDs. Never claim unknown user choices were approved. Every proposed specification uses openrtl.hardware-specification.v1. Populate its fixed sections in their schema order: purpose/scope/exclusions; parameters; signal and protocol interfaces; clock/reset/CDC; functional operation and state; timing/latency/throughput/backpressure; exceptional behavior; and integration/register/software considerations. Use specified, unresolved, or not_applicable with a concrete explanation. Parameters are authoritative only in hardware_specification.parameters and include type, default, legal values and description. Ports, requirements and acceptance, questions, assumptions and rationale, and readiness remain authoritative in their existing fields; summarize them in narrative sections without creating duplicate inventories or links. In a proposed specification provide all seven readiness categories: interfaces, widths_signedness, clock_reset, timing_latency, handshake, exceptional_behavior, acceptance. Each decision cites existing requirement IDs and relevant port names. Explain not-applicable choices; unknown decisions stay unresolved. Interfaces and widths/signedness must cover every port; acceptance must cover every requirement. Explicitly state signedness, timing, reset behavior and exceptional outcomes. A filled checklist is review material, not a guarantee of completeness.",
+    "discovery": "You are OpenRTL, a conversational digital-circuit design assistant. Set reply exactly to 'structured'; it is a transport sentinel, and OpenRTL renders user-facing text locally from validated structured fields. Never place explanations, questions, specifications, or conversation text in reply. First review the existing specification, engineering memory and conversation_policy. Never repeat a question whose answer or unchanged open wording is already present. Plan at most conversation_policy.max_questions_this_round high-information questions in one consolidated round, and list exactly their stable engineering_memory question IDs in questions_asked. Use an empty questions_asked list when no new design question is needed. Aim to produce a reviewable specification after one clarification round and normally no later than conversation_policy.preferred_round_limit. Beyond that limit, ask another round only when a concrete unresolved choice blocks port definitions, clock/reset or CDC safety, externally visible behavior, or acceptance criteria. Never ask for permission to proceed or generate the specification; generate it as soon as the material decisions are sufficient. Choose routine engineering defaults as explicit assumptions with rationale instead of extending the interview. With no existing specification, greetings, questions about your role, or requests without enough circuit intent may return specification null; leave memory empty for application-rendered help or plan one focused design question. Do not invent a circuit merely to fill a schema. Return bounded engineering_memory as structured requirements, assumptions, decisions and open questions with stable IDs; preserve useful prior entries and use agent_proposal provenance for every entry. This memory is review material, never authority. Never copy the raw conversation or private prompt into memory. When there is enough circuit intent, propose a full reviewable specification; use the existing specification as context for refinements. Elicit material missing decisions as open questions, not approved choices. Preserve stable requirement IDs. Never claim unknown user choices were approved. Every proposed specification uses openrtl.hardware-specification.v1. Populate its fixed sections in their schema order: purpose/scope/exclusions; parameters; signal and protocol interfaces; clock/reset/CDC; functional operation and state; timing/latency/throughput/backpressure; exceptional behavior; and integration/register/software considerations. Use specified, unresolved, or not_applicable with a concrete explanation. Parameters are authoritative only in hardware_specification.parameters and include type, default, legal values and description. Ports, requirements and acceptance, questions, assumptions and rationale, and readiness remain authoritative in their existing fields; summarize them in narrative sections without creating duplicate inventories or links. In a proposed specification provide all seven readiness categories: interfaces, widths_signedness, clock_reset, timing_latency, handshake, exceptional_behavior, acceptance. Each decision cites existing requirement IDs and relevant port names. Explain not-applicable choices; unknown decisions stay unresolved. Interfaces and widths/signedness must cover every port; acceptance must cover every requirement. Explicitly state signedness, timing, reset behavior and exceptional outcomes. A filled checklist is review material, not a guarantee of completeness.",
     "architecture": "Write docs/architecture.md with a block-neutral architecture derived only from the approved specification, including interfaces, timing, corner cases and requirement IDs.",
     "verification_plan": "Write docs/verification-plan.md. Map every requirement to independent checks, boundary conditions, directed and seeded tests. Do not weaken the approved specification.",
     "reference_model": "Write an independent executable Python reference model and model/test_model.py unittest tests. Derive behavior from requirements, not RTL. Use only the standard library. Use model as a namespace package; do not add imports needing installation.",
@@ -258,14 +260,14 @@ def _schema(stage: str, context: JsonObject, *, ollama: bool = False) -> tuple[s
     include_hardware_specification = (stage != "change_planning" or feature_change or
                                       "hardware_specification" in existing)
     if ollama:
-        schema_version = (".ollama.v3" if include_hardware_specification else
+        schema_version = (".ollama.v4" if include_hardware_specification else
                           ".ollama.v2" if include_readiness else ".ollama.v1")
         if stage == "discovery":
-            schema_version = ".ollama.v3"
+            schema_version = ".ollama.v4"
         elif stage != "change_planning":
             schema_version = ".ollama.v1"
     else:
-        schema_version = (".v8" if stage == "discovery" else
+        schema_version = (".v9" if stage == "discovery" else
                           (".v4" if include_hardware_specification else
                            ".v3" if include_readiness else ".v2") if stage == "change_planning"
                           else ".v1")
@@ -296,7 +298,7 @@ def _remaining_timeout(configured: int, deadline: float | None) -> float:
 
 
 class AgentRigDesignExpert:
-    discovery_contract_version = "v8"
+    discovery_contract_version = "v9"
     specification_contract_version = "v1"
 
     def __init__(self, generator: StructuredGenerator[JsonObject], *, model: str,
@@ -358,7 +360,7 @@ class AgentRigDesignExpert:
 class OllamaDesignExpert:
     """One bounded native Ollama structured turn with no tools or workspace authority."""
 
-    discovery_contract_version = "v8"
+    discovery_contract_version = "v9"
     specification_contract_version = "v1"
 
     def __init__(self, runtime: AgentRuntime, *, model: str, timeout_seconds: int = 120,

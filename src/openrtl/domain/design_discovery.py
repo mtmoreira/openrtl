@@ -7,9 +7,12 @@ import re
 from dataclasses import dataclass
 
 from openrtl.domain.design_session import (
-    JsonObject, object_value, require, sequence, stable_id, text,
+    JsonObject, MAX_CONTEXT_BYTES, object_value, require, sequence, stable_id, text,
     validate_engineering_memory, validate_spec,
 )
+
+
+DISCOVERY_REPLY_SENTINEL = "structured"
 
 
 @dataclass(frozen=True)
@@ -149,10 +152,15 @@ def validate_discovery(result: object, state: JsonObject, message: str, *,
         require(required <= set(result) <= required | optional, "expert_discussion_fields_invalid")
         require(not require_plan or set(result) == required | optional,
                 "expert_discussion_fields_invalid")
-        reply = text(result["reply"], maximum=8000)
+        # Versioned discovery responses carry a transport-only reply field. The
+        # application renders user-facing text from validated structured state
+        # below, so verbose provider prose is never accepted as authority.
+        reply = text(result["reply"], maximum=MAX_CONTEXT_BYTES if require_plan else 8000)
         proposal = result["specification"]
         incoming = copy.deepcopy(validate_engineering_memory(result.get("engineering_memory", [])))
-        _check_memory_content(incoming, message, reply)
+        reply_check = (reply if reply != DISCOVERY_REPLY_SENTINEL and
+                       len(reply.encode("utf-8")) <= 1024 else None)
+        _check_memory_content(incoming, message, reply_check)
         requested = result.get("questions_asked", [])
         resolutions = sequence(result.get("resolved_questions", []), maximum=32)
     else:
@@ -245,6 +253,8 @@ def validate_discovery(result: object, state: JsonObject, message: str, *,
                 for identifier in asked), "expert_clarification_repeated")
     if specification is None and prior_spec is not None:
         require(False, "expert_specification_refinement_missing")
+    if require_plan and specification is None and prior_questions and not current:
+        require(False, "expert_specification_required")
     if isinstance(result, dict) and "question_plan" in result:
         _check_plan(result["question_plan"], asked, aliases, clarification_rounds)
 

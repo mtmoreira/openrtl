@@ -18,6 +18,7 @@ from openrtl.domain.design_readiness import CATEGORIES
 from openrtl.domain.design_session import JsonObject, canonical, content_digest
 from openrtl.domain.provider_controls import estimated_cost_nano
 from tests.test_design_agent import specification
+from tests.test_hardware_specification import parameterized_fifo_spec
 
 
 def discussion(spec: JsonObject | None, *, reply: str = "Synthetic reviewable proposal",
@@ -25,6 +26,12 @@ def discussion(spec: JsonObject | None, *, reply: str = "Synthetic reviewable pr
                questions: list[str] | None = None) -> JsonObject:
     return {"reply": reply, "specification": spec,
             "engineering_memory": memory or [], "questions_asked": questions or []}
+
+
+def compact_candidate(value: JsonObject) -> JsonObject:
+    result = copy.deepcopy(value)
+    result["reply"] = "structured"
+    return result
 
 
 def zero_width_proposal() -> JsonObject:
@@ -76,6 +83,11 @@ class ScriptedExpert:
         return ExpertReply(copy.deepcopy(selected), self.provider, self.model, 100, 50)
 
 
+class VersionedScriptedExpert(ScriptedExpert):
+    discovery_contract_version = "v9"
+    specification_contract_version = "v1"
+
+
 class DiscoveryRecoveryTest(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
@@ -88,6 +100,72 @@ class DiscoveryRecoveryTest(unittest.TestCase):
 
     def failures(self) -> list[JsonObject]:
         return [row for row in self.store.events() if row["event"] == "operation.failed"]
+
+    def test_captured_oversized_reply_is_omitted_from_correction_and_complete_spec_is_required(self) -> None:
+        questions = [
+            {"id": "fifo.width", "kind": "question", "text": "Choose the FIFO data width",
+             "provenance": "agent_proposal"},
+            {"id": "fifo.depth", "kind": "question", "text": "Choose the FIFO depth",
+             "provenance": "agent_proposal"},
+            {"id": "fifo.reset", "kind": "question", "text": "Choose the reset behavior",
+             "provenance": "agent_proposal"},
+        ]
+        initial = {
+            "reply": "structured", "specification": None, "engineering_memory": questions,
+            "questions_asked": [row["id"] for row in questions], "resolved_questions": [],
+            "question_plan": [
+                {"id": row["id"], "topic": topic, "reason": "Required for the interface contract"}
+                for row, topic in zip(questions, ("interface", "configuration", "clock_reset"), strict=True)
+            ],
+        }
+        decisions = [
+            {"id": "fifo.width.value", "kind": "decision", "text": "Data width is 32 bits",
+             "provenance": "agent_proposal"},
+            {"id": "fifo.depth.value", "kind": "decision", "text": "Depth is 16 entries",
+             "provenance": "agent_proposal"},
+            {"id": "fifo.reset.value", "kind": "decision", "text": "Reset is active low and synchronous",
+             "provenance": "agent_proposal"},
+            {"id": "fifo.ordering", "kind": "requirement", "text": "Accepted data remains ordered",
+             "provenance": "agent_proposal"},
+            {"id": "fifo.backpressure", "kind": "requirement", "text": "Full and empty apply backpressure",
+             "provenance": "agent_proposal"},
+            {"id": "fifo.simultaneous", "kind": "requirement", "text": "Simultaneous transfers are supported",
+             "provenance": "agent_proposal"},
+        ]
+        resolutions = [
+            {"id": question["id"], "resolution_id": decision["id"]}
+            for question, decision in zip(questions, decisions[:3], strict=True)
+        ]
+        captured = {
+            "reply": "R" * 8570, "specification": None, "engineering_memory": decisions,
+            "questions_asked": [], "question_plan": [], "resolved_questions": resolutions,
+        }
+        corrected = copy.deepcopy(captured)
+        corrected["reply"] = "structured"
+        corrected["specification"] = parameterized_fifo_spec()
+        self.assertEqual((len(captured["reply"]), type(captured["reply"]),
+                          type(captured["specification"]), len(captured["engineering_memory"]),
+                          len(captured["resolved_questions"])),
+                         (8570, str, type(None), 6, 3))
+
+        expert = VersionedScriptedExpert([initial, captured, corrected])
+        traces = DesignTraceStore(self.store, enabled=True)
+        agent = DesignAgent(self.store, expert, trace_store=traces)
+        asyncio.run(agent.discuss("Design a parameterized FIFO"))
+        state = asyncio.run(agent.discuss("Use width 32, depth 16, and active-low synchronous reset"))
+
+        self.assertEqual(state["spec"], corrected["specification"])
+        failure = self.failures()[-1]
+        self.assertEqual(failure["fields"]["validation_code"], "expert_specification_required")
+        correction = expert.seen[2][1]["discovery_correction"]
+        self.assertEqual(correction["candidate"]["reply"], "structured")
+        self.assertEqual(correction["candidate"]["engineering_memory"], decisions)
+        self.assertLess(len(canonical(correction["candidate"])), len(canonical(captured)) - 8000)
+        self.assertNotIn("R" * 100, canonical(correction).decode())
+        failed_operation = failure["fields"]["operation_id"]
+        captured_output = next(row["payload"]["output"] for row in traces.records({failed_operation})
+                               if row["category"] == "assistant_output")
+        self.assertEqual(len(captured_output["reply"]), 8570)
 
     def test_repeated_full_policy_question_is_corrected_with_original_request(self) -> None:
         question = {"id": "q_full_policy", "kind": "question",
@@ -125,7 +203,8 @@ class DiscoveryRecoveryTest(unittest.TestCase):
         self.assertEqual(first_pack["discovery_deadline"], correction_pack["discovery_deadline"])
         self.assertNotIn("discovery_correction", first_pack)
         self.assertEqual(correction_pack["discovery_correction"], {
-            "attempt": 1, "validation_code": "expert_clarification_repeated", "candidate": repeated})
+            "attempt": 1, "validation_code": "expert_clarification_repeated",
+            "candidate": compact_candidate(repeated)})
         self.assertEqual(len({row[2] for row in expert.seen}), 3)
         starts = [row for row in self.store.events() if row["event"] == "operation.started"]
         for started, (_, context, operation_id) in zip(starts, expert.seen, strict=True):
@@ -154,7 +233,8 @@ class DiscoveryRecoveryTest(unittest.TestCase):
                 state = asyncio.run(agent.discuss("Synthetic correction request"))
                 self.assertEqual(state["spec"], valid["specification"])
                 self.assertEqual(state["calls"] - before_calls, 2)
-                self.assertEqual(expert.seen[1][1]["discovery_correction"]["candidate"], invalid)
+                self.assertEqual(expert.seen[1][1]["discovery_correction"]["candidate"],
+                                 compact_candidate(invalid))
                 self.assertEqual(self.failures()[-1]["fields"]["validation_code"], code)
                 failed_state = self.store.historical_state(self.failures()[-1]["sequence"])
                 self.assertNotEqual(failed_state["spec"], invalid["specification"])
@@ -335,7 +415,8 @@ class DiscoveryRecoveryTest(unittest.TestCase):
         self.assertEqual(len(expert.seen), 2)
         self.assertIn({"id": "fifo.width", "text": question["text"]}, expert.seen[0][1]["question_history"])
         self.assertEqual(self.failures()[-1]["fields"]["validation_code"], "expert_clarification_repeated")
-        self.assertEqual(expert.seen[1][1]["discovery_correction"]["candidate"], invalid)
+        self.assertEqual(expert.seen[1][1]["discovery_correction"]["candidate"],
+                         compact_candidate(invalid))
         self.assertEqual(state["spec"]["questions"], [])
         self.assertTrue(all(row["kind"] != "question" for row in state["engineering_memory"]))
         self.assertIn(decision, state["engineering_memory"])

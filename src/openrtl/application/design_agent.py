@@ -18,12 +18,22 @@ from openrtl.domain.design_delegation import specification_warnings, validate_de
 from openrtl.domain.design_imports import baseline_plan, digest_value, validate_change_plan
 from openrtl.domain.design_coaching import analysis_input_digest, validate_analysis, validate_intent, validate_proposal
 from openrtl.domain.discovery_validation import DiscoveryValidationError
-from openrtl.domain.design_discovery import discovery_memory, validate_discovery
+from openrtl.domain.design_discovery import (
+    DISCOVERY_REPLY_SENTINEL, discovery_memory, validate_discovery,
+)
 
 DESIGN_CONTEXT_SCHEMA = "openrtl.design-context.v8"
-DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v8"
+DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v9"
 PREFERRED_CLARIFICATION_ROUNDS = 3
 MAX_QUESTIONS_PER_ROUND = 3
+
+
+def _discovery_correction_candidate(result: JsonObject) -> JsonObject:
+    """Keep engineering structure while omitting non-authoritative provider prose."""
+    candidate = copy.deepcopy(result)
+    if "reply" in candidate:
+        candidate["reply"] = DISCOVERY_REPLY_SENTINEL
+    return candidate
 
 
 class SessionStore(Protocol):
@@ -246,7 +256,7 @@ class DesignAgent:
             try:
                 candidate = validate_discovery(result, state, message,
                     clarification_rounds=prior_rounds, question_history=question_history,
-                    require_plan=getattr(self.expert, "discovery_contract_version", None) == "v8",
+                    require_plan=getattr(self.expert, "discovery_contract_version", None) in ("v8", "v9"),
                     require_hardware_specification=(
                         getattr(self.expert, "specification_contract_version", None) == "v1"))
             except (ValueError, TypeError, KeyError) as error:
@@ -258,7 +268,7 @@ class DesignAgent:
                         attempt == self.policy.max_discovery_corrections or time.monotonic() >= deadline):
                     raise failure from None
                 correction = {"attempt": attempt + 1, "validation_code": failure.validation_code,
-                              "candidate": result}
+                              "candidate": _discovery_correction_candidate(result)}
                 state = self._idle()
                 continue
             break
