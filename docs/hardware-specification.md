@@ -44,6 +44,23 @@ port, requirement, acceptance, question, assumption, or readiness inventories.
 
 ## Compatibility and approval
 
+Discovery and feature-generation provider schemas represent the eight sections
+and seven readiness categories as closed objects with required named fields.
+This enforces each fixed inventory even in the conservative Ollama schema, which
+omits array-length constraints. The adapter restores the canonical ordered arrays
+without supplying missing content or changing any engineering value. Missing or
+extra transport records stay unconverted and reach ordinary domain validation,
+which rejects them after recording usage and can request bounded correction.
+Complete legacy arrays also remain subject to the unchanged domain validator.
+Width, status, requirement, port, and readiness-anchor checks are unchanged.
+
+Saved specification and correction context use the same named-field presentation
+on those provider calls. The original saved state is not modified. Detailed
+private capture retains the provider response before decoding, while accepted
+application output uses the canonical specification shape. DV and optimization
+calls keep their existing array transport so exact retained specifications and
+digests are preserved.
+
 Saved legacy specifications remain valid and retain their historic content
 digests. The CLI and web review identify them as legacy rather than rewriting
 them. New discovery and feature proposals must include the v1 format. DV-only

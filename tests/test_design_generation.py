@@ -108,7 +108,7 @@ class DesignGenerationTest(unittest.TestCase):
 
     def test_one_tool_free_structured_turn_returns_usage_and_untrusted_output(self) -> None:
         adapter = AgentRigDesignExpert(generator(), model="test-model")
-        self.assertEqual(adapter.discovery_contract_version, "v9")
+        self.assertEqual(adapter.discovery_contract_version, "v10")
         self.assertEqual(adapter.specification_contract_version, "v1")
         reply = asyncio.run(adapter.generate("discovery", {"schema": "unit_context"}, "a" * 32))
         self.assertEqual(reply.output, specification())
@@ -131,7 +131,7 @@ class DesignGenerationTest(unittest.TestCase):
     def test_native_ollama_turn_uses_a_tool_free_schema_contract(self) -> None:
         runtime = ScriptedOllamaRuntime()
         adapter = OllamaDesignExpert(runtime, model="qwen3:8b")
-        self.assertEqual(adapter.discovery_contract_version, "v9")
+        self.assertEqual(adapter.discovery_contract_version, "v10")
         self.assertEqual(adapter.specification_contract_version, "v1")
         reply = asyncio.run(adapter.generate("discovery", {"schema": "unit_context"}, "b" * 32))
         self.assertEqual(reply.provider, "ollama")
@@ -141,8 +141,8 @@ class DesignGenerationTest(unittest.TestCase):
         self.assertEqual(request.contract.allowed_tools, ())
         self.assertEqual(request.contract.permissions["workspace"], "denied")
         self.assertEqual(request.contract.permissions["network"], "allowed")
-        self.assertEqual(request.contract.output_schema, "openrtl.design.discovery.ollama.v4")
-        self.assertEqual(request.contract.prompt_version, "openrtl.design.instructions.v9")
+        self.assertEqual(request.contract.output_schema, "openrtl.design.discovery.ollama.v5")
+        self.assertEqual(request.contract.prompt_version, "openrtl.design.instructions.v10")
         self.assertEqual(request.contract.limits.max_tool_calls, 0)
         self.assertIn("Never ask for permission to proceed", request.instructions)
         self.assertIn("at most conversation_policy.max_questions_this_round", request.instructions)
@@ -189,7 +189,7 @@ class DesignGenerationTest(unittest.TestCase):
             with self.subTest(ollama=ollama):
                 schema_id, schema = _schema("discovery", {}, ollama=ollama)
                 self.assertEqual(schema_id, "openrtl.design.discovery" +
-                                 (".ollama.v4" if ollama else ".v9"))
+                                 (".ollama.v5" if ollama else ".v10"))
                 self.assertEqual(schema["properties"]["reply"]["enum"], ["structured"])
                 self.assertIn("question_plan", schema["required"])
                 self.assertIn("resolved_questions", schema["required"])
@@ -218,11 +218,12 @@ class DesignGenerationTest(unittest.TestCase):
                      "Its IDs must exactly equal questions_asked in the same order",
                      "After three clarification rounds", "configuration questions are not permitted",
                      "All user-facing questions are rendered by the application",
-                     "Keep reply explanatory", "complete updated specification, never null",
+                     "Keep reply exactly 'structured'", "complete updated specification, never null",
                      "ephemeral rejected, untrusted output", "exact deterministic validation_code",
                      "Do not invent choices, grant approvals, weaken validation"):
             with self.subTest(rule=rule):
                 self.assertIn(rule, instructions)
+        self.assertNotIn("Keep reply explanatory", instructions)
 
     def test_shared_deadline_caps_each_provider_attempt_without_serializing_local_timing(self) -> None:
         for ollama in (False, True):

@@ -151,7 +151,7 @@ class HardwareSpecificationTest(unittest.TestCase):
         self.assertEqual(sections["minItems"], len(SECTION_IDS))
         self.assertEqual(sections["items"]["properties"]["id"]["enum"], list(SECTION_IDS))
         self.assertEqual(_schema("discovery", {}, ollama=True)[0],
-                         "openrtl.design.discovery.ollama.v4")
+                         "openrtl.design.discovery.ollama.v5")
 
     def test_live_discovery_contract_rejects_a_legacy_shaped_proposal(self) -> None:
         response = {"reply": "Prepared a reviewable draft.", "specification": specification(),
@@ -213,7 +213,7 @@ class HardwareSpecificationTest(unittest.TestCase):
         self.assertEqual(legacy_id, "openrtl.design.change_planning.v2")
         self.assertNotIn("hardware_specification",
                          legacy_schema["properties"]["specification"]["required"])
-        self.assertEqual(feature_id, "openrtl.design.change_planning.v4")
+        self.assertEqual(feature_id, "openrtl.design.change_planning.v5")
         self.assertIn("hardware_specification",
                       feature_schema["properties"]["specification"]["required"])
 

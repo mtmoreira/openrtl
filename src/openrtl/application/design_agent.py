@@ -23,7 +23,7 @@ from openrtl.domain.design_discovery import (
 )
 
 DESIGN_CONTEXT_SCHEMA = "openrtl.design-context.v8"
-DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v9"
+DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v10"
 PREFERRED_CLARIFICATION_ROUNDS = 3
 MAX_QUESTIONS_PER_ROUND = 3
 
@@ -256,7 +256,7 @@ class DesignAgent:
             try:
                 candidate = validate_discovery(result, state, message,
                     clarification_rounds=prior_rounds, question_history=question_history,
-                    require_plan=getattr(self.expert, "discovery_contract_version", None) in ("v8", "v9"),
+                    require_plan=getattr(self.expert, "discovery_contract_version", None) in ("v8", "v9", "v10"),
                     require_hardware_specification=(
                         getattr(self.expert, "specification_contract_version", None) == "v1"))
             except (ValueError, TypeError, KeyError) as error:
