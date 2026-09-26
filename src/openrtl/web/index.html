@@ -50,7 +50,7 @@
           </div>
           <label for="provider-timeout">Request deadline (seconds)</label>
           <input id="provider-timeout" type="number" min="1" max="300" step="1" value="120" required aria-describedby="provider-timeout-help">
-          <p id="provider-timeout-help" class="muted">Allow 1–300 seconds per provider request. A timeout may leave external completion uncertain.</p>
+          <p id="provider-timeout-help" class="muted">Allow 1–300 seconds per OpenAI request. A timeout may leave external completion uncertain.</p>
           <label class="provider-toggle"><input id="provider-detailed-capture" type="checkbox" aria-describedby="provider-capture-help">Capture detailed operation records locally</label>
           <p id="provider-capture-help" class="capture-disclosure">Optional capture stores submitted prompts, model requests and outputs, provider-returned reasoning, and available file, tool/process and usage records on this computer. These records may contain sensitive project content. Credentials are excluded; inaccessible model internals cannot be captured. Only future operations are captured. Turning this off or restarting the server stops new capture and does not erase saved records.</p>
           <label class="provider-toggle"><input id="provider-enabled" type="checkbox">Enable provider calls for this workspace</label>

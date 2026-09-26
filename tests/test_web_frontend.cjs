@@ -84,6 +84,13 @@ function prepareWorkflowApp() {
   return app;
 }
 
+function providerSettings(overrides = {}) {
+  return {revision: 1, models: [], selected_provider: "ollama", selected_model: "example:local",
+    enabled: true, editable: true, uncertain: false, estimated_spend_usd: "0.000000",
+    timeout_seconds: 240, timeout_limits_seconds: {openai: 300, ollama: 900},
+    detailed_capture: false, ...overrides};
+}
+
 test("notices and operation progress reconcile as identified System messages", () => {
   const app = browser();
   app.context.notice("Connection unavailable", "connection");
@@ -195,6 +202,8 @@ test("latest history selection wins even when earlier responses arrive late", as
 
 test("provider settings submit explicit timeout and capture choice, rejecting invalid deadlines", async () => {
   const app = browser();
+  app.context.api = async () => providerSettings();
+  await app.context.loadProviderSettings();
   const submissions = [];
   app.context.post = async (route, body) => { submissions.push({route, body}); return {}; };
   app.context.loadProviderSettings = async () => {};
@@ -212,12 +221,75 @@ test("provider settings submit explicit timeout and capture choice, rejecting in
   assert.equal(submissions[0].body.detailed_capture, true);
   assert.equal(submissions[0].body.api_key, null);
   assert.equal(app.element("provider-key").value, "");
-  for (const value of ["0", "301", "1.5", "bad"]) {
+  for (const value of ["0", "901", "1.5", "bad"]) {
     app.element("provider-timeout").value = value;
     await submit({preventDefault() {}});
   }
   assert.equal(submissions.length, 1);
+  assert.match(app.element("conversation-list").textContent, /1 to 900 seconds/);
+});
+
+test("provider settings restore and submit the 900-second local deadline", async () => {
+  const app = browser();
+  app.context.api = async () => providerSettings({timeout_seconds: 900});
+  await app.context.loadProviderSettings();
+  assert.equal(app.element("provider-timeout").value, "900");
+  assert.equal(app.element("provider-timeout").max, "900");
+  assert.match(app.element("provider-timeout-help").textContent, /1–900 seconds per local Ollama/);
+  assert.match(app.element("provider-status").textContent, /Request deadline: 900 seconds/);
+  const submissions = [];
+  app.context.post = async (route, body) => { submissions.push({route, body}); return {}; };
+  app.context.refresh = async () => {};
+  await app.element("provider-form").listeners.submit({preventDefault() {}});
+  assert.equal(submissions.length, 1);
+  assert.equal(submissions[0].route, "/api/provider");
+  assert.equal(submissions[0].body.timeout_seconds, 900);
+  assert.equal(submissions[0].body.provider, "ollama");
+  assert.equal(app.element("provider-timeout").value, "900");
+});
+
+test("switching a local 900-second deadline to OpenAI preserves it and blocks submission", async () => {
+  const app = browser();
+  app.context.api = async () => providerSettings({timeout_seconds: 900});
+  await app.context.loadProviderSettings();
+  const submissions = [];
+  app.context.post = async (route, body) => { submissions.push({route, body}); return {}; };
+  app.context.loadProviderSettings = async () => {};
+  app.context.refresh = async () => {};
+  app.element("provider-kind").value = "openai";
+  app.element("provider-kind").listeners.change();
+  assert.equal(app.element("provider-timeout").value, "900");
+  assert.equal(app.element("provider-timeout").max, "300");
+  assert.match(app.element("provider-timeout-help").textContent, /1–300 seconds per OpenAI/);
+  const submit = app.element("provider-form").listeners.submit;
+  await submit({preventDefault() {}});
+  app.element("provider-timeout").value = "301";
+  await submit({preventDefault() {}});
+  assert.equal(submissions.length, 0);
   assert.match(app.element("conversation-list").textContent, /1 to 300 seconds/);
+  app.element("provider-timeout").value = "300";
+  await submit({preventDefault() {}});
+  assert.equal(submissions.length, 1);
+  assert.equal(submissions[0].body.provider, "openai");
+  assert.equal(submissions[0].body.timeout_seconds, 300);
+});
+
+test("default deadline remains 120 and missing server limits keep the conservative bound", async () => {
+  const app = browser();
+  app.context.api = async () => providerSettings({selected_provider: "openai", timeout_seconds: undefined,
+    timeout_limits_seconds: undefined});
+  await app.context.loadProviderSettings();
+  assert.equal(app.element("provider-timeout").value, "120");
+  assert.equal(app.element("provider-timeout").max, "300");
+  app.element("provider-kind").value = "ollama";
+  app.element("provider-kind").listeners.change();
+  assert.equal(app.element("provider-timeout").value, "120");
+  assert.equal(app.element("provider-timeout").max, "300");
+  let submissions = 0;
+  app.context.post = async () => { submissions++; };
+  app.element("provider-timeout").value = "900";
+  await app.element("provider-form").listeners.submit({preventDefault() {}});
+  assert.equal(submissions, 0);
 });
 
 test("concurrent refresh requests share one snapshot request", async () => {

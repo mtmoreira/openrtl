@@ -12,9 +12,11 @@ import unittest
 from unittest.mock import patch
 import uuid
 
+from agentrig.core.errors import AgentRigError, Failure, FailureKind
 from openrtl.adapters.design_session_store import DesignSessionStore
 from openrtl.adapters.design_trace_store import DesignTraceStore
-from openrtl.application.design_agent import DesignAgent, ExpertReply, design_input_digest
+from openrtl.adapters.design_web import WorkspaceRuntime
+from openrtl.application.design_agent import DesignAgent, DesignPolicy, ExpertReply, design_input_digest
 from openrtl.application.design_workspace import DesignWorkspace
 from openrtl.domain.design_session import JsonObject, STAGES, canonical, content_digest
 from openrtl.domain.provider_controls import request_reserve_nano
@@ -273,6 +275,101 @@ class WebGenerationTest(unittest.TestCase):
         self.assertEqual(after["provider"]["spent_nano_usd"], 0)
         self.assertIsNone(after["provider"]["pending"])
         self.assertFalse(after["provider"]["uncertain"])
+        self.assertEqual(self.simulator.calls, [])
+
+    def test_ollama_reference_model_timeout_retries_with_longer_deadline_without_reset(self) -> None:
+        attempts: list[tuple[str, int, JsonObject]] = []
+        builds: list[int] = []
+
+        class LocalExpert(FakeExpert):
+            def __init__(self, timeout: int) -> None:
+                super().__init__()
+                self.timeout_seconds = timeout
+
+            async def generate(self, stage: str, context: JsonObject, operation_id: str) -> ExpertReply:
+                attempts.append((stage, self.timeout_seconds, copy.deepcopy(context)))
+                if stage == "reference_model" and self.timeout_seconds == 300:
+                    raise AgentRigError(Failure(kind=FailureKind.DEADLINE_EXCEEDED,
+                        code="ollama.request_timeout", message="Synthetic provider timeout"))
+                reply = await super().generate(stage, context, operation_id)
+                return replace(reply, provider="ollama", model="synthetic:1b")
+
+        def build(provider: str, model: str, key: str | None, timeout: int) -> LocalExpert:
+            self.assertEqual((provider, model, key), ("ollama", "synthetic:1b", None))
+            builds.append(timeout)
+            return LocalExpert(timeout)
+
+        runtime = WorkspaceRuntime(self.root.parent / "retry-project", create=True,
+            expert_factory=lambda: None, provider_builder=build, policy=DesignPolicy(),
+            initial_provider="ollama", initial_model="synthetic:1b", timeout_seconds=300,
+            detailed_capture=True, simulator_factory=lambda: self.simulator)
+        self.addCleanup(runtime.close)
+
+        def approve(workspace: DesignWorkspace) -> JsonObject:
+            workspace.agent.propose(ready_spec())
+            card = workspace.review("specification")
+            return workspace.approve_review("specification", expected_revision=card["revision"],
+                state_digest=card["state_digest"], payload_digest=card["payload_digest"])
+
+        def advance() -> JsonObject:
+            plan = runtime.call(lambda workspace: workspace.generation_plan())
+            identifier = uuid.uuid4().hex
+            self.assertEqual(runtime.generate(identifier, plan["revision"], plan["plan_digest"])["phase"],
+                             "queued")
+
+            async def settle() -> JsonObject:
+                assert runtime.workspace is not None
+                await runtime.workspace._tasks[identifier]
+                return runtime.workspace.operation(identifier)
+            return runtime._await(settle())
+
+        runtime.call(approve)
+        for _ in range(2):
+            self.assertEqual(advance()["phase"], "completed")
+        saved = runtime.call(lambda workspace: workspace.agent.store.read())
+        self.assertEqual(saved["stage"], 2)
+        self.assertEqual(set(saved["files"]), {"docs/architecture.md", "docs/verification-plan.md"})
+
+        failed_operation = advance()
+        self.assertEqual(failed_operation["phase"], "failed")
+        self.assertEqual(failed_operation["error_code"], "provider_timeout")
+        failed = runtime.call(lambda workspace: workspace.agent.store.read())
+        self.assertEqual((failed["stage"], failed["status"], failed["calls"]), (2, "building", 3))
+        self.assertEqual(failed["files"], saved["files"])
+        self.assertEqual(failed["approved_spec"], saved["approved_spec"])
+        self.assertIsNone(failed["active"])
+        self.assertIsNone(failed["provider"]["pending"])
+        self.assertFalse(failed["provider"]["uncertain"])
+        self.assertIsNone(failed["simulation"])
+        detail = runtime.call(lambda workspace: workspace.history(failed["revision"]))
+        failure = next(row["payload"] for row in detail["details"]
+                       if row["category"] == "provider_failure")
+        self.assertEqual(failure["error_code"], "provider_timeout")
+        self.assertEqual(failure["stage"], "reference_model")
+        self.assertIsInstance(failure["elapsed_ms"], int)
+        self.assertNotIn("Synthetic provider timeout", canonical(detail).decode())
+
+        settings = runtime.configure_provider("ollama", "synthetic:1b", None, None, True,
+                                              timeout_seconds=900)
+        self.assertEqual(settings["timeout_seconds"], 900)
+        self.assertTrue(settings["detailed_capture"])
+        self.assertEqual(builds, [300, 900])
+        self.assertEqual(runtime.call(lambda workspace: workspace.agent.store.read()), failed)
+        self.assertEqual(len(attempts), 3)  # A settings change never silently retries a provider call.
+        self.assertEqual(runtime.call(lambda workspace: workspace.generation_plan())["stage"], "reference_model")
+        self.assertEqual(advance()["phase"], "completed")
+        resumed = runtime.call(lambda workspace: workspace.agent.store.read())
+        self.assertEqual((resumed["stage"], resumed["calls"]), (3, 4))
+        self.assertEqual({path: resumed["files"][path] for path in saved["files"]}, saved["files"])
+        self.assertEqual(set(resumed["files"]) - set(saved["files"]),
+                         {"model/wire.py", "model/test_model.py"})
+        self.assertEqual(resumed["approved_spec"], saved["approved_spec"])
+        self.assertEqual([(stage, timeout) for stage, timeout, _ in attempts],
+            [("architecture", 300), ("verification_plan", 300), ("reference_model", 300),
+             ("reference_model", 900)])
+        self.assertEqual(attempts[-1][2], attempts[-2][2])
+        self.assertEqual(runtime.call(lambda workspace: workspace.history(failed["revision"])), detail)
+        self.assertIsNone(resumed["simulation"])
         self.assertEqual(self.simulator.calls, [])
 
     def test_call_budget_exhaustion_blocks_plan_without_new_effect(self) -> None:

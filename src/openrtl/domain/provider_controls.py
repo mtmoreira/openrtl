@@ -36,6 +36,16 @@ HIGH_CONTEXT_THRESHOLD = 272_000
 NANO_USD = 1_000_000_000
 OLLAMA_HOST = "http://127.0.0.1:11434"
 OLLAMA_SELECTOR_PREFIX = "ollama/"
+PROVIDER_TIMEOUT_LIMITS_SECONDS = {"openai": 300, "ollama": 900}
+
+
+def provider_timeout_seconds(provider: object, timeout: object) -> int:
+    """Validate an explicit request deadline without changing other effect limits."""
+    require(type(provider) is str and provider in PROVIDER_TIMEOUT_LIMITS_SECONDS,
+            "provider_kind_invalid")
+    maximum = PROVIDER_TIMEOUT_LIMITS_SECONDS[cast(str, provider)]
+    require(type(timeout) is int and 1 <= timeout <= maximum, "expert_timeout_invalid")
+    return cast(int, timeout)
 
 
 def compatible_model(model: object) -> str:

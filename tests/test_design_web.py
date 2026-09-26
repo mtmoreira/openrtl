@@ -282,6 +282,7 @@ class DesignWebTest(unittest.TestCase):
         code, initial = self.request("GET", "/api/provider")
         self.assertEqual(code, 200)
         self.assertEqual(initial["timeout_seconds"], 120)
+        self.assertEqual(initial["timeout_limits_seconds"], {"openai": 300, "ollama": 900})
         self.assertFalse(initial["detailed_capture"])
         settings: dict[str, object] = {
             "provider": "ollama", "model": "fixture:local", "max_spend_usd": None,
@@ -295,7 +296,7 @@ class DesignWebTest(unittest.TestCase):
         self.assertTrue(configured["detailed_capture"])
         _, baseline = self.request("GET", "/api/provider")
         _, before = self.request("GET", "/api/snapshot")
-        for field, values in (("timeout_seconds", [0, 301, True, 1.5, "240"]),
+        for field, values in (("timeout_seconds", [0, 901, True, 1.5, "240"]),
                               ("detailed_capture", [1, "true", []])):
             for value in values:
                 with self.subTest(field=field, value=value):
@@ -307,11 +308,11 @@ class DesignWebTest(unittest.TestCase):
                     self.assertEqual(current, baseline)
                     self.assertEqual(snapshot["state"], before["state"])
                     self.assertEqual(len(built), 1)
-        settings.update(timeout_seconds=300, detailed_capture=False)
+        settings.update(timeout_seconds=900, detailed_capture=False)
         code, disabled = self.request("POST", "/api/provider", settings)
         self.assertEqual(code, 200)
         self.assertFalse(disabled["detailed_capture"])
-        self.assertEqual(built[-1], ("ollama", "fixture:local", 300))
+        self.assertEqual(built[-1], ("ollama", "fixture:local", 900))
         code, conversation = self.request("GET", "/api/conversation")
         self.assertEqual(code, 200)
         self.assertFalse(conversation["capture"]["enabled"])
@@ -321,7 +322,7 @@ class DesignWebTest(unittest.TestCase):
         settings.pop("detailed_capture")
         code, preserved = self.request("POST", "/api/provider", settings)
         self.assertEqual(code, 200)
-        self.assertEqual(preserved["timeout_seconds"], 300)
+        self.assertEqual(preserved["timeout_seconds"], 900)
         self.assertFalse(preserved["detailed_capture"])
 
     def test_captured_conversation_reopens_without_restoring_capture_consent(self) -> None:

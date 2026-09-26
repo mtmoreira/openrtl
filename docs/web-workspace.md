@@ -71,13 +71,24 @@ stable IDs and attribution. Prompt and reply text remain ephemeral by default.
 A refresh or restart reconstructs engineering state without replaying a turn.
 
 Use `--timeout-seconds 240` on `ui` or change **Request deadline (seconds)** in
-Provider settings to allow a longer request. The accepted range is 1–300 seconds;
-the default is 120. Earlier attempts ending at roughly 120 seconds could appear
+Provider settings to allow a longer request. OpenAI accepts 1–300 seconds;
+local Ollama accepts 1–900 seconds. Both default to 120. For a slow local model,
+explicitly select `--provider ollama --timeout-seconds 900` on launch or save
+900 in Provider settings. Switching to OpenAI requires correcting a deadline
+above 300; the browser does not silently reduce it. These are provider-request
+limits, not simulation or waveform limits. Earlier attempts ending at roughly 120 seconds could appear
 as a generic provider failure: typed deadline/cancellation failures had no
 provider error code, and a second equal application timeout could race the
 adapter's timeout. The adapter now owns the deadline and OpenRTL reports typed
 timeout/cancellation outcomes. A timed-out remote attempt can still have an
 unknown external outcome; changing the deadline does not reconcile or replay it.
+
+After a generation timeout, keep the existing project. Completed engineering
+stages remain saved; changing Provider settings makes no new request. Use the
+displayed **Next step** generation action to explicitly retry the failed stage.
+A longer deadline does not guarantee completion. Waveforms become available
+only after generation and an explicitly authorized simulation produce retained
+VCD evidence. Detailed capture remains opt-in, including after server restart.
 
 For explicit local capture, launch `ui` with `--capture-details` or select
 **Capture detailed operation records locally** and save Provider settings.

@@ -20,7 +20,8 @@ from openrtl.application.design_agent import DesignAgent, DesignExpert, DesignPo
 from openrtl.application.design_workspace import DesignWorkspace
 from openrtl.domain.design_session import JsonObject, SESSION_SCHEMA, canonical, require
 from openrtl.domain.provider_controls import (
-    dollars, model_catalog, ollama_catalog, provider_selector, selector_model, selector_provider,
+    PROVIDER_TIMEOUT_LIMITS_SECONDS, dollars, model_catalog, ollama_catalog,
+    provider_selector, provider_timeout_seconds, selector_model, selector_provider,
     spend_limit_nano,
 )
 
@@ -44,7 +45,7 @@ class WorkspaceRuntime:
         self.initial_provider = initial_provider
         self.initial_model = initial_model
         self.initial_limit_nano = initial_limit_nano
-        require(type(timeout_seconds) is int and 1 <= timeout_seconds <= 300, "expert_timeout_invalid")
+        timeout_seconds = provider_timeout_seconds(initial_provider, timeout_seconds)
         require(type(detailed_capture) is bool, "trace_capture_invalid")
         self.timeout_seconds, self.detailed_capture = timeout_seconds, detailed_capture
         self.trace_store: DesignTraceStore | None = None
@@ -113,7 +114,9 @@ class WorkspaceRuntime:
                     "uncertain": provider["uncertain"],
                     "prior_unpriced_calls": provider["prior_unpriced_calls"],
                     "enabled": self.workspace is not None and self.workspace.agent.expert is not None,
-                    "timeout_seconds": self.timeout_seconds, "detailed_capture": self.detailed_capture,
+                    "timeout_seconds": self.timeout_seconds,
+                    "timeout_limits_seconds": dict(PROVIDER_TIMEOUT_LIMITS_SECONDS),
+                    "detailed_capture": self.detailed_capture,
                     "key_present": selected_provider == "openai" and self._key is not None,
                     "editable": self.provider_builder is not None and self.workspace is not None}
         return self._await(invoke())
@@ -141,7 +144,7 @@ class WorkspaceRuntime:
             selected_model = selector_model(selection)
             timeout = self.timeout_seconds if timeout_seconds is None else timeout_seconds
             capture = self.detailed_capture if detailed_capture is None else detailed_capture
-            require(type(timeout) is int and 1 <= timeout <= 300, "expert_timeout_invalid")
+            timeout = provider_timeout_seconds(selected_provider, timeout)
             require(type(capture) is bool, "trace_capture_invalid")
             require(type(enabled) is bool and (api_key is None or type(api_key) is str),
                     "provider_settings_invalid")

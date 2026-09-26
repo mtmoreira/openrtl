@@ -35,6 +35,7 @@ from openrtl.adapters.design_specification_transport import (
 from openrtl.application.design_agent import DESIGN_PROMPT_VERSION, DesignTraceRecorder, ExpertReply
 from openrtl.domain.design_discovery import DISCOVERY_REPLY_SENTINEL
 from openrtl.domain.design_session import JsonObject, MAX_CONTEXT_BYTES, STAGES, canonical, require, text
+from openrtl.domain.provider_controls import provider_timeout_seconds
 
 
 def _object(properties: JsonObject) -> JsonObject:
@@ -339,7 +340,7 @@ class AgentRigDesignExpert:
     def __init__(self, generator: StructuredGenerator[JsonObject], *, model: str,
                  timeout_seconds: int = 120, max_output_tokens: int = 16000) -> None:
         self.generator, self.model = generator, text(model, maximum=128)
-        require(type(timeout_seconds) is int and 1 <= timeout_seconds <= 300, "expert_timeout_invalid")
+        timeout_seconds = provider_timeout_seconds("openai", timeout_seconds)
         require(type(max_output_tokens) is int and 256 <= max_output_tokens <= 32768, "output_budget_invalid")
         self.timeout_seconds, self.max_output_tokens = timeout_seconds, max_output_tokens
         self.trace_store: DesignTraceRecorder | None = None
@@ -408,7 +409,7 @@ class OllamaDesignExpert:
         from openrtl.domain.provider_controls import compatible_ollama_model
         self.runtime = runtime
         self.model = compatible_ollama_model(model)
-        require(type(timeout_seconds) is int and 1 <= timeout_seconds <= 300, "expert_timeout_invalid")
+        timeout_seconds = provider_timeout_seconds("ollama", timeout_seconds)
         require(type(max_output_tokens) is int and 256 <= max_output_tokens <= 32768,
                 "output_budget_invalid")
         self.timeout_seconds, self.max_output_tokens = timeout_seconds, max_output_tokens

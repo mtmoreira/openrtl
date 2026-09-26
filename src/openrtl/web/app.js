@@ -16,7 +16,7 @@ const elements = Object.fromEntries([
   "conversation-list", "chat-form", "chat-input", "chat-kind", "composer-status",
   "provider-form", "provider-kind", "provider-openai-settings", "provider-ollama-settings",
   "provider-model", "provider-ollama-model", "provider-spend", "provider-key", "provider-enabled", "provider-status",
-  "provider-timeout", "provider-detailed-capture",
+  "provider-timeout", "provider-timeout-help", "provider-detailed-capture",
   "provider-recovery", "provider-reconcile-button"
 ].map(id => [id, document.getElementById(id)]));
 let state = null;
@@ -37,6 +37,7 @@ let waveSignals = [];
 let waveWindow = null;
 let providerFieldsLoaded = false;
 let providerRevision = null;
+let providerTimeoutLimits = {openai: 300, ollama: 300};
 let historyRequest = 0;
 let workbenchRequest = 0;
 let refreshPromise = null;
@@ -359,6 +360,10 @@ function post(path, body) {
     body: JSON.stringify(body) });
 }
 
+function providerTimeoutLimit() {
+  return providerTimeoutLimits[elements["provider-kind"].value] ?? 300;
+}
+
 function showProviderFields() {
   const local = elements["provider-kind"].value === "ollama";
   elements["provider-openai-settings"].hidden = local;
@@ -366,6 +371,11 @@ function showProviderFields() {
   elements["provider-model"].required = !local;
   elements["provider-spend"].required = !local;
   elements["provider-ollama-model"].required = local;
+  const maximum = providerTimeoutLimit();
+  elements["provider-timeout"].max = String(maximum);
+  elements["provider-timeout-help"].textContent = "Allow 1–" + maximum +
+    " seconds per " + (local ? "local Ollama" : "OpenAI") +
+    " request. A timeout may leave external completion uncertain.";
 }
 elements["provider-kind"].addEventListener("change", showProviderFields);
 
@@ -373,6 +383,10 @@ async function loadProviderSettings(resetFields = false) {
   try {
     const settings = await api("/api/provider");
     providerRevision = settings.revision;
+    for (const provider of ["openai", "ollama"]) {
+      const maximum = settings.timeout_limits_seconds?.[provider];
+      providerTimeoutLimits[provider] = Number.isSafeInteger(maximum) && maximum >= 1 ? maximum : 300;
+    }
     if (!providerFieldsLoaded || resetFields) {
       empty(elements["provider-model"]);
       for (const item of settings.models) {
@@ -390,9 +404,9 @@ async function loadProviderSettings(resetFields = false) {
       elements["provider-enabled"].checked = settings.enabled;
       elements["provider-timeout"].value = String(settings.timeout_seconds ?? 120);
       elements["provider-detailed-capture"].checked = settings.detailed_capture === true;
-      showProviderFields();
       providerFieldsLoaded = true;
     }
+    showProviderFields();
     elements["provider-form"].querySelectorAll("input,select,button").forEach(item => {
       item.disabled = !settings.editable || settings.uncertain;
     });
@@ -427,9 +441,10 @@ elements["provider-form"].addEventListener("submit", async event => {
   const key = elements["provider-key"].value;
   const local = elements["provider-kind"].value === "ollama";
   const timeout = Number(elements["provider-timeout"].value);
-  if (!Number.isInteger(timeout) || timeout < 1 || timeout > 300) {
+  const maximum = providerTimeoutLimit();
+  if (!Number.isInteger(timeout) || timeout < 1 || timeout > maximum) {
     elements["provider-key"].value = "";
-    notice("Request deadline must be a whole number from 1 to 300 seconds.");
+    notice("Request deadline must be a whole number from 1 to " + maximum + " seconds.");
     return;
   }
   try {
