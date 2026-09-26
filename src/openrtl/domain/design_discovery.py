@@ -202,8 +202,8 @@ def validate_discovery(result: object, state: JsonObject, message: str, *,
     for value in resolutions:
         row = object_value(value, {"id", "resolution_id"})
         identifier, target = stable_id(row["id"]), stable_id(row["resolution_id"])
-        require(identifier in prior_questions and identifier not in resolution_ids and
-                target in incoming_by_id and incoming_by_id[target]["kind"] != "question",
+        require(identifier not in resolution_ids and target in incoming_by_id and
+                incoming_by_id[target]["kind"] != "question",
                 "expert_question_resolution_invalid")
         resolution_ids.add(identifier)
         decision = incoming_by_id[target]
@@ -212,8 +212,29 @@ def validate_discovery(result: object, state: JsonObject, message: str, *,
             require(explicit["kind"] != "question" and
                     _normalized(explicit["text"]) == _normalized(decision["text"]),
                     "expert_question_resolution_invalid")
-        merged[identifier] = {"id": identifier, "kind": decision["kind"], "text": decision["text"],
-                              "provenance": "agent_proposal"}
+        if identifier not in prior_questions:
+            # A full proposal may acknowledge an already accepted resolution.
+            # This is a no-op only when accepted history and both saved records
+            # prove the exact same decision. Never infer a new answer from a
+            # stale link or use incoming/merged memory as evidence.
+            saved_resolution, saved_target = prior.get(identifier), prior.get(target)
+            require(identifier in history_ids and saved_resolution is not None and
+                    saved_target is not None, "expert_question_resolution_invalid")
+            assert saved_resolution is not None and saved_target is not None
+            require(all(saved["kind"] == decision["kind"] and saved["text"] == decision["text"]
+                        for saved in (saved_resolution, saved_target)),
+                    "expert_question_resolution_invalid")
+            if identifier in incoming_by_id:
+                explicit = incoming_by_id[identifier]
+                require(explicit["kind"] == saved_resolution["kind"] and
+                        explicit["text"] == saved_resolution["text"],
+                        "expert_question_resolution_invalid")
+            # Preserve each saved row's provenance, including user confirmation.
+            merged[identifier] = copy.deepcopy(saved_resolution)
+            merged[target] = copy.deepcopy(saved_target)
+        else:
+            merged[identifier] = {"id": identifier, "kind": decision["kind"], "text": decision["text"],
+                                  "provenance": "agent_proposal"}
         resolved.add(identifier)
 
     # Legacy structured drafts already express reviewable assumptions with stable
