@@ -1,0 +1,232 @@
+{
+  "schema": "openrtl.milestone-evidence.v1",
+  "milestone_id": "ollama-generation-deadline-v1",
+  "base_commit": "03304a0698d9ff670fe7c4d0ddde0ebf76953590",
+  "qualified_commit": "098820277b955f2559643b7fbf7419dfd5c87f06",
+  "review_state": "local-contracts-validated-live-provider-qualification-pending",
+  "qualification_lane": "owner-offline",
+  "milestone_complete": true,
+  "implementation_slice_complete": true,
+  "qualification_scope": "Explicit local Ollama deadlines up to 900 seconds; unchanged OpenAI maximum 300 and default 120; fail-closed provider switching and explicit retry preserving completed generation stages and telemetry.",
+  "locator_roots": {
+    "openrtl-primary-checkout": {
+      "kind": "declared-external-checkout",
+      "repository": "openrtl",
+      "resolution": "Resolve against the primary checkout; retained artifacts are local and not distributed."
+    }
+  },
+  "artifacts": [
+    {
+      "artifact_id": "ollama-generation-deadline.local.1",
+      "locator": "build/retained-evidence/ollama-generation-deadline-v1/run-uyigcIdL/source.sha256",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "a08c3ede109e220ce29cfb14907fd899a7c142f5ee826cb69a07c045f1d60c4f",
+      "size_bytes": 964,
+      "producer": "ollama-deadline-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "ollama-generation-deadline.local.2",
+      "locator": "build/retained-evidence/ollama-generation-deadline-v1/run-uyigcIdL/runtime.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "dd5f86d613e7c4ec755123718ae07f43c3c41558ff1bfeebafb3335894e0cc1b",
+      "size_bytes": 63,
+      "producer": "ollama-deadline-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "ollama-generation-deadline.local.3",
+      "locator": "build/retained-evidence/ollama-generation-deadline-v1/run-uyigcIdL/focused.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "9071d6e52718473eb3c780c6c03a4f99d4a98edeba904201f9ba14e50210ee47",
+      "size_bytes": 271,
+      "producer": "ollama-deadline-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "ollama-generation-deadline.local.4",
+      "locator": "build/retained-evidence/ollama-generation-deadline-v1/run-uyigcIdL/frontend.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "963436b7a75407bb3dc8235b2e0b0eaad1af3a3f2b026c65cd33b7270cc9f760",
+      "size_bytes": 3210,
+      "producer": "ollama-deadline-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "ollama-generation-deadline.local.5",
+      "locator": "build/retained-evidence/ollama-generation-deadline-v1/run-uyigcIdL/typing.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "f9b031e5c45aa702cd4fef028d465551cb20a2c4698e0913c7b00766b20ac4d8",
+      "size_bytes": 43,
+      "producer": "ollama-deadline-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "ollama-generation-deadline.local.6",
+      "locator": "build/retained-evidence/ollama-generation-deadline-v1/run-uyigcIdL/full.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "99efb9f277cc05876dac239dad75e65213738e75cc83e1cfc8330ea0cf5b45e0",
+      "size_bytes": 1622,
+      "producer": "ollama-deadline-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "ollama-generation-deadline.local.7",
+      "locator": "build/retained-evidence/ollama-generation-deadline-v1/run-uyigcIdL/canary.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "6dd5c04298cefe79950ded4403877720fc91f937d781d9b6bad5aa77235ff537",
+      "size_bytes": 42,
+      "producer": "ollama-deadline-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "ollama-generation-deadline.local.8",
+      "locator": "build/retained-evidence/ollama-generation-deadline-v1/run-uyigcIdL/canary/canary.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "5c521807b29d4670d43176c1ba75e229fd94486e8bab95bc7c167bf4654385cb",
+      "size_bytes": 83431,
+      "producer": "ollama-deadline-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "ollama-generation-deadline.local.9",
+      "locator": "build/retained-evidence/ollama-generation-deadline-v1/run-uyigcIdL/canary/evidence.json",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "openrtl.verilator-canary-evidence.v1",
+      "media_type": "application/json",
+      "sha256": "fcde018f0e7f79b800bf93c9fded6d95d565237cf4aa7a3289519f8abffd639f",
+      "size_bytes": 1000,
+      "producer": "ollama-deadline-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "ollama-generation-deadline.local.10",
+      "locator": "build/retained-evidence/ollama-generation-deadline-v1/run-uyigcIdL/canary/results.xml",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "application/xml",
+      "sha256": "cebc099d43da64d2df1082798ebe50fabbe71467162dbeaeaeb14350a7e1b2a6",
+      "size_bytes": 429,
+      "producer": "ollama-deadline-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "ollama-generation-deadline.local.11",
+      "locator": "build/retained-evidence/ollama-generation-deadline-v1/run-uyigcIdL/canary/waves.vcd",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "3472b20dd63cc6fe6cacc6b5109f33dd1c922928b78a4686f502010daf79d271",
+      "size_bytes": 44303,
+      "producer": "ollama-deadline-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    }
+  ],
+  "validation_outcomes": {
+    "focused": {
+      "suite_test_counts": [
+        170
+      ],
+      "exit_code": 0
+    },
+    "full_repository_and_examples": {
+      "suite_test_counts": [
+        680,
+        3,
+        3
+      ],
+      "exit_code": 0
+    },
+    "frontend": {
+      "exit_code": 0
+    },
+    "typing_provider_policy_and_adapter": {
+      "exit_code": 0
+    },
+    "source_binding": {
+      "files": 10,
+      "unchanged_after_validation": true
+    },
+    "verilator_cocotb_canary": {
+      "status": "passed",
+      "tests": 1,
+      "exit_code": 0
+    },
+    "provider_dependency": {
+      "version": "0.3.1.dev13",
+      "wheel_sha256": "b77cf547002361632f6fa3b6437287ea92f4fe69108c9a5ac837fce9c0b369d3",
+      "source": "verified-wheel-extracted-for-validation-without-installation"
+    }
+  },
+  "authorization_boundary": {
+    "local_implementation_and_commits": true,
+    "local_simulation": true,
+    "provider_calls": false,
+    "credential_values_handled": false,
+    "saved_customer_project_mutations": false,
+    "downloads": false,
+    "installation": false,
+    "publication": false,
+    "production_authorized": false
+  },
+  "qualification_limits": [
+    "Only synthetic fixtures and existing RTL canary artifacts qualify this milestone. No private prompts, provider responses, reasoning or customer project content are retained in this evidence.",
+    "A longer request deadline does not guarantee live-model completion or output validity. Live performance and new RTL design quality remain unqualified.",
+    "Simulation and waveform limits, provider authorization, strict deterministic validation, capture consent and compatibility checks remain unchanged.",
+    "Typing covers the provider policy and generation adapter; known pre-existing web-adapter narrowing errors are outside this change.",
+    "Retained canary copies match original bytes; embedded worktree paths are historical after cleanup. Existing RTL success is not live agent design qualification."
+  ],
+  "pending": [
+    "m46-live-rtl-qualification",
+    "m47-release"
+  ]
+}
