@@ -11,7 +11,8 @@ import uuid
 from openrtl.application.design_agent import DesignAgent, design_input_digest
 from openrtl.application.design_conversation import ShownReview, approve_shown, review_payload
 from openrtl.application.design_workbench import DesignWorkbench
-from openrtl.domain.design_session import JsonObject, ROLES, STAGES, canonical, content_digest, require, text
+from openrtl.domain.design_readiness import require_ready
+from openrtl.domain.design_session import JsonObject, ROLES, STAGES, canonical, content_digest, require, text, validate_spec
 from openrtl.domain.provider_failures import EXPERT_OPERATION_ERROR_CODES
 
 
@@ -56,9 +57,111 @@ class DesignWorkspace:
                 "design_input_digest": design_input_digest(state),
                 "capabilities": {"provider": self.agent.expert is not None,
                                  "simulation": self.agent.simulator is not None},
+                "workflow": self.workflow(),
                 "progress": self._progress,
                 "events": events, "next_cursor": events[-1]["sequence"] if events else cursor,
                 "more_events": bool(events and events[-1]["sequence"] < state["revision"])}
+
+    def _writer_idle(self, state: JsonObject) -> None:
+        require(state["active"] is None, "interrupted_operation_requires_reconciliation")
+        require(not any(row["phase"] in ("queued", "active", "cancellation_requested")
+                        for row in state["workspace_operations"].values()),
+                "workspace_writer_busy_or_unreconciled")
+
+    def _generation_plan(self, state: JsonObject) -> JsonObject:
+        # This selector deliberately excludes simulation. Never expose an
+        # unrestricted advance() endpoint: it can cross an authority boundary.
+        require(state["proposal"] is None and
+                state["status"] in ("building", "needs_repair", "needs_signoff") and
+                not (state["status"] == "building" and state["stage"] == len(STAGES)),
+                "workspace_generation_not_ready")
+        require(state["approved_spec"] == content_digest(validate_spec(state["spec"])),
+                "reviewed_specification_required")
+        require(self.agent.expert is not None, "expert_not_configured")
+        require(not state["provider"]["uncertain"] and state["provider"]["pending"] is None,
+                "provider_spend_uncertain")
+        if self.agent.policy.provider_model is not None:
+            from openrtl.domain.provider_controls import request_reserve_nano, selector_model, selector_provider
+            selection = self.agent.policy.provider_model
+            provider = state["provider"]
+            require(provider["model"] == selection, "provider_spend_not_configured")
+            if selector_provider(selection) == "openai":
+                require(provider["limit_nano_usd"] is not None, "provider_spend_not_configured")
+                reserve = request_reserve_nano(selector_model(selection), self.agent.policy.max_output_tokens)
+                require(provider["spent_nano_usd"] + reserve <= provider["limit_nano_usd"],
+                        "provider_spend_budget_exhausted")
+        limits = state["limits"] or {}
+        require(state["calls"] < min(self.agent.policy.max_calls,
+                                     limits.get("max_calls", self.agent.policy.max_calls)),
+                "expert_call_budget_exhausted")
+        stage = ("diagnosis" if state["status"] == "needs_repair" else
+                 "signoff" if state["status"] == "needs_signoff" else STAGES[state["stage"]])
+        if stage == "diagnosis":
+            require(state["repairs"] < min(self.agent.policy.max_repairs,
+                                           limits.get("max_repairs", self.agent.policy.max_repairs)),
+                    "repair_budget_exhausted")
+        plan = {"schema": "openrtl.web-generation-plan.v1", "revision": state["revision"],
+                "input_digest": design_input_digest(state), "approved_spec": state["approved_spec"],
+                "status": state["status"], "stage": stage}
+        return {**plan, "plan_digest": content_digest(plan)}
+
+    def generation_plan(self) -> JsonObject:
+        state = self.agent.store.read()
+        self._writer_idle(state)
+        return self._generation_plan(state)
+
+    def workflow(self) -> JsonObject:
+        """Project the next explicit action without granting any authority."""
+        state = self.agent.store.read()
+        result: JsonObject = {"schema": "openrtl.web-workflow.v1", "action": "blocked",
+                              "message": "Inspect History for the current blocker.",
+                              "stage": None, "plan": None}
+        if state["active"] is not None:
+            result["message"] = "An operation is active or needs reconciliation. Inspect its saved status before continuing."
+        elif any(row["phase"] in ("queued", "active", "cancellation_requested")
+                 for row in state["workspace_operations"].values()):
+            result["message"] = "Wait for the current operation to finish before taking the next step."
+        elif state["proposal"] is not None:
+            result.update(action="review_change", message="Review the proposed change before approving it.")
+        elif state["status"] == "discovery":
+            spec = state["spec"]
+            if spec is None:
+                result.update(action="discuss", message="Describe the design to begin its specification.")
+            else:
+                try:
+                    require_ready(spec)
+                except ValueError:
+                    result.update(action="discuss", message="The draft is not ready for approval. Resolve open questions and incomplete readiness or specification sections.")
+                else:
+                    result.update(action="review_specification", message="The draft is ready for your review. Review and explicitly approve the specification before generating implementation stages.")
+        elif state["status"] == "awaiting_acceptance":
+            result.update(action="review_acceptance", message="Review the design and retained simulation evidence before final acceptance.")
+        elif state["status"] == "accepted":
+            result.update(action="complete", message="The reviewed design has been accepted. This does not authorize a release or publication.")
+        elif state["status"] == "review_blocked":
+            result["message"] = "Signoff requested changes. Inspect the saved findings, then use Propose a reviewed change to propose a correction."
+        elif state["status"] == "building" and state["stage"] == len(STAGES):
+            if self.agent.simulator is None:
+                result["message"] = "Implementation stages are complete. Configure an explicitly authorized isolated simulator before reviewing a run."
+            else:
+                result.update(action="simulate", message="Implementation stages are complete. Review the run configuration before starting simulation.")
+        elif state["status"] in ("building", "needs_repair", "needs_signoff"):
+            try:
+                plan = self._generation_plan(state)
+            except ValueError as error:
+                messages = {
+                    "expert_not_configured": "Enable a compatible provider in Provider settings to generate the next stage.",
+                    "provider_spend_uncertain": "Reconcile the uncertain provider outcome in Provider settings before continuing.",
+                    "provider_spend_not_configured": "Select a compatible provider and budget in Provider settings before continuing.",
+                    "provider_spend_budget_exhausted": "The provider budget cannot cover the next request reservation. Review the spend limit in Provider settings before continuing.",
+                    "expert_call_budget_exhausted": "The saved provider-call budget is exhausted. No further stage was started.",
+                    "repair_budget_exhausted": "The repair budget is exhausted. Inspect the recorded findings before revising the design.",
+                }
+                result["message"] = messages.get(str(error), "The next stage is blocked. Inspect History and the reviewed specification.")
+            else:
+                result.update(action="generate", stage=plan["stage"], plan=plan,
+                              message="Generate one engineering stage at a time. Simulation and final acceptance remain separate actions.")
+        return result
 
     def operation(self, identifier: str) -> JsonObject:
         state = self.agent.store.read()
@@ -350,6 +453,79 @@ class DesignWorkspace:
         task.add_done_callback(lambda done: self._reconcile_cancelled_task(client_operation_id, done))
         return self.operation(client_operation_id)
 
+    async def submit_generation(self, *, client_operation_id: str,
+                                expected_revision: int, plan_digest: str) -> JsonObject:
+        require(isinstance(client_operation_id, str) and
+                uuid.UUID(hex=client_operation_id).hex == client_operation_id,
+                "client_operation_id_invalid")
+        require(type(expected_revision) is int and expected_revision >= 0,
+                "expected_revision_invalid")
+        require(isinstance(plan_digest, str), "generation_plan_digest_invalid")
+        request_digest = content_digest({"action": "generate", "plan_digest": plan_digest})
+        state = self.agent.store.read()
+        existing = state["workspace_operations"].get(client_operation_id)
+        if existing is not None:
+            require(existing["request_digest"] == request_digest, "client_operation_id_conflict")
+            return self.operation(client_operation_id)
+        require(state["revision"] == expected_revision, "workspace_revision_stale")
+        self._writer_idle(state)
+        require(len(state["workspace_operations"]) < 128, "workspace_operation_limit")
+        plan = self._generation_plan(state)
+        require(plan["plan_digest"] == plan_digest, "generation_plan_stale")
+        updated = copy.deepcopy(state)
+        updated["workspace_operations"][client_operation_id] = {
+            "request_digest": request_digest, "phase": "queued",
+            "result_revision": None, "error_code": None,
+        }
+        self.agent.store.save(state, updated, "workspace.requested",
+                              {"client_operation_id": client_operation_id,
+                               "request_digest": request_digest})
+        self._capture(client_operation_id, "conversation_input", {"text": "Generate stage: " + plan["stage"]})
+        task = asyncio.create_task(self._run_generation(client_operation_id, plan))
+        self._tasks[client_operation_id] = task
+        task.add_done_callback(lambda done: self._reconcile_cancelled_task(client_operation_id, done))
+        return self.operation(client_operation_id)
+
+    async def _run_generation(self, identifier: str, plan: JsonObject) -> None:
+        previous_progress = self.agent.progress
+        self.agent.progress = self._on_progress
+        try:
+            state = self.agent.store.read()
+            row = state["workspace_operations"][identifier]
+            if row["phase"] == "cancellation_requested":
+                self._finish(identifier, "reconciliation_needed", "operation_cancelled_uncertain")
+                return
+            if row["phase"] != "queued":
+                return
+            # Only our queue record may have changed since the reviewed plan.
+            # A stale queued job must never advance a different stage or simulate.
+            require(state["revision"] == plan["revision"] + 1 and state["active"] is None,
+                    "generation_plan_stale")
+            bound = {**state, "revision": plan["revision"]}
+            require(self._generation_plan(bound) == plan, "generation_plan_stale")
+            updated = copy.deepcopy(state)
+            updated["workspace_operations"][identifier]["phase"] = "active"
+            self.agent.store.save(state, updated, "workspace.active", {"client_operation_id": identifier})
+            await self.agent.advance()
+            reply = ("Completed stage: " + plan["stage"].replace("_", " ") +
+                     ". Use Next step to continue. Simulation and acceptance require separate review.")
+            self._replies[identifier] = reply
+            self._capture(identifier, "conversation_output", {"text": reply})
+            self._finish(identifier, "completed", None)
+        except asyncio.CancelledError:
+            self._finish(identifier, "reconciliation_needed", "operation_cancelled_uncertain")
+        except Exception as error:
+            uncertain = self.agent.store.read()["active"] is not None
+            category = getattr(error, "category_code", None)
+            code = category if category in EXPERT_OPERATION_ERROR_CODES else (
+                str(error) if type(error) is ValueError and str(error) in EXPERT_OPERATION_ERROR_CODES else "operation_failed")
+            self._finish(identifier, "reconciliation_needed" if uncertain else "failed",
+                         "operation_cancelled_uncertain" if uncertain else code)
+        finally:
+            self.agent.progress = previous_progress
+            self._progress = None
+            self._tasks.pop(identifier, None)
+
     def simulation_plan(self) -> JsonObject:
         state = self.agent.store.read()
         require(state["status"] == "building" and state["stage"] == len(STAGES) and
@@ -590,6 +766,7 @@ class DesignWorkspace:
     def approve_review(self, kind: str, *, expected_revision: int,
                        state_digest: str, payload_digest: str) -> JsonObject:
         state = self.agent.store.read()
+        self._writer_idle(state)
         require(state["revision"] == expected_revision, "workspace_revision_stale")
         require(content_digest(state) == state_digest, "review_state_stale")
         card = ShownReview(kind, state_digest, payload_digest)

@@ -12,6 +12,7 @@ const elements = Object.fromEntries([
   "waveform-zoom-out", "waveform-pan-left", "waveform-pan-right", "waveform-chart",
   "waveform-cursor-a", "waveform-cursor-b", "waveform-values", "waveform-save", "waveform-attach",
   "review-card", "review-button", "approve-button", "activity-list", "history-detail",
+  "workflow-card", "workflow-title", "workflow-message", "workflow-plan", "workflow-action", "workflow-navigation",
   "conversation-list", "chat-form", "chat-input", "chat-kind", "composer-status",
   "provider-form", "provider-kind", "provider-openai-settings", "provider-ollama-settings",
   "provider-model", "provider-ollama-model", "provider-spend", "provider-key", "provider-enabled", "provider-status",
@@ -40,6 +41,13 @@ let historyRequest = 0;
 let workbenchRequest = 0;
 let refreshPromise = null;
 let refreshRequested = false;
+let workflow = null;
+let generationPlan = null;
+let generationSubmitting = false;
+let simulationSubmitting = false;
+let approvalSubmitting = false;
+let reviewRequest = 0;
+let simulationPlanRequest = 0;
 const systemMessages = new Map();
 const deliveredReplies = new Set();
 const displayedUserOperations = new Set();
@@ -89,6 +97,87 @@ function node(tag, text, className) {
 }
 
 function empty(target) { target.replaceChildren(); }
+
+const generationStages = Object.freeze({architecture: "architecture", verification_plan: "verification plan",
+  reference_model: "reference model", rtl: "RTL", assertions: "assertions", dv: "verification tests",
+  diagnosis: "diagnosis and repair", signoff: "signoff review"});
+const navigationPhrases = new Set([
+  "continue", "next", "next step", "can we continue", "ok can we continue", "okay can we continue",
+  "can we code", "ok can we code", "okay can we code", "let's continue", "lets continue",
+  "let's code", "lets code", "start coding", "start implementation", "review", "show the review",
+  "show review", "show readiness", "review specification", "review the specification", "show next step"
+]);
+function isWorkflowNavigation(value) {
+  // Whole phrases only: never discard a constraint, negation, or attached engineering evidence.
+  return navigationPhrases.has(value.toLowerCase().trim().replace(/[?!.]+$/, "").replace(/\s+/g, " "));
+}
+function workflowBusy() { return !!state?.active || pending.size > 0 || generationSubmitting || simulationSubmitting || approvalSubmitting; }
+function renderWorkflow(value = workflow) {
+  workflow = value?.schema === "openrtl.web-workflow.v1" ? value : null;
+  generationPlan = null;
+  const action = workflow?.action;
+  const busy = workflowBusy();
+  const titles = {discuss: "Clarify the specification", review_specification: "Specification ready for review",
+    generate: "Next engineering stage", simulate: "Implementation ready for simulation",
+    review_acceptance: "Evidence ready for acceptance", review_change: "Change ready for review",
+    blocked: "Next step needs attention", complete: "Design accepted"};
+  const labels = {discuss: "Describe or clarify the design", review_specification: "Review specification",
+    simulate: "Review simulation configuration", review_acceptance: "Review acceptance evidence",
+    review_change: "Review proposed change"};
+  elements["workflow-title"].textContent = titles[action] || "Next step";
+  elements["workflow-message"].textContent = workflow?.message || "Refresh the saved project to determine the next step.";
+  empty(elements["workflow-plan"]);
+  const button = elements["workflow-action"];
+  button.hidden = !Object.hasOwn(labels, action) && action !== "generate";
+  button.disabled = busy;
+  button.textContent = labels[action] || "Continue";
+  if (action === "generate") {
+    const plan = workflow.plan;
+    const label = generationStages[workflow.stage] || "engineering stage";
+    button.textContent = "Run " + label;
+    if (plan?.schema === "openrtl.web-generation-plan.v1" && plan.revision === state?.revision &&
+        Object.hasOwn(generationStages, plan.stage) && plan.stage === workflow.stage &&
+        plan.status === state?.status && plan.approved_spec === state?.approved_spec &&
+        typeof plan.plan_digest === "string" && !busy) generationPlan = plan;
+    button.disabled = !generationPlan;
+    elements["workflow-plan"].append(node("p", "One stage per click. This may call the selected provider; it never starts simulation."));
+    if (plan) elements["workflow-plan"].append(node("div", "Revision " + plan.revision + " · " +
+      label + " · plan " + plan.plan_digest, "digest-line"));
+  }
+  if (state?.status === "review_blocked" && state.review) {
+    elements["workflow-plan"].append(node("h3", "Saved signoff findings"), node("p", state.review.summary));
+    const findings = node("ul", "");
+    for (const finding of state.review.findings || []) findings.append(node("li", finding));
+    elements["workflow-plan"].append(findings);
+  }
+  elements["workflow-navigation"].textContent = busy ? "View current progress" : "Show next step";
+}
+function focusWorkflow() {
+  elements["workflow-card"].scrollIntoView({block: "nearest", behavior: "smooth"});
+  (elements["workflow-action"].hidden || elements["workflow-action"].disabled ?
+    elements["workflow-card"] : elements["workflow-action"]).focus();
+}
+async function navigateWorkflow() {
+  if (!state) return;
+  focusWorkflow();
+  if (workflowBusy()) {
+    notice("An operation is still active. The next step will update when its saved result is available.", "workflow-navigation");
+    return;
+  }
+  const kind = {review_specification: "specification", review_change: "change", review_acceptance: "acceptance"}[workflow?.action];
+  if (kind) {
+    if (await showReview(kind) && card?.kind === kind && card.revision === state?.revision &&
+        !elements["approve-button"].hidden) notice("Review the displayed " + kind +
+      ", then use its explicit approval button. No approval or generation was submitted.", "workflow-navigation");
+  } else if (workflow?.action === "simulate") {
+    if (await showSimulationPlan() && simulationPlan?.revision === state?.revision &&
+        !elements["simulation-run-button"].hidden) notice("Review the displayed simulation configuration before choosing Run. No simulation was submitted.", "workflow-navigation");
+  } else {
+    notice((workflow?.message || "Refresh the project to determine the next step.") +
+      (workflow?.action === "generate" ? " Use the displayed Run button to start that stage. No provider call was submitted." : ""), "workflow-navigation");
+    if (workflow?.action === "discuss") elements["chat-input"].focus();
+  }
+}
 
 function printable(value) {
   if (value === null || value === undefined) return "Unavailable · not recorded";
@@ -802,6 +891,11 @@ function moveWaveWindow(action) {
 }
 
 function renderSnapshot(snapshot) {
+  if (state && snapshot.state.revision < state.revision) return;
+  if (state && snapshot.state.revision !== state.revision) {
+    reviewRequest++;
+    simulationPlanRequest++;
+  }
   state = snapshot.state;
   waveProjectId = snapshot.project_id;
   cursor = snapshot.next_cursor;
@@ -820,6 +914,13 @@ function renderSnapshot(snapshot) {
     const active = ["active", "cancellation_requested"].includes(operation.phase);
     const progress = active && snapshot.progress?.operation_id === state.active?.id ? snapshot.progress : null;
     reconcileOperation({id, ...operation}, progress);
+  }
+  renderWorkflow(snapshot.workflow || null);
+  if (card && (card.revision !== state.revision || workflowBusy())) {
+    card = null;
+    reviewRequest++;
+    elements["approve-button"].hidden = true;
+    elements["review-card"].textContent = "Project state changed. Open a fresh review before approving.";
   }
   renderSpecification(state.spec);
   if (simulationPlan && simulationPlan.revision !== state.revision) {
@@ -903,6 +1004,12 @@ elements["chat-form"].addEventListener("submit", async event => {
   event.preventDefault();
   const value = elements["chat-input"].value.trim();
   if (!value || !state) return;
+  if (!selectedAttachment && elements["chat-kind"].value !== "change" && isWorkflowNavigation(value)) {
+    message("user", value);
+    elements["chat-input"].value = "";
+    await navigateWorkflow();
+    return;
+  }
   const id = crypto.randomUUID().replaceAll("-", "");
   try {
     const discovery = state.status === "discovery";
@@ -922,39 +1029,93 @@ elements["chat-form"].addEventListener("submit", async event => {
 });
 
 async function showReview(kind) {
-  if (!state) return;
+  if (!state || workflowBusy()) return false;
+  const request = ++reviewRequest;
+  const revision = state.revision;
+  card = null;
+  elements["approve-button"].hidden = true;
   try {
-    card = await api("/api/review?kind=" + kind);
+    const result = await api("/api/review?kind=" + kind);
+    if (request !== reviewRequest || revision !== state?.revision || result.revision !== revision || result.kind !== kind || workflowBusy()) return false;
+    card = result;
     empty(elements["review-card"]);
     elements["review-card"].append(node("div", JSON.stringify(card.payload, null, 2), "review-line"));
     elements["review-card"].append(node("div", "Revision " + card.revision + " · " + card.payload_digest, "muted"));
-    elements["approve-button"].textContent = "Approve displayed " + kind;
+    elements["approve-button"].textContent = kind === "acceptance" ? "Accept displayed design evidence" : "Approve displayed " + kind;
     elements["approve-button"].hidden = false;
+    elements["review-card"].scrollIntoView({block: "nearest", behavior: "smooth"});
+    elements["approve-button"].focus();
+    return true;
   } catch (error) {
+    if (request !== reviewRequest) return false;
     notice("No " + kind + " is available for review yet.");
+    return false;
   }
 }
 elements["review-button"].addEventListener("click", () => showReview("specification"));
 elements["change-review-button"].addEventListener("click", () => showReview("change"));
 
-elements["simulation-review-button"].addEventListener("click", async () => {
+async function showSimulationPlan() {
+  if (!state || workflowBusy()) return false;
+  const request = ++simulationPlanRequest;
+  const revision = state.revision;
+  simulationPlan = null;
+  elements["simulation-run-button"].hidden = true;
   try {
-    simulationPlan = await api("/api/simulation/plan");
+    const result = await api("/api/simulation/plan");
+    if (request !== simulationPlanRequest || revision !== state?.revision || result.revision !== revision || workflowBusy()) return false;
+    simulationPlan = result;
     elements["simulation-plan"].textContent = JSON.stringify(simulationPlan, null, 2);
     elements["simulation-run-button"].hidden = false;
-  } catch (error) { notice("Simulation is unavailable. Review the baseline and explicitly selected runtime."); }
+    elements["simulation-plan"].scrollIntoView({block: "nearest", behavior: "smooth"});
+    elements["simulation-run-button"].focus();
+    return true;
+  } catch (error) {
+    if (request === simulationPlanRequest) notice("Simulation is unavailable. Review the baseline and explicitly selected runtime.");
+    return false;
+  }
+}
+elements["simulation-review-button"].addEventListener("click", showSimulationPlan);
+elements["workflow-navigation"].addEventListener("click", navigateWorkflow);
+elements["workflow-action"].addEventListener("click", async () => {
+  if (!state || workflowBusy()) return;
+  if (workflow?.action !== "generate") { await navigateWorkflow(); return; }
+  if (!generationPlan || generationPlan.revision !== state.revision) return;
+  const plan = generationPlan;
+  generationSubmitting = true;
+  renderWorkflow();
+  try {
+    const job = await post("/api/generations", {client_operation_id: crypto.randomUUID().replaceAll("-", ""),
+      expected_revision: plan.revision, plan_digest: plan.plan_digest});
+    reconcileOperation(job);
+  } catch (error) {
+    notice("The stage submission could not be confirmed. Refresh and inspect its saved operation before another request; no stage was retried.");
+  } finally {
+    generationSubmitting = false;
+    // Only a fresh server snapshot may restore a consumed plan or enable the next stage.
+    generationPlan = null;
+    await refresh();
+  }
 });
 
 elements["simulation-run-button"].addEventListener("click", async () => {
-  if (!simulationPlan || !state) return;
+  if (!simulationPlan || !state || workflowBusy() || simulationPlan.revision !== state.revision) return;
+  const plan = simulationPlan;
+  simulationPlan = null;
+  simulationPlanRequest++;
+  simulationSubmitting = true;
+  elements["simulation-run-button"].hidden = true;
+  renderWorkflow();
   try {
     const job = await post("/api/simulations", {client_operation_id: crypto.randomUUID().replaceAll("-", ""),
-      expected_revision: simulationPlan.revision, plan_digest: simulationPlan.plan_digest});
+      expected_revision: plan.revision, plan_digest: plan.plan_digest});
     reconcileOperation(job);
-    simulationPlan = null;
-    elements["simulation-run-button"].hidden = true;
-    refresh();
-  } catch (error) { notice("The simulation submission could not be confirmed. Inspect the saved operation before submitting another run."); }
+  } catch (error) {
+    notice("The simulation submission could not be confirmed. Inspect the saved operation before submitting another run.");
+  } finally {
+    simulationSubmitting = false;
+    await refresh();
+  }
 });
 
 elements["simulation-recover-button"].addEventListener("click", async () => {
@@ -1024,18 +1185,25 @@ elements["diff-source-button"].addEventListener("click", async () => {
 });
 
 elements["approve-button"].addEventListener("click", async () => {
-  if (!card) return;
+  if (!card || workflowBusy() || card.revision !== state?.revision) return;
+  const review = card;
+  card = null;
+  reviewRequest++;
+  approvalSubmitting = true;
+  elements["approve-button"].hidden = true;
+  renderWorkflow();
   try {
     await post("/api/approve", {
-      kind: card.kind, expected_revision: card.revision,
-      state_digest: card.state_digest, payload_digest: card.payload_digest
+      kind: review.kind, expected_revision: review.revision,
+      state_digest: review.state_digest, payload_digest: review.payload_digest
     });
-    card = null;
-    elements["approve-button"].hidden = true;
-    notice("The displayed specification was approved. Engineering stages still require their normal controls.");
-    refresh();
+    notice(review.kind === "acceptance" ? "The displayed design evidence was accepted. This is not a release or publication." :
+      "The displayed " + review.kind + " was approved. Use Next step to start the next engineering stage; simulation remains a separate reviewed action.");
   } catch (error) {
     notice("That review is stale or incomplete. Refresh and inspect the current proposal.");
+  } finally {
+    approvalSubmitting = false;
+    await refresh();
   }
 });
 

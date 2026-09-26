@@ -28,6 +28,12 @@
       <div class="document-heading"><div><span class="eyebrow">PROJECT</span><h1>Design overview</h1></div><span id="digest-label" class="digest">No approved design</span></div>
       <button id="create-project-button" type="button" hidden>Create this project</button>
       <button id="upgrade-project-button" type="button" hidden>Upgrade this project session</button>
+      <section id="workflow-card" class="surface workflow-card" tabindex="-1" aria-label="Next engineering step">
+        <div class="section-title"><h2 id="workflow-title">Next step</h2><span>Review → implement → simulate → accept</span></div>
+        <p id="workflow-message" role="status">Loading the saved project workflow.</p>
+        <div id="workflow-plan" class="stack muted"></div>
+        <button id="workflow-action" type="button" hidden>Continue</button>
+      </section>
       <section class="surface">
         <div class="section-title"><h2>Provider settings</h2><span>Remote or local structured inference</span></div>
         <form id="provider-form" class="provider-form" autocomplete="off">
@@ -64,7 +70,7 @@
     <aside class="conversation" aria-label="Design conversation">
       <div class="conversation-heading"><div><span class="eyebrow">DESIGN LEAD</span><h2>Conversation</h2></div><span class="live-dot" aria-hidden="true"></span></div>
       <div id="conversation-list" class="messages" role="log" aria-live="polite" aria-relevant="additions text"><div class="message system"><strong class="message-identity">System</strong><div class="message-text">Describe a circuit in your own words. OpenRTL will ask about missing details and show a specification for review.</div></div></div>
-      <form id="chat-form" class="composer"><label for="chat-input">Your request</label><textarea id="chat-input" rows="3" maxlength="16000" placeholder="For example: I need a counter with a reset and enable…"></textarea><label for="chat-kind">Action</label><select id="chat-kind"><option value="question">Ask about the design</option><option value="change">Propose a reviewed change</option></select><div class="composer-footer"><span id="composer-status">Provider unavailable until explicitly selected at launch.</span><button type="submit">Send</button></div></form>
+      <form id="chat-form" class="composer"><button id="workflow-navigation" type="button">Show next step</button><label for="chat-input">Your request</label><textarea id="chat-input" rows="3" maxlength="16000" placeholder="For example: I need a counter with a reset and enable…"></textarea><label for="chat-kind">Message type</label><select id="chat-kind"><option value="question">Ask about the design</option><option value="change">Propose a reviewed change</option></select><div class="composer-footer"><span id="composer-status">Provider unavailable until explicitly selected at launch.</span><button type="submit">Send</button></div></form>
     </aside>
   </div>
 </body>

@@ -108,6 +108,40 @@ panel displays its completeness, parameters, all fixed narrative sections, ports
 acceptance criteria, open questions, assumption rationale, and readiness anchors.
 Older saved projects are labeled legacy and are not silently rewritten.
 
+The **Next step** card is the authoritative handoff between discovery and
+engineering. Zero open questions means clarification may be finished, not that
+the specification has been approved. When deterministic readiness checks pass,
+choose **Review specification**, inspect the complete displayed revision, then
+**Approve displayed specification**. Approval is bound to that exact revision
+and its digests; it does not start a provider call. The card then offers one
+explicit **Run** action for the next engineering stage: architecture,
+verification plan, reference model, RTL, assertions, then verification tests.
+Each click submits one durable generation operation against the displayed plan
+and revision. It may use the explicitly enabled provider, but it never starts
+simulation or automatically advances another stage. Progress and any failure
+remain visible in Conversation and History; reconnect never replays the call.
+
+Plain navigation phrases such as “continue”, “ok can we continue?” and “ok can
+we code?” show the next step or open its review instead of asking the provider
+to draft the same specification again. **Show next step** beside the composer
+does the same. These shortcuts never approve, generate, or simulate. They match
+only whole, finite phrases: messages containing additional design constraints,
+negation, a source/waveform attachment, or the reviewed-change message type keep
+their normal discussion/question path.
+
+Once all six generation stages are saved, the next action is **Review simulation
+configuration**, followed by the separate **Run displayed simulation** button.
+A simulator must have been explicitly selected for this server. Missing provider
+or simulator authority, incomplete discovery, active/uncertain work, and blocked
+reviews are reported as next-step guidance instead of appearing complete.
+A failed simulation can lead to a separately requested diagnosis/repair stage;
+a passing one leads to a separately requested signoff review. Successful signoff
+offers **Review acceptance evidence**, then **Accept displayed design evidence**.
+Acceptance revalidates the saved evidence and does not release or publish anything.
+Reviewing and approving a proposed change uses the same revision/digest boundary
+and returns to the relevant engineering stages. A stale review or plan cannot
+authorize work at a newer revision. No fresh project is needed to resume this flow.
+
 If a completed model response fails deterministic discovery validation, the
 System message in Conversation identifies whether the proposed readiness,
 questions, specification, memory or structured fields failed. The matching

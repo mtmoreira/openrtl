@@ -38,7 +38,8 @@ class Element {
     return null;
   }
   querySelectorAll() { return []; }
-  scrollIntoView() {}
+  scrollIntoView() { this.scrolled = true; }
+  focus() { this.focused = true; }
 }
 
 function browser() {
@@ -61,6 +62,26 @@ function browser() {
 function history(sequence, overrides = {}) {
   return {event: {sequence, event: "operation.received", fields: {}}, trace: [],
     state: {}, evidence: null, visibility: {}, details: [], files: [], ...overrides};
+}
+
+function workflowSnapshot(action, {revision = 10, status = "discovery", stage = null, plan = null, ...changes} = {}) {
+  return {state: {revision, active: null, status, approved_spec: status === "discovery" ? null : "approved-digest",
+    stage: 0, manifest: null, simulation: null, spec: null, engineering_memory: [], workspace_operations: {}},
+    project_id: "unit-project", next_cursor: revision, capabilities: {provider: true, simulation: false}, events: [],
+    workflow: {schema: "openrtl.web-workflow.v1", action, message: "Saved next-step guidance", stage, plan}, ...changes};
+}
+function generationSnapshot(stage = "architecture", changes = {}) {
+  const revision = changes.revision ?? 10;
+  return workflowSnapshot("generate", {status: "building", stage, revision,
+    plan: {schema: "openrtl.web-generation-plan.v1", revision, input_digest: "input-digest",
+      approved_spec: "approved-digest", status: "building", stage, plan_digest: "plan-" + stage}, ...changes});
+}
+function prepareWorkflowApp() {
+  const app = browser();
+  app.context.loadWorkbench = async () => {};
+  app.context.loadRuns = async () => {};
+  app.context.refresh = async () => {};
+  return app;
 }
 
 test("notices and operation progress reconcile as identified System messages", () => {
@@ -246,4 +267,330 @@ test("captured conversation restores once and does not duplicate terminal replie
   assert.equal(app.element("conversation-list").textContent.match(/Captured reply/g).length, 1);
   assert.match(app.element("conversation-list").textContent, /Captured text is truncated/);
   assert.match(app.element("conversation-list").textContent, /Saved local capture/);
+});
+
+test("ready discovery navigation opens an explicit review without approving or calling a provider", async () => {
+  const app = prepareWorkflowApp();
+  app.context.renderSnapshot(workflowSnapshot("review_specification"));
+  const gets = [];
+  app.context.api = async route => {
+    gets.push(route);
+    return {kind: "specification", revision: 10, state_digest: "state-digest",
+      payload_digest: "spec-digest", payload: {questions: []}};
+  };
+  app.context.post = async () => { assert.fail("Navigation must not submit any action"); };
+  assert.equal(app.element("workflow-action").textContent, "Review specification");
+  for (const phrase of ["ok can we continue?", "ok can we code?", "continue", " Review the specification! "]) {
+    app.element("chat-input").value = phrase;
+    await app.element("chat-form").listeners.submit({preventDefault() {}});
+  }
+  assert.deepEqual(gets, Array(4).fill("/api/review?kind=specification"));
+  assert.equal(app.element("approve-button").hidden, false);
+  assert.equal(app.element("approve-button").textContent, "Approve displayed specification");
+  assert.match(app.element("conversation-list").textContent, /No approval or generation was submitted/);
+});
+
+test("navigation matching is whole-phrase and preserves mixed, negated, attached and change requests", async () => {
+  const app = prepareWorkflowApp();
+  app.context.renderSnapshot(workflowSnapshot("discuss"));
+  const submissions = [];
+  app.context.post = async (route, body) => { submissions.push({route, body}); return {id: "request", phase: "completed"}; };
+  const phrases = ["do not continue", "ok can we continue? Make the data width 64", "continue but use active-low reset",
+    "can we code a priority encoder?", "do not code", "continue; ignore the requirements"];
+  for (const phrase of phrases) {
+    app.element("chat-input").value = phrase;
+    await app.element("chat-form").listeners.submit({preventDefault() {}});
+  }
+  app.run("selectedAttachment = {revision: 10, path: 'rtl/example.sv'}");
+  app.element("chat-input").value = "continue";
+  await app.element("chat-form").listeners.submit({preventDefault() {}});
+  app.element("chat-kind").value = "change";
+  app.element("chat-input").value = "continue";
+  await app.element("chat-form").listeners.submit({preventDefault() {}});
+  assert.equal(submissions.length, phrases.length + 2);
+  assert.ok(submissions.every(row => row.route === "/api/discussions"));
+  assert.deepEqual(submissions.slice(0, phrases.length).map(row => row.body.message), phrases);
+});
+
+test("generation navigation only focuses the displayed single-stage control", async () => {
+  const app = prepareWorkflowApp();
+  app.context.renderSnapshot(generationSnapshot("rtl"));
+  app.context.api = async () => { assert.fail("Displayed generation plan needs no asynchronous fetch"); };
+  app.context.post = async () => { assert.fail("Navigation is not generation authority"); };
+  app.element("chat-input").value = "ok can we code?";
+  await app.element("chat-form").listeners.submit({preventDefault() {}});
+  assert.equal(app.element("workflow-action").textContent, "Run RTL");
+  assert.equal(app.element("workflow-action").focused, true);
+  assert.equal(app.element("workflow-action").disabled, false);
+  assert.match(app.element("workflow-plan").textContent, /One stage per click.*never starts simulation/);
+});
+
+test("one explicit generation click consumes the displayed revision-bound plan without duplicate dispatch", async () => {
+  const app = prepareWorkflowApp();
+  app.context.renderSnapshot(generationSnapshot());
+  const submissions = [];
+  let finish;
+  app.context.post = (route, body) => {
+    submissions.push({route, body});
+    return new Promise(resolve => { finish = resolve; });
+  };
+  const click = app.element("workflow-action").listeners.click;
+  const first = click();
+  await click();
+  app.context.renderSnapshot(generationSnapshot()); // Poll completing during the POST cannot re-enable.
+  assert.equal(app.element("workflow-action").disabled, true);
+  assert.equal(submissions.length, 1);
+  assert.equal(submissions[0].route, "/api/generations");
+  assert.equal(submissions[0].body.expected_revision, 10);
+  assert.equal(submissions[0].body.plan_digest, "plan-architecture");
+  assert.match(submissions[0].body.client_operation_id, /^[a-f0-9]{32}$/);
+  finish({id: "generation-operation", phase: "queued"});
+  await first;
+  await click();
+  assert.equal(submissions.length, 1);
+  assert.equal(app.run("generationPlan"), null);
+});
+
+test("generation plans fail closed for stale revision, approval, stage or status", () => {
+  for (const change of [{revision: 9}, {approved_spec: "changed"}, {stage: "simulation"}, {status: "discovery"}]) {
+    const app = prepareWorkflowApp();
+    const snapshot = generationSnapshot();
+    Object.assign(snapshot.workflow.plan, change);
+    app.context.renderSnapshot(snapshot);
+    assert.equal(app.element("workflow-action").disabled, true);
+    assert.equal(app.run("generationPlan"), null);
+  }
+});
+
+test("missing or unknown workflow schemas never retain a previous generation plan", () => {
+  const app = prepareWorkflowApp();
+  app.context.renderSnapshot(generationSnapshot());
+  for (const value of [null, {schema: "unknown", action: "generate", plan: generationSnapshot().workflow.plan}]) {
+    const snapshot = generationSnapshot();
+    snapshot.workflow = value;
+    app.context.renderSnapshot(snapshot);
+    assert.equal(app.run("generationPlan"), null);
+    assert.equal(app.element("workflow-action").hidden, true);
+  }
+});
+
+test("failed generation submission remains consumed until a fresh snapshot and never retries itself", async () => {
+  const app = prepareWorkflowApp();
+  app.context.renderSnapshot(generationSnapshot());
+  let submissions = 0, refreshes = 0;
+  app.context.post = async () => { submissions++; throw new Error("connection lost"); };
+  app.context.refresh = async () => { refreshes++; };
+  await app.element("workflow-action").listeners.click();
+  await app.element("workflow-action").listeners.click();
+  assert.equal(submissions, 1);
+  assert.equal(refreshes, 1);
+  assert.equal(app.element("workflow-action").disabled, true);
+  assert.match(app.element("conversation-list").textContent, /no stage was retried/);
+});
+
+test("specification approval posts only displayed authority and refreshes the next stage", async () => {
+  const app = prepareWorkflowApp();
+  app.context.renderSnapshot(workflowSnapshot("review_specification"));
+  app.context.api = async () => ({kind: "specification", revision: 10,
+    state_digest: "reviewed-state", payload_digest: "reviewed-spec", payload: {ports: []}});
+  await app.context.showReview("specification");
+  const submissions = [];
+  app.context.post = async (route, body) => { submissions.push({route, body}); };
+  app.context.refresh = async () => app.context.renderSnapshot(generationSnapshot("architecture", {revision: 11}));
+  await app.element("approve-button").listeners.click();
+  assert.equal(submissions.length, 1);
+  assert.equal(submissions[0].route, "/api/approve");
+  assert.deepEqual(JSON.parse(JSON.stringify(submissions[0].body)), {kind: "specification", expected_revision: 10,
+    state_digest: "reviewed-state", payload_digest: "reviewed-spec"});
+  assert.equal(app.element("approve-button").hidden, true);
+  assert.equal(app.element("workflow-action").textContent, "Run architecture");
+  assert.equal(app.element("workflow-action").disabled, false);
+});
+
+test("late review responses cannot restore approval at a newer revision", async () => {
+  const app = prepareWorkflowApp();
+  app.context.renderSnapshot(workflowSnapshot("review_specification"));
+  let finish;
+  app.context.api = () => new Promise(resolve => { finish = resolve; });
+  const reviewing = app.context.showReview("specification");
+  app.context.renderSnapshot(workflowSnapshot("discuss", {revision: 11}));
+  finish({kind: "specification", revision: 10, payload: {}, state_digest: "old", payload_digest: "old"});
+  await reviewing;
+  assert.equal(app.element("approve-button").hidden, true);
+  assert.equal(app.run("card"), null);
+});
+
+test("a newer snapshot invalidates displayed approval and ignores older snapshots", async () => {
+  const app = prepareWorkflowApp();
+  app.context.renderSnapshot(workflowSnapshot("review_specification"));
+  app.context.api = async () => ({kind: "specification", revision: 10, payload: {}, state_digest: "old", payload_digest: "old"});
+  await app.context.showReview("specification");
+  app.context.renderSnapshot(workflowSnapshot("discuss", {revision: 11}));
+  app.context.renderSnapshot(workflowSnapshot("review_specification", {revision: 10}));
+  assert.equal(app.element("approve-button").hidden, true);
+  assert.equal(app.run("state.revision"), 11);
+  assert.equal(app.element("workflow-action").textContent, "Describe or clarify the design");
+});
+
+test("completed generation exposes the next stage without automatically dispatching it", () => {
+  const app = prepareWorkflowApp();
+  app.context.post = async () => { assert.fail("Rendering a completed operation cannot dispatch work"); };
+  const active = generationSnapshot();
+  active.state.workspace_operations = {work: {phase: "active"}};
+  app.context.renderSnapshot(active);
+  assert.equal(app.element("workflow-action").disabled, true);
+  const completed = generationSnapshot("verification_plan", {revision: 15});
+  completed.state.workspace_operations = {work: {phase: "completed", result_revision: 14}};
+  app.context.renderSnapshot(completed);
+  assert.equal(app.element("workflow-action").disabled, false);
+  assert.equal(app.element("workflow-action").textContent, "Run verification plan");
+});
+
+test("simulation navigation reviews but never executes and stale plans cannot reappear", async () => {
+  const app = prepareWorkflowApp();
+  app.context.renderSnapshot(workflowSnapshot("simulate", {status: "building"}));
+  const gets = [];
+  app.context.api = async route => { gets.push(route); return {revision: 10, plan_digest: "run-plan"}; };
+  app.context.post = async () => { assert.fail("Reviewing is not simulation authority"); };
+  await app.element("workflow-action").listeners.click();
+  assert.deepEqual(gets, ["/api/simulation/plan"]);
+  assert.equal(app.element("simulation-run-button").hidden, false);
+  let finish;
+  app.context.api = () => new Promise(resolve => { finish = resolve; });
+  const reviewing = app.context.showSimulationPlan();
+  app.context.renderSnapshot(workflowSnapshot("blocked", {status: "building", revision: 11}));
+  finish({revision: 10, plan_digest: "old-run-plan"});
+  await reviewing;
+  assert.equal(app.element("simulation-run-button").hidden, true);
+  assert.equal(app.run("simulationPlan"), null);
+});
+
+test("simulation needs its own explicit displayed-plan click and cannot double-dispatch", async () => {
+  const app = prepareWorkflowApp();
+  app.context.renderSnapshot(workflowSnapshot("simulate", {status: "building"}));
+  app.context.api = async () => ({revision: 10, plan_digest: "run-plan"});
+  await app.context.showSimulationPlan();
+  let finish;
+  const posts = [];
+  app.context.post = (route, body) => {
+    posts.push({route, body});
+    return new Promise(resolve => { finish = resolve; });
+  };
+  const first = app.element("simulation-run-button").listeners.click();
+  await app.element("simulation-run-button").listeners.click();
+  assert.equal(posts.length, 1);
+  assert.equal(posts[0].route, "/api/simulations");
+  assert.equal(posts[0].body.expected_revision, 10);
+  assert.equal(posts[0].body.plan_digest, "run-plan");
+  finish({id: "simulation-operation", phase: "queued"});
+  await first;
+  assert.equal(app.element("simulation-run-button").hidden, true);
+});
+
+test("repair and signoff use individual generation stages, never implicit simulation or acceptance", async () => {
+  for (const [stage, status, label] of [["diagnosis", "needs_repair", "Run diagnosis and repair"],
+    ["signoff", "needs_signoff", "Run signoff review"]]) {
+    const app = prepareWorkflowApp();
+    const snapshot = generationSnapshot(stage, {status});
+    snapshot.workflow.plan.status = status;
+    app.context.renderSnapshot(snapshot);
+    assert.equal(app.element("workflow-action").textContent, label);
+    assert.equal(app.element("workflow-action").disabled, false);
+    const posts = [];
+    app.context.post = async (route, body) => { posts.push({route, body}); return {id: stage, phase: "queued"}; };
+    await app.element("workflow-action").listeners.click();
+    assert.equal(posts.length, 1);
+    assert.equal(posts[0].route, "/api/generations");
+    assert.equal(posts[0].body.plan_digest, "plan-" + stage);
+  }
+});
+
+test("acceptance and change handoffs open exact review kinds with distinct explicit approvals", async () => {
+  for (const [action, kind] of [["review_acceptance", "acceptance"], ["review_change", "change"]]) {
+    const app = prepareWorkflowApp();
+    app.context.renderSnapshot(workflowSnapshot(action, {status: "awaiting_acceptance"}));
+    const gets = [], posts = [];
+    app.context.api = async route => { gets.push(route); return {kind, revision: 10, payload: {evidence: "saved"},
+      state_digest: "state-digest", payload_digest: "payload-digest"}; };
+    app.context.post = async (route, body) => { posts.push({route, body}); };
+    await app.element("workflow-action").listeners.click();
+    assert.deepEqual(gets, ["/api/review?kind=" + kind]);
+    assert.equal(posts.length, 0);
+    assert.equal(app.element("approve-button").textContent,
+      kind === "acceptance" ? "Accept displayed design evidence" : "Approve displayed change");
+    await app.element("approve-button").listeners.click();
+    assert.equal(posts.length, 1);
+    assert.equal(posts[0].route, "/api/approve");
+    assert.equal(posts[0].body.kind, kind);
+    if (kind === "acceptance") assert.match(app.element("conversation-list").textContent, /not a release or publication/);
+  }
+});
+
+test("incomplete discovery, blocked capability and completed state provide safe next-step guidance", async () => {
+  for (const action of ["discuss", "blocked", "complete"]) {
+    const app = prepareWorkflowApp();
+    const snapshot = workflowSnapshot(action);
+    snapshot.workflow.message = "<img src=x> Safe authoritative guidance for " + action;
+    app.context.renderSnapshot(snapshot);
+    app.context.api = async () => { assert.fail("Guidance must not fetch a generation or approval action"); };
+    app.context.post = async () => { assert.fail("Guidance must not cause effects"); };
+    await app.element("workflow-navigation").listeners.click();
+    assert.equal(app.element("workflow-message").textContent, snapshot.workflow.message);
+    assert.equal(app.element("workflow-action").hidden, action !== "discuss");
+    assert.equal(app.run("generationPlan"), null);
+  }
+});
+
+test("failed review navigation never claims that an approval or simulation plan was displayed", async () => {
+  for (const [action, errorText] of [["review_specification", "No specification is available"],
+    ["review_change", "No change is available"], ["review_acceptance", "No acceptance is available"],
+    ["simulate", "Simulation is unavailable"]]) {
+    const app = prepareWorkflowApp();
+    app.context.renderSnapshot(workflowSnapshot(action));
+    app.context.api = async () => { throw new Error("stale request"); };
+    app.context.post = async () => { assert.fail("Failed review navigation cannot submit an action"); };
+    await app.element("workflow-navigation").listeners.click();
+    assert.ok(app.element("conversation-list").textContent.includes(errorText));
+    assert.doesNotMatch(app.element("conversation-list").textContent, /Review the displayed/);
+    assert.equal(app.run("card"), null);
+    assert.equal(app.run("simulationPlan"), null);
+  }
+});
+
+test("late navigation reviews do not announce a plan invalidated by a newer snapshot", async () => {
+  for (const action of ["review_specification", "simulate"]) {
+    const app = prepareWorkflowApp();
+    app.context.renderSnapshot(workflowSnapshot(action));
+    let finish;
+    app.context.api = () => new Promise(resolve => { finish = resolve; });
+    app.context.post = async () => { assert.fail("Stale navigation cannot submit an action"); };
+    const navigation = app.element("workflow-navigation").listeners.click();
+    app.context.renderSnapshot(workflowSnapshot("blocked", {revision: 11}));
+    finish({kind: "specification", revision: 10, payload: {}, state_digest: "old", payload_digest: "old", plan_digest: "old"});
+    await navigation;
+    assert.doesNotMatch(app.element("conversation-list").textContent, /Review the displayed/);
+    assert.equal(app.run("card"), null);
+    assert.equal(app.run("simulationPlan"), null);
+  }
+});
+
+test("blocked signoff renders saved findings safely without private capture or provider dispatch", async () => {
+  const app = prepareWorkflowApp();
+  const snapshot = workflowSnapshot("blocked", {status: "review_blocked"});
+  snapshot.state.review = {verdict: "revise", summary: "Reset behavior needs a reviewed correction.",
+    findings: ["<img src=x onerror=throw-new-error>", "Clarify the output during reset."]};
+  snapshot.workflow.message = "Signoff requested changes. Inspect the saved findings, then use Propose a reviewed change to propose a correction.";
+  app.context.api = async () => { assert.fail("Findings must come from accepted state, not private capture"); };
+  app.context.post = async () => { assert.fail("Displaying findings cannot propose, approve or generate changes"); };
+  app.context.renderSnapshot(snapshot);
+  await app.element("workflow-navigation").listeners.click();
+  for (const value of ["Saved signoff findings", snapshot.state.review.summary, ...snapshot.state.review.findings]) {
+    assert.ok(app.element("workflow-plan").textContent.includes(value), value);
+  }
+  assert.match(app.element("workflow-message").textContent, /Propose a reviewed change/);
+  assert.equal(app.element("workflow-action").hidden, true);
+  const newer = workflowSnapshot("generate", {revision: 11, status: "building"});
+  newer.state.review = snapshot.state.review; // Historical findings must not masquerade as a current blocker.
+  app.context.renderSnapshot(newer);
+  assert.doesNotMatch(app.element("workflow-plan").textContent, /Saved signoff findings/);
 });

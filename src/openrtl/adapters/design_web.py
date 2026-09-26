@@ -235,6 +235,15 @@ class WorkspaceRuntime:
                                                         kind=kind, intent=intent)
         return self._await(invoke())
 
+    def generate(self, identifier: str, revision: int, plan_digest: str) -> JsonObject:
+        async def invoke() -> JsonObject:
+            require(self.workspace is not None, "project_not_created")
+            assert self.workspace is not None
+            return await self.workspace.submit_generation(client_operation_id=identifier,
+                                                          expected_revision=revision,
+                                                          plan_digest=plan_digest)
+        return self._await(invoke())
+
     def simulate(self, identifier: str, revision: int, plan_digest: str) -> JsonObject:
         async def invoke() -> JsonObject:
             require(self.workspace is not None, "project_not_created")
@@ -323,6 +332,9 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
                            "provider_reconciliation_request_invalid",
                            "provider_reconciliation_decision_invalid",
                            "provider_reconciliation_not_required", "workspace_revision_stale",
+                           "generation_plan_stale", "workspace_generation_not_ready",
+                           "provider_spend_not_configured", "provider_spend_budget_exhausted",
+                           "expert_not_configured", "expert_call_budget_exhausted", "repair_budget_exhausted",
                            "workspace_writer_busy_or_unreconciled",
                            "interrupted_operation_requires_reconciliation"}
                 code = str(error) if type(error) is ValueError and str(error) in allowed else "invalid_or_stale_request"
@@ -365,6 +377,10 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
                     query = parse_qs(parsed.query, strict_parsing=True)
                     require(set(query) == {"kind"} and len(query["kind"]) == 1, "web_query_invalid")
                     self._json(200, runtime.call(lambda workspace: workspace.review(query["kind"][0])))
+                    return
+                if parsed.path == "/api/generation/plan":
+                    require(not parsed.query, "web_query_invalid")
+                    self._json(200, runtime.call(lambda workspace: workspace.generation_plan()))
                     return
                 if parsed.path == "/api/simulation/plan":
                     require(not parsed.query, "web_query_invalid")
@@ -429,6 +445,11 @@ def handler(runtime: WorkspaceRuntime) -> type[BaseHTTPRequestHandler]:
                     self._json(202, runtime.question(body["message"], body["client_operation_id"],
                                                      body["expected_revision"], body["attachment"],
                                                      body["kind"], body["intent"]))
+                    return
+                if parsed.path == "/api/generations":
+                    body = self._body({"client_operation_id", "expected_revision", "plan_digest"})
+                    self._json(202, runtime.generate(body["client_operation_id"],
+                                                     body["expected_revision"], body["plan_digest"]))
                     return
                 if parsed.path == "/api/simulations":
                     body = self._body({"client_operation_id", "expected_revision", "plan_digest"})
