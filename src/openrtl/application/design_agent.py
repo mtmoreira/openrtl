@@ -18,12 +18,13 @@ from openrtl.domain.design_delegation import specification_warnings, validate_de
 from openrtl.domain.design_imports import baseline_plan, digest_value, validate_change_plan
 from openrtl.domain.design_coaching import analysis_input_digest, validate_analysis, validate_intent, validate_proposal
 from openrtl.domain.discovery_validation import DiscoveryValidationError
+from openrtl.domain.artifact_validation import artifact_validation_code
 from openrtl.domain.design_discovery import (
     DISCOVERY_REPLY_SENTINEL, discovery_memory, validate_discovery,
 )
 
 DESIGN_CONTEXT_SCHEMA = "openrtl.design-context.v8"
-DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v10"
+DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v11"
 PREFERRED_CLARIFICATION_ROUNDS = 3
 MAX_QUESTIONS_PER_ROUND = 3
 
@@ -706,8 +707,8 @@ class DesignAgent:
             return self.store.save(started, updated, "operation.completed",
                                    {"role": ROLES[stage], "output_digest": content_digest(result),
                                     "artifact_count": len(files)}, files=files)
-        except (ValueError, KeyError, TypeError):
-            self._failed(started, "expert_output_invalid")
+        except (ValueError, KeyError, TypeError) as error:
+            self._failed(started, "expert_output_invalid", validation_code=artifact_validation_code(error))
             raise ValueError("expert_output_invalid") from None
 
     async def _simulate(self, state: JsonObject) -> JsonObject:

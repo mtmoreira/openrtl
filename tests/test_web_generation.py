@@ -372,6 +372,94 @@ class WebGenerationTest(unittest.TestCase):
         self.assertIsNone(resumed["simulation"])
         self.assertEqual(self.simulator.calls, [])
 
+    def test_rejected_reference_model_paths_preserve_capture_state_and_explicit_retry(self) -> None:
+        # Synthetic shape of the rejected response; no customer code is replayed.
+        rejected = {"summary": "Synthetic reference-model response", "manifest": None,
+            "files": [{"path": path, "content": "# Synthetic artifact; never executed.\n"}
+                      for path in ("model/__init__.py", "model/sync_fifo.py",
+                                   "test_model/__init__.py", "test_model/test_sync_fifo.py")]}
+
+        class LocalExpert(FakeExpert):
+            async def generate(self, stage: str, context: JsonObject, operation_id: str) -> ExpertReply:
+                reply = await super().generate(stage, context, operation_id)
+                return replace(reply, provider="ollama", model="synthetic:1b",
+                               input_tokens=137, output_tokens=509)
+
+        self.expert = LocalExpert()
+        self.expert.responses["reference_model"] = rejected
+        self.agent.expert = self.expert
+        self.agent.trace_store = DesignTraceStore(self.store, enabled=True)
+        self.approve_specification()
+        self.agent.configure_provider("ollama/synthetic:1b", None)
+        identifier = uuid.uuid4().hex
+
+        async def scenario() -> None:
+            for _ in range(2):
+                await self.generate_one()
+            saved = self.store.read()
+            contents = self.store.contents(saved)
+            self.assertEqual(saved["stage"], 2)
+            self.assertEqual(set(contents), {"docs/architecture.md", "docs/verification-plan.md"})
+            plan = self.workspace.generation_plan()
+            await self.workspace.submit_generation(client_operation_id=identifier,
+                expected_revision=plan["revision"], plan_digest=plan["plan_digest"])
+            await self.workspace._tasks[identifier]
+            operation = self.workspace.operation(identifier)
+            self.assertEqual(operation["phase"], "failed")
+            self.assertEqual(operation["error_code"], "expert_output_invalid")
+            failed = self.store.read()
+            self.assertEqual((failed["stage"], failed["status"], failed["calls"]), (2, "building", 3))
+            for field in ("spec", "approved_spec", "files", "summaries", "manifest", "provider"):
+                self.assertEqual(failed[field], saved[field], field)
+            self.assertEqual(self.store.contents(failed), contents)
+            self.assertIsNone(failed["active"])
+            self.assertIsNone(failed["simulation"])
+
+            detail = self.workspace.history(failed["revision"])
+            failure = next(row for row in detail["trace"] if row["event"] == "operation.failed")
+            self.assertEqual(failure["fields"]["validation_code"], "source_path_invalid")
+            receipt = next(row for row in detail["trace"] if row["event"] == "operation.received")
+            self.assertLess(receipt["sequence"], failure["sequence"])
+            self.assertEqual(receipt["fields"]["input_tokens"], 137)
+            self.assertEqual(receipt["fields"]["output_tokens"], 509)
+            self.assertEqual(detail["metrics"]["input_tokens"], 137)
+            self.assertEqual(detail["metrics"]["output_tokens"], 509)
+            self.assertIsInstance(detail["metrics"]["elapsed_ms"], int)
+            captures = [row for row in detail["details"] if row["category"] == "assistant_output"]
+            self.assertEqual(len(captures), 1)
+            self.assertEqual(captures[0]["payload"]["output"], rejected)
+            self.assertFalse(captures[0]["truncated"])
+            self.assertNotIn("provider_failure", {row["category"] for row in detail["details"]})
+            self.assertNotIn("Synthetic artifact", canonical(self.store.events()).decode())
+            self.assertNotIn("Synthetic artifact", canonical(self.workspace.snapshot()).decode())
+
+            # Reads and replaying the same failed request cannot trigger another call.
+            self.assertEqual(self.workspace.generation_plan()["stage"], "reference_model")
+            replay = await self.workspace.submit_generation(client_operation_id=identifier,
+                expected_revision=plan["revision"], plan_digest=plan["plan_digest"])
+            self.assertEqual(replay, operation)
+            self.assertEqual(self.store.read(), failed)
+            self.assertEqual(len(self.expert.seen), 3)
+
+            # A new explicit request retries only this stage with the same provider.
+            del self.expert.responses["reference_model"]
+            await self.generate_one()
+            resumed = self.store.read()
+            self.assertEqual((resumed["stage"], resumed["calls"]), (3, 4))
+            for field in ("spec", "approved_spec", "provider"):
+                self.assertEqual(resumed[field], saved[field], field)
+            self.assertEqual({path: resumed["files"][path] for path in saved["files"]}, saved["files"])
+            self.assertEqual(set(resumed["files"]) - set(saved["files"]),
+                             {"model/wire.py", "model/test_model.py"})
+            self.assertEqual([stage for stage, _ in self.expert.seen],
+                             ["architecture", "verification_plan", "reference_model", "reference_model"])
+            self.assertEqual(self.expert.seen[-1][1], self.expert.seen[-2][1])
+            self.assertEqual(self.workspace.history(failed["revision"]), detail)
+            self.assertIsNone(resumed["simulation"])
+            self.assertEqual(self.simulator.calls, [])
+
+        asyncio.run(scenario())
+
     def test_call_budget_exhaustion_blocks_plan_without_new_effect(self) -> None:
         self.approve_specification()
         self.agent.policy = replace(self.agent.policy, max_calls=1)

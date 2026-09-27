@@ -132,6 +132,18 @@ and revision. It may use the explicitly enabled provider, but it never starts
 simulation or automatically advances another stage. Progress and any failure
 remain visible in Conversation and History; reconnect never replays the call.
 
+Reference-model generation uses a versioned stage-relative file contract:
+the provider returns `relative_path` and OpenRTL supplies the `model/` root.
+Multiple Python modules and nested packages remain supported; saved artifacts,
+imports and reviewed change scopes retain their exact project-relative paths.
+The baseline still requires a root `model/test_model.py` unittest entry point.
+Code contents and imports are never silently rewritten, and rejected legacy
+paths are never relocated. Strict local path, ownership, size and review checks
+still apply. A rejected generation response retains its received usage and any
+opted-in detailed capture; History exposes only an allowlisted validation rule
+(for example `source_path_invalid`), never raw exception text. Existing approved
+specifications and completed stages remain saved for an explicit retry.
+
 Plain navigation phrases such as “continue”, “ok can we continue?” and “ok can
 we code?” show the next step or open its review instead of asking the provider
 to draft the same specification again. **Show next step** beside the composer
