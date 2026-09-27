@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from openrtl.domain.design_session import JsonObject, name, object_value, require, sequence, text
+from openrtl.domain.design_session import (
+    JsonObject, object_value, require, sequence, specification_name, text,
+)
 
 
 HARDWARE_SPECIFICATION_SCHEMA = "openrtl.hardware-specification.v1"
@@ -33,9 +35,9 @@ def validate_hardware_specification(value: object) -> JsonObject:
             "hardware_specification_schema_invalid")
     parameters = sequence(document["parameters"], maximum=64)
     parameter_names: list[str] = []
-    for item in parameters:
+    for index, item in enumerate(parameters):
         row = object_value(item, {"name", "type", "default", "legal_values", "description"})
-        parameter_names.append(name(row["name"]))
+        parameter_names.append(specification_name(row["name"], "parameter", index=index))
         require(row["type"] in PARAMETER_TYPES, "parameter_type_invalid")
         text(row["default"], maximum=1024)
         text(row["legal_values"], maximum=2048)

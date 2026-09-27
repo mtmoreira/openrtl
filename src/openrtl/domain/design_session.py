@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from openrtl.domain.provider_failures import EXPERT_OPERATION_ERROR_CODES, PROVIDER_FAILURE_CODES
 
@@ -70,6 +70,31 @@ def name(value: object) -> str:
     return result
 
 
+class SpecificationIdentifierError(ValueError):
+    """A trusted specification location, never the rejected identifier value."""
+
+    def __init__(self, location: Literal["top", "port", "parameter"], *,
+                 index: int | None = None) -> None:
+        require(location in ("top", "port", "parameter"), "identifier_diagnostic_invalid")
+        require(index is None if location == "top" else
+                type(index) is int and 0 <= index < 64, "identifier_diagnostic_invalid")
+        super().__init__("identifier_invalid")
+        self.field = ("specification.top" if location == "top" else
+                      f"specification.ports[{index}].name" if location == "port" else
+                      f"specification.hardware_specification.parameters[{index}].name")
+
+
+def specification_name(value: object, location: Literal["top", "port", "parameter"], *,
+                       index: int | None = None) -> str:
+    """Attach a closed field location without changing identifier/text rules."""
+    try:
+        return name(value)
+    except ValueError as error:
+        if str(error) == "identifier_invalid":
+            raise SpecificationIdentifierError(location, index=index) from None
+        raise
+
+
 def stable_id(value: object) -> str:
     result = text(value, maximum=128)
     require(re.fullmatch(r"[A-Za-z][A-Za-z0-9_.-]*", result) is not None, "stable_id_invalid")
@@ -102,7 +127,7 @@ def validate_spec(value: object, *, require_hardware_specification: bool = False
         fields.add("hardware_specification")
     spec = object_value(value, fields)
     text(spec["title"], maximum=256)
-    name(spec["top"])
+    specification_name(spec["top"], "top")
     text(spec["behavior"], maximum=32000)
     text(spec["clock_reset"], maximum=8000)
     requirements = sequence(spec["requirements"])
@@ -116,9 +141,9 @@ def validate_spec(value: object, *, require_hardware_specification: bool = False
     require(len(ids) == len(set(ids)), "requirement_ids_duplicate")
     ports = sequence(spec["ports"])
     port_names = []
-    for item in ports:
+    for index, item in enumerate(ports):
         port = object_value(item, {"name", "direction", "width"})
-        port_names.append(name(port["name"]))
+        port_names.append(specification_name(port["name"], "port", index=index))
         require(port["direction"] in ("input", "output", "inout"), "port_direction_invalid")
         require(type(port["width"]) is int and 1 <= port["width"] <= 65536, "port_width_invalid")
     require(len(port_names) == len(set(port_names)), "port_names_duplicate")

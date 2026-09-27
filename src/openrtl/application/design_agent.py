@@ -10,21 +10,22 @@ import uuid
 import time
 
 from openrtl.domain.design_session import (
-    JsonObject, MAX_CONTEXT_BYTES, ROLES, STAGES, SESSION_SCHEMA, canonical, content_digest,
+    JsonObject, MAX_CONTEXT_BYTES, ROLES, STAGES, SESSION_SCHEMA, SpecificationIdentifierError,
+    canonical, content_digest,
     object_value, require, sequence, text,
     validate_files, validate_manifest, validate_spec,
 )
 from openrtl.domain.design_delegation import specification_warnings, validate_delegated_spec, warning
 from openrtl.domain.design_imports import baseline_plan, digest_value, validate_change_plan
 from openrtl.domain.design_coaching import analysis_input_digest, validate_analysis, validate_intent, validate_proposal
-from openrtl.domain.discovery_validation import DiscoveryValidationError
+from openrtl.domain.discovery_validation import DiscoveryValidationError, identifier_validation_feedback
 from openrtl.domain.artifact_validation import artifact_validation_code
 from openrtl.domain.design_discovery import (
     DISCOVERY_REPLY_SENTINEL, discovery_memory, validate_discovery,
 )
 
 DESIGN_CONTEXT_SCHEMA = "openrtl.design-context.v8"
-DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v11"
+DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v12"
 PREFERRED_CLARIFICATION_ROUNDS = 3
 MAX_QUESTIONS_PER_ROUND = 3
 
@@ -261,7 +262,8 @@ class DesignAgent:
                     require_hardware_specification=(
                         getattr(self.expert, "specification_contract_version", None) == "v1"))
             except (ValueError, TypeError, KeyError) as error:
-                failure = DiscoveryValidationError(str(error) if type(error) is ValueError else None)
+                failure = DiscoveryValidationError(
+                    str(error) if type(error) in (ValueError, SpecificationIdentifierError) else None)
                 self._failed(started, "expert_output_invalid", validation_code=failure.validation_code)
                 # Security-boundary violations and unclassified failures are not
                 # fed back as repair candidates. Transport errors never get here.
@@ -270,6 +272,9 @@ class DesignAgent:
                     raise failure from None
                 correction = {"attempt": attempt + 1, "validation_code": failure.validation_code,
                               "candidate": _discovery_correction_candidate(result)}
+                feedback = identifier_validation_feedback(error)
+                if feedback is not None:
+                    correction["validation_feedback"] = feedback
                 state = self._idle()
                 continue
             break

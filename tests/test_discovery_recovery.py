@@ -16,6 +16,7 @@ from openrtl.application.design_agent import DesignAgent, DesignPolicy, ExpertRe
 from openrtl.application.design_workspace import DesignWorkspace
 from openrtl.domain.design_readiness import CATEGORIES
 from openrtl.domain.design_session import JsonObject, canonical, content_digest
+from openrtl.domain.discovery_validation import IDENTIFIER_EXPECTATION
 from openrtl.domain.provider_controls import estimated_cost_nano
 from tests.test_design_agent import specification
 from tests.test_hardware_specification import parameterized_fifo_spec
@@ -100,6 +101,86 @@ class DiscoveryRecoveryTest(unittest.TestCase):
 
     def failures(self) -> list[JsonObject]:
         return [row for row in self.store.events() if row["event"] == "operation.failed"]
+
+    def test_identifier_corrections_identify_only_the_invalid_field(self) -> None:
+        for field in ("specification.top", "specification.ports[1].name",
+                      "specification.hardware_specification.parameters[1].name"):
+            with self.subTest(field=field):
+                valid = discussion(parameterized_fifo_spec())
+                invalid = copy.deepcopy(valid)
+                spec = invalid["specification"]
+                if field == "specification.top":
+                    # Exact captured invalid scalar and JSON type; all other content is synthetic.
+                    spec["top"] = "openrtl.hardware-specification.v1"
+                    self.assertIs(type(spec["top"]), str)
+                elif field == "specification.ports[1].name":
+                    spec["ports"][1]["name"] = "SYNTHETIC PRIVATE PORT NAME"
+                else:
+                    spec["hardware_specification"]["parameters"][1]["name"] = "SYNTHETIC PRIVATE PARAMETER NAME"
+                traces = DesignTraceStore(self.store, enabled=True)
+                expert = ScriptedExpert([invalid, valid])
+                agent = DesignAgent(self.store, expert, trace_store=traces)
+                before_calls = self.store.read()["calls"]
+                state = asyncio.run(agent.discuss("Synthetic identifier correction"))
+
+                self.assertEqual(state["spec"], valid["specification"])
+                self.assertEqual(state["calls"] - before_calls, 2)
+                self.assertIsNone(state["active"])
+                correction = expert.seen[1][1]["discovery_correction"]
+                self.assertEqual(correction, {
+                    "attempt": 1, "validation_code": "identifier_invalid",
+                    "candidate": compact_candidate(invalid),
+                    "validation_feedback": {"field": field, "expected": IDENTIFIER_EXPECTATION}})
+                failure = self.failures()[-1]
+                self.assertEqual(failure["fields"]["validation_code"], "identifier_invalid")
+                captured = [row["payload"]["output"] for row in traces.records({expert.seen[0][2]})
+                            if row["category"] == "assistant_output"]
+                self.assertEqual(captured, [invalid])
+                events = self.store.events()
+                received = [row for row in events if row["event"] == "operation.received"
+                            and row["fields"]["operation_id"] in {item[2] for item in expert.seen}]
+                self.assertEqual(len(received), 2)
+                self.assertLess(received[0]["sequence"], failure["sequence"])
+                public = canonical({"state": state, "events": events}).decode()
+                for private in ("validation_feedback", "SYNTHETIC PRIVATE", IDENTIFIER_EXPECTATION):
+                    self.assertNotIn(private, public)
+
+    def test_captured_identifier_exhaustion_preserves_state_and_accounts_all_attempts(self) -> None:
+        invalid = discussion(parameterized_fifo_spec(), memory=[{
+            "id": "invalid.only", "kind": "decision", "text": "SYNTHETIC REJECTED MEMORY",
+            "provenance": "agent_proposal"}])
+        invalid["specification"]["top"] = "openrtl.hardware-specification.v1"
+        expert = ScriptedExpert([invalid, invalid, invalid])
+        traces = DesignTraceStore(self.store, enabled=True)
+        agent = DesignAgent(self.store, expert, trace_store=traces)
+        prior = agent.propose(specification())["spec"]
+
+        with self.assertRaisesRegex(ValueError, "^expert_output_invalid$"):
+            asyncio.run(agent.discuss("Synthetic exhausted identifier correction"))
+
+        state = self.store.read()
+        self.assertEqual(state["calls"], 3)
+        self.assertEqual(len(expert.seen), 3)
+        self.assertEqual(state["spec"], prior)
+        self.assertEqual(state["engineering_memory"], [])
+        self.assertIsNone(state["active"])
+        self.assertEqual([row["fields"]["validation_code"] for row in self.failures()],
+                         ["identifier_invalid"] * 3)
+        for attempt, (_, context, _) in enumerate(expert.seen[1:], 1):
+            self.assertEqual(context["discovery_correction"]["attempt"], attempt)
+            self.assertEqual(context["discovery_correction"]["validation_feedback"], {
+                "field": "specification.top", "expected": IDENTIFIER_EXPECTATION})
+        receipts = [row for row in self.store.events() if row["event"] == "operation.received"]
+        self.assertEqual(len(receipts), 3)
+        self.assertEqual(sum(row["fields"]["input_tokens"] for row in receipts), 300)
+        self.assertEqual(sum(row["fields"]["output_tokens"] for row in receipts), 150)
+        outputs = [row["payload"]["output"] for row in traces.records({row[2] for row in expert.seen})
+                   if row["category"] == "assistant_output"]
+        self.assertEqual(outputs, [invalid] * 3)
+        public = canonical({"state": state, "events": self.store.events()}).decode()
+        for private in ("validation_feedback", "openrtl.hardware-specification.v1",
+                        "SYNTHETIC REJECTED MEMORY", IDENTIFIER_EXPECTATION):
+            self.assertNotIn(private, public)
 
     def test_captured_oversized_reply_is_omitted_from_correction_and_complete_spec_is_required(self) -> None:
         questions = [

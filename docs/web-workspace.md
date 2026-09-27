@@ -174,6 +174,17 @@ erase earlier answers, and the request is never replayed automatically. These
 codes describe local checks, not raw model output; detailed capture remains
 subject to its separate opt-in.
 
+Discovery and feature proposals use an explicit provider field,
+`specification.rtl_top_module_name`, for the RTL module identifier; the saved
+specification still uses `top`. It is distinct from the document's
+`hardware_specification.schema` label. Module, port and parameter identifiers
+remain strictly validated, never guessed or sanitized. When a discovery attempt
+fails the identifier rule, bounded correction feedback names the failing field
+and expected format. Corrections share the original deadline, call budget and
+retry limit. Rejected values stay in opt-in private capture only, not ordinary
+diagnostics, and cannot replace previously accepted project state. Legacy saved
+specifications and exact-copy DV/optimization proposals retain their contracts.
+
 Operation notices, progress and errors appear in Conversation with a **System**
 identity. Updates reconcile the same operation, and reconnect never resubmits
 it. History and Activity rows inspect details without switching the workbench's

@@ -8,6 +8,7 @@ import unittest
 
 from openrtl.adapters.design_generation import _ollama_schema, _schema, response_schema
 from openrtl.adapters.design_specification_transport import (
+    decode_specification_module_name,
     decode_specification_output,
     transport_context,
     transport_schema,
@@ -59,6 +60,7 @@ def canonical_specification() -> dict[str, Any]:
 def wire_output() -> dict[str, Any]:
     """Build provider-shaped input directly, never using the production encoder."""
     spec = canonical_specification()
+    spec["rtl_top_module_name"] = spec.pop("top")
     spec["hardware_specification"]["sections"] = {
         row["id"]: {"status": row["status"], "content": row["content"]}
         for row in reversed(spec["hardware_specification"]["sections"])
@@ -90,11 +92,15 @@ class DesignSpecificationTransportTest(unittest.TestCase):
             for ollama in (False, True):
                 with self.subTest(stage=stage, ollama=ollama):
                     identifier, schema = _schema(stage, context, ollama=ollama)
-                    suffix = ".ollama.v5" if ollama else ".v10" if stage == "discovery" else ".v5"
+                    suffix = ".ollama.v6" if ollama else ".v11" if stage == "discovery" else ".v6"
                     self.assertEqual(identifier, expected_id + suffix)
                     spec = schema["properties"]["specification"]
                     if stage == "discovery":
                         spec = spec["anyOf"][0]
+                    self.assertIn("rtl_top_module_name", spec["required"])
+                    self.assertNotIn("top", spec["required"])
+                    self.assertNotIn("top", spec["properties"])
+                    self.assertEqual(spec["properties"]["rtl_top_module_name"]["type"], "string")
                     sections = spec["properties"]["hardware_specification"]["properties"]["sections"]
                     readiness = spec["properties"]["readiness"]["properties"]["items"]
                     for inventory, names, row_keys in (
@@ -118,6 +124,7 @@ class DesignSpecificationTransportTest(unittest.TestCase):
         self.assertEqual(original, before)
         spec = converted["properties"]["specification"]["anyOf"][0]
         original_spec = original["properties"]["specification"]["anyOf"][0]
+        self.assertEqual(spec["properties"]["rtl_top_module_name"], original_spec["properties"]["top"])
         self.assertEqual(spec["properties"]["ports"], original_spec["properties"]["ports"])
         self.assertEqual(spec["properties"]["hardware_specification"]["properties"]["parameters"],
                          original_spec["properties"]["hardware_specification"]["properties"]["parameters"])
@@ -197,6 +204,99 @@ class DesignSpecificationTransportTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "^port_width_invalid$"):
             validate_spec(decoded["specification"])
 
+    def test_captured_schema_label_is_preserved_and_rejected_as_a_module_identifier(self) -> None:
+        output = wire_output()
+        output["specification"]["rtl_top_module_name"] = "openrtl.hardware-specification.v1"
+        before = copy.deepcopy(output)
+        decoded = decode_specification_output(output)
+        self.assertEqual(decoded["specification"]["top"], "openrtl.hardware-specification.v1")
+        self.assertIs(type(decoded["specification"]["top"]), str)
+        self.assertNotIn("rtl_top_module_name", decoded["specification"])
+        with self.assertRaisesRegex(ValueError, "^identifier_invalid$"):
+            validate_spec(decoded["specification"], require_hardware_specification=True)
+        self.assertEqual(output, before)
+
+    def test_module_field_values_are_never_sanitized_or_coerced(self) -> None:
+        for value, error in (("wire.top", "identifier_invalid"),
+                             (" wire_top ", "identifier_invalid"),
+                             (1, "text_type_invalid"), (True, "text_type_invalid"),
+                             (None, "text_type_invalid"), ({"name": "wire_top"}, "text_type_invalid")):
+            with self.subTest(value=value):
+                output = wire_output()
+                output["specification"]["rtl_top_module_name"] = value
+                decoded = decode_specification_output(output)
+                self.assertEqual(decoded["specification"]["top"], value)
+                self.assertIs(type(decoded["specification"]["top"]), type(value))
+                with self.assertRaisesRegex(ValueError, "^" + error + "$"):
+                    validate_spec(decoded["specification"])
+
+    def test_missing_or_ambiguous_module_fields_are_rejected_without_mutation(self) -> None:
+        for mode in ("missing", "canonical_only", "both_equal", "both_different"):
+            with self.subTest(mode=mode):
+                output = wire_output()
+                spec = output["specification"]
+                if mode == "missing":
+                    del spec["rtl_top_module_name"]
+                elif mode == "canonical_only":
+                    spec["top"] = spec.pop("rtl_top_module_name")
+                else:
+                    spec["top"] = "wire_top" if mode == "both_equal" else "other_top"
+                before = copy.deepcopy(output)
+                with self.assertRaisesRegex(ValueError, "^expert_output_invalid$"):
+                    decode_specification_output(output)
+                with self.assertRaisesRegex(ValueError, "^expert_output_invalid$"):
+                    decode_specification_module_name(output)
+                self.assertEqual(output, before)
+
+    def test_module_only_decode_preserves_malformed_inventory_for_domain_diagnostics(self) -> None:
+        for block, field, identifier in (("hardware_specification", "sections", "integration"),
+                                        ("readiness", "items", "acceptance")):
+            with self.subTest(block=block):
+                output = wire_output()
+                del output["specification"][block][field][identifier]
+                before = copy.deepcopy(output)
+                decoded = decode_specification_module_name(output)
+                expected = copy.deepcopy(output)
+                expected["specification"]["top"] = expected["specification"].pop("rtl_top_module_name")
+                self.assertEqual(decoded, expected)
+                self.assertEqual(decoded["specification"][block][field], before["specification"][block][field])
+                with self.assertRaisesRegex(ValueError, "^expert_output_invalid$"):
+                    decode_specification_output(output)
+                self.assertEqual(output, before)
+
+    def test_context_translates_only_top_feedback_path_and_preserves_invalid_value(self) -> None:
+        for field in ("specification.top", "specification.ports[0].name",
+                      "specification.hardware_specification.parameters[0].name"):
+            with self.subTest(field=field):
+                spec = canonical_specification()
+                spec["top"] = "openrtl.hardware-specification.v1"
+                context = {"discovery_correction": {
+                    "attempt": 1, "validation_code": "identifier_invalid",
+                    "validation_feedback": {"field": field, "expected": "synthetic trusted rule"},
+                    "candidate": {"specification": spec}}}
+                before = copy.deepcopy(context)
+                correction = transport_context(context)["discovery_correction"]
+                expected_field = "specification.rtl_top_module_name" if field == "specification.top" else field
+                self.assertEqual(correction["validation_feedback"],
+                                 {"field": expected_field, "expected": "synthetic trusted rule"})
+                encoded = correction["candidate"]["specification"]
+                self.assertNotIn("top", encoded)
+                self.assertEqual(encoded["rtl_top_module_name"], "openrtl.hardware-specification.v1")
+                self.assertEqual(context, before)
+
+    def test_context_preserves_both_module_fields_and_already_encoded_candidates(self) -> None:
+        for canonical in (False, True):
+            for saved in (False, True):
+                with self.subTest(canonical=canonical, saved=saved):
+                    spec = wire_output()["specification"]
+                    if canonical:
+                        spec["top"] = "different_top"
+                    context = ({"specification": spec} if saved else
+                               {"discovery_correction": {"candidate": {"specification": spec}}})
+                    before = copy.deepcopy(context)
+                    self.assertEqual(transport_context(context), before)
+                    self.assertEqual(context, before)
+
     def test_context_encodes_saved_and_rejected_specs_without_mutation(self) -> None:
         context = {"specification": canonical_specification(),
                    "discovery_correction": {"attempt": 1, "validation_code": "hardware_specification_sections_missing",
@@ -245,8 +345,10 @@ class DesignSpecificationTransportTest(unittest.TestCase):
         legacy = canonical_specification()
         del legacy["hardware_specification"]
         del legacy["readiness"]
-        self.assertEqual(decode_specification_output({"specification": legacy}), {"specification": legacy})
-        self.assertEqual(transport_context({"specification": legacy}), {"specification": legacy})
+        encoded = copy.deepcopy(legacy)
+        encoded["rtl_top_module_name"] = encoded.pop("top")
+        self.assertEqual(decode_specification_output({"specification": encoded}), {"specification": legacy})
+        self.assertEqual(transport_context({"specification": legacy}), {"specification": encoded})
 
     def test_dv_and_optimization_preserve_existing_list_schemas_and_identity(self) -> None:
         for intent in ("dv", "optimization"):
@@ -272,6 +374,8 @@ class DesignSpecificationTransportTest(unittest.TestCase):
                         self.assertEqual(actual, expected)
                         self.assertEqual(content_digest(actual), content_digest(expected))
                         props = actual["properties"]["specification"]["properties"]
+                        self.assertIn("top", props)
+                        self.assertNotIn("rtl_top_module_name", props)
                         if with_readiness:
                             self.assertEqual(props["readiness"]["properties"]["items"]["type"], "array")
                         if with_hardware:

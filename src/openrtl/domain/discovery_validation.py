@@ -2,6 +2,21 @@
 
 from __future__ import annotations
 
+from openrtl.domain.design_session import SpecificationIdentifierError
+
+
+IDENTIFIER_EXPECTATION = (
+    "A JSON string of 1 to 128 ASCII characters matching [A-Za-z_][A-Za-z0-9_]*; "
+    "not a schema label, filename, or document title."
+)
+
+
+def identifier_validation_feedback(error: Exception) -> dict[str, str] | None:
+    """Return fixed repair guidance only for the exact trusted domain exception."""
+    if type(error) is not SpecificationIdentifierError:
+        return None
+    return {"field": error.field, "expected": IDENTIFIER_EXPECTATION}
+
 
 DISCOVERY_VALIDATION_CATEGORIES = {
     **dict.fromkeys((

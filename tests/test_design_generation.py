@@ -141,8 +141,8 @@ class DesignGenerationTest(unittest.TestCase):
         self.assertEqual(request.contract.allowed_tools, ())
         self.assertEqual(request.contract.permissions["workspace"], "denied")
         self.assertEqual(request.contract.permissions["network"], "allowed")
-        self.assertEqual(request.contract.output_schema, "openrtl.design.discovery.ollama.v5")
-        self.assertEqual(request.contract.prompt_version, "openrtl.design.instructions.v11")
+        self.assertEqual(request.contract.output_schema, "openrtl.design.discovery.ollama.v6")
+        self.assertEqual(request.contract.prompt_version, "openrtl.design.instructions.v12")
         self.assertEqual(request.contract.limits.max_tool_calls, 0)
         self.assertIn("Never ask for permission to proceed", request.instructions)
         self.assertIn("at most conversation_policy.max_questions_this_round", request.instructions)
@@ -189,7 +189,7 @@ class DesignGenerationTest(unittest.TestCase):
             with self.subTest(ollama=ollama):
                 schema_id, schema = _schema("discovery", {}, ollama=ollama)
                 self.assertEqual(schema_id, "openrtl.design.discovery" +
-                                 (".ollama.v5" if ollama else ".v10"))
+                                 (".ollama.v6" if ollama else ".v11"))
                 self.assertEqual(schema["properties"]["reply"]["enum"], ["structured"])
                 self.assertIn("question_plan", schema["required"])
                 self.assertIn("resolved_questions", schema["required"])
@@ -311,6 +311,30 @@ class DesignGenerationTest(unittest.TestCase):
                          "^[A-Za-z][A-Za-z0-9_.-]*$")
         self.assertEqual(response_schema("change_planning")["properties"]["specification"]
                          ["properties"]["questions"]["maxItems"], 32)
+
+    def test_identifier_semantics_survive_both_provider_schema_variants(self) -> None:
+        for stage, context in (("discovery", {}),
+                               ("change_planning", {"improvement_intent": "feature"})):
+            for ollama in (False, True):
+                with self.subTest(stage=stage, ollama=ollama):
+                    _, schema = _schema(stage, context, ollama=ollama)
+                    spec = schema["properties"]["specification"]
+                    if stage == "discovery":
+                        spec = spec["anyOf"][0]
+                    self.assertIn("rtl_top_module_name", spec["required"])
+                    self.assertNotIn("top", spec["properties"])
+                    self.assertIn("not a document title", spec["properties"]["rtl_top_module_name"]["description"])
+                    for identifier in (spec["properties"]["rtl_top_module_name"],
+                                       spec["properties"]["ports"]["items"]["properties"]["name"],
+                                       spec["properties"]["hardware_specification"]["properties"]
+                                           ["parameters"]["items"]["properties"]["name"]):
+                        self.assertIn("1-128 ASCII", identifier["description"])
+                        self.assertEqual("pattern" in identifier, not ollama)
+            runtime = ScriptedOllamaRuntime()
+            asyncio.run(OllamaDesignExpert(runtime, model="qwen3:8b").generate(stage, context, "a" * 32))
+            self.assertIn("specification.rtl_top_module_name names the RTL top-level module",
+                          runtime.requests[0].instructions)
+            self.assertIn("discovery_correction.validation_feedback", runtime.requests[0].instructions)
 
     def test_ollama_format_schema_omits_value_constraints_but_retains_structure(self) -> None:
         unsupported = {"pattern", "minLength", "maxLength", "minItems", "maxItems",

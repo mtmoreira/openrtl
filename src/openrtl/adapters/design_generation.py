@@ -30,7 +30,8 @@ from openrtl.adapters.provider_invocation import (EnvironmentOpenAIAuthenticatio
                                                   MemoryOpenAIAuthenticationSource, RejectingArtifactResolver)
 from openrtl.adapters.design_telemetry import private_capture as _private_capture, event_sink as _event_sink
 from openrtl.adapters.design_specification_transport import (
-    decode_specification_output, transport_context, transport_schema, uses_specification_transport,
+    decode_specification_module_name, decode_specification_output,
+    transport_context, transport_schema, uses_specification_transport,
 )
 from openrtl.adapters.design_reference_transport import decode_reference_model_output
 from openrtl.application.design_agent import DESIGN_PROMPT_VERSION, DesignTraceRecorder, ExpertReply
@@ -56,7 +57,9 @@ def _specification_schema(*, include_readiness: bool, include_hardware_specifica
                           max_questions: int = 32) -> JsonObject:
     string: JsonObject = {"type": "string", "minLength": 1}
     identifier: JsonObject = {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$", "maxLength": 128}
-    port_name: JsonObject = {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$", "maxLength": 128}
+    port_name: JsonObject = {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$", "maxLength": 128,
+                            "description": "RTL identifier: 1-128 ASCII letters, digits or underscores; "
+                                           "start with a letter or underscore, never a digit."}
     from openrtl.domain.hardware_specification import PARAMETER_TYPES, SECTION_IDS, SECTION_STATUSES
     hardware_specification = _object({
         "schema": {"type": "string", "enum": ["openrtl.hardware-specification.v1"]},
@@ -73,7 +76,10 @@ def _specification_schema(*, include_readiness: bool, include_hardware_specifica
             "content": {**string, "maxLength": 8000},
         }), minimum=len(SECTION_IDS), maximum=len(SECTION_IDS)),
     })
-    properties = {"title": {**string, "maxLength": 256}, "top": port_name,
+    properties = {"title": {**string, "maxLength": 256}, "top": {**port_name,
+                  "description": "RTL top-level module identifier, not a document title, schema "
+                                 "identifier or file path. Use 1-128 ASCII letters, digits or "
+                                 "underscores; start with a letter or underscore."},
                   "behavior": {**string, "maxLength": 32000},
                   "clock_reset": {**string, "maxLength": 8000},
                   "requirements": _array(_object({"id": identifier, "text": string,
@@ -252,6 +258,15 @@ def _instructions(stage: str, context: JsonObject) -> str:
         )
     if uses_specification_transport(stage, context):
         instruction += (
+            " specification.rtl_top_module_name names the RTL top-level module; OpenRTL saves it as"
+            " specification.top. It is not the document title, schema identifier or file path."
+            " The format label openrtl.hardware-specification.v1 belongs only in"
+            " hardware_specification.schema, never in an RTL name. Module, port and parameter names"
+            " must contain 1-128 ASCII letters, digits or underscores and start with a letter or"
+            " underscore: [A-Za-z_][A-Za-z0-9_]*. Do not guess or rewrite a saved design's identifiers."
+            " If discovery_correction.validation_feedback is present, its field identifies the"
+            " rejected candidate field and expected states the exact local rule to satisfy."
+            " Correct that field using the design intent while preserving already settled decisions."
             " In the provider response, hardware_specification.sections is an object with every"
             " named section required by the schema, including integration even when not applicable."
             " Each section value has status and content, with no id field. Likewise readiness.items"
@@ -286,10 +301,14 @@ def _specification_output(value: object, *, fixed_records: bool) -> JsonObject:
         converted = decode_specification_output(output)
     except ValueError:
         # A malformed record is still a received, metered provider response.
-        # Preserve it unchanged so domain validation can reject/correct it after
-        # accounting and capture. Never drop inventory IDs/fields or fill gaps.
+        # Preserve inventory IDs/fields and missing content for domain validation
+        # after accounting and capture. Decode an unambiguous module-name alias
+        # independently so it does not mask the actual inventory failure.
         # Already-canonical legacy arrays also remain subject to those validators.
-        return output
+        try:
+            return _decode_output(decode_specification_module_name(output))
+        except ValueError:
+            return output
     return _decode_output(converted)
 
 
@@ -329,7 +348,7 @@ def _schema(stage: str, context: JsonObject, *, ollama: bool = False) -> tuple[s
     if stage == "reference_model":
         schema_version = ".ollama.v2" if ollama else ".v2"
     elif fixed_records:
-        schema_version = ".ollama.v5" if ollama else ".v10" if stage == "discovery" else ".v5"
+        schema_version = ".ollama.v6" if ollama else ".v11" if stage == "discovery" else ".v6"
     elif ollama:
         schema_version = (".ollama.v4" if include_hardware_specification else
                           ".ollama.v2" if include_readiness else ".ollama.v1")

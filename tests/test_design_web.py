@@ -115,7 +115,7 @@ class DesignWebTest(unittest.TestCase):
         self.assertEqual(detail["visibility"]["hidden_reasoning"], "not_collected")
         self.assertEqual(detail["visibility"]["tool_calls"], 0)
         started = next(row for row in detail["trace"] if row["event"] == "operation.started")
-        self.assertEqual(started["fields"]["prompt_version"], "openrtl.design.instructions.v11")
+        self.assertEqual(started["fields"]["prompt_version"], "openrtl.design.instructions.v12")
         self.assertEqual(started["fields"]["context_schema"], "openrtl.design-context.v8")
         self.assertNotIn("A counter", json.dumps(detail))
         self.assertNotIn("What width should", json.dumps(detail))

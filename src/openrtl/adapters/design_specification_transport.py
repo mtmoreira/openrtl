@@ -1,7 +1,8 @@
-"""Lossless provider records for fixed specification inventories.
+"""Lossless provider names and records for specification proposals.
 
-The saved domain contract remains ordered arrays. Required object properties let
-providers express the same fixed inventory without generating its IDs or counts.
+The saved domain contract retains ``top`` and ordered arrays. An explicit wire
+name distinguishes the RTL module from schema labels; required object properties
+express fixed inventories without generating their IDs or counts.
 No engineering values, missing sections, or readiness anchors are inferred here.
 """
 
@@ -20,6 +21,7 @@ _INVENTORIES = (
     ("readiness", "items", CATEGORIES, "category",
      ("status", "decision", "requirement_ids", "ports")),
 )
+_TOP_MODULE_FIELD = "rtl_top_module_name"
 
 
 def uses_specification_transport(stage: str, context: JsonObject) -> bool:
@@ -35,6 +37,10 @@ def transport_schema(schema: JsonObject) -> JsonObject:
     for variant in variants:
         if variant.get("type") != "object":
             continue
+        variant["properties"][_TOP_MODULE_FIELD] = variant["properties"].pop("top")
+        variant["required"] = [
+            _TOP_MODULE_FIELD if field == "top" else field for field in variant["required"]
+        ]
         for block, field, identifiers, discriminator, _ in _INVENTORIES:
             if block not in variant["properties"]:
                 continue
@@ -59,13 +65,24 @@ def _blocks(specification: object) -> Iterator[tuple[JsonObject, str, tuple[str,
                 yield container, field, identifiers, discriminator, fields
 
 
+def decode_specification_module_name(output: JsonObject) -> JsonObject:
+    """Restore only an unambiguous field name, preserving all engineering values."""
+    result = copy.deepcopy(output)
+    specification = result.get("specification")
+    if specification is not None:
+        require(isinstance(specification, dict) and _TOP_MODULE_FIELD in specification and
+                "top" not in specification, "expert_output_invalid")
+        specification["top"] = specification.pop(_TOP_MODULE_FIELD)
+    return result
+
+
 def decode_specification_output(output: JsonObject) -> JsonObject:
-    """Require complete records, then restore only their structural IDs/order.
+    """Require the explicit module field and restore structural names/IDs/order.
 
     The ordinary domain validators still check every engineering value and link.
     Malformed records fail before they can be treated as a canonical specification.
     """
-    result = copy.deepcopy(output)
+    result = decode_specification_module_name(output)
     for container, field, identifiers, discriminator, fields in _blocks(result.get("specification")):
         records = container[field]
         require(isinstance(records, dict) and set(records) == set(identifiers),
@@ -80,6 +97,11 @@ def decode_specification_output(output: JsonObject) -> JsonObject:
 
 
 def _encode_specification(specification: object) -> None:
+    if (isinstance(specification, dict) and "top" in specification and
+            _TOP_MODULE_FIELD not in specification):
+        specification[_TOP_MODULE_FIELD] = specification.pop("top")
+    # If both names occur, preserve both values for deterministic rejection and
+    # correction. No field takes precedence over contradictory provider data.
     for container, field, identifiers, discriminator, fields in _blocks(specification):
         rows = container[field]
         if not isinstance(rows, list):
@@ -108,4 +130,7 @@ def transport_context(context: JsonObject) -> JsonObject:
         candidate = correction.get("candidate")
         if isinstance(candidate, dict):
             _encode_specification(candidate.get("specification"))
+        feedback = correction.get("validation_feedback")
+        if isinstance(feedback, dict) and feedback.get("field") == "specification.top":
+            feedback["field"] = "specification." + _TOP_MODULE_FIELD
     return result
