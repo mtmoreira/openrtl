@@ -61,7 +61,7 @@ inventing readiness evidence; ask the authorized design lead to complete the
 checklist before using normal conversational approval or the normal batch route.
 Readiness is a versioned extension (`openrtl.design-readiness.v1`); previous
 stored specs and their approval hashes are not rewritten. Role context is now
-`openrtl.design-context.v8`, with v9 OpenAI and v4 Ollama discovery response schemas.
+`openrtl.design-context.v9`, with v11 OpenAI and v6 Ollama discovery response schemas.
 Provider-proposed feature changes use the new document format; DV-only and
 optimization proposals retain their exact specification, including a legacy
 shape. An older baseline remains unchanged unless a complete feature proposal is

@@ -170,33 +170,41 @@ def validate_spec(value: object, *, require_hardware_specification: bool = False
 
 
 def validate_manifest(value: object, files: dict[str, str], spec: JsonObject) -> JsonObject:
+    from openrtl.domain.artifact_validation import manifest_validation
+
     manifest = object_value(value, {"top", "sources", "test_modules", "expected_tests",
                                     "requirement_tests", "seed"})
-    require(name(manifest["top"]) == spec["top"], "top_differs_from_specification")
-    sources = [source_path(p) for p in sequence(manifest["sources"])]
-    require(bool(sources) and len(set(sources)) == len(sources), "source_list_invalid")
-    for path in sources:
-        require(source_path(path).startswith("rtl/") and path in files, "source_unavailable")
-    require(set(sources) == {p for p in files if p.startswith("rtl/") and p.endswith((".sv", ".v"))},
-            "unlisted_rtl_source")
-    modules = [name(m) for m in sequence(manifest["test_modules"])]
-    require(bool(modules) and len(set(modules)) == len(modules), "test_modules_invalid")
-    for module in modules:
-        require("dv/" + name(module) + ".py" in files, "test_module_unavailable")
-    tests = [name(t) for t in sequence(manifest["expected_tests"])]
-    require(bool(tests) and len(set(tests)) == len(tests), "expected_tests_invalid")
-    for test in tests:
-        name(test)
-    links = sequence(manifest["requirement_tests"])
-    covered = []
-    for item in links:
-        row = object_value(item, {"requirement_id", "tests"})
-        covered.append(stable_id(row["requirement_id"]))
-        linked_tests = sequence(row["tests"])
-        require(bool(linked_tests) and all(t in tests for t in linked_tests), "test_link_invalid")
-    require(len(covered) == len(set(covered)) and set(covered) == {r["id"] for r in spec["requirements"]},
-            "requirement_test_links_incomplete")
-    require(type(manifest["seed"]) is int and 0 <= manifest["seed"] < 2**31, "seed_invalid")
+    with manifest_validation("top"):
+        require(name(manifest["top"]) == spec["top"], "top_differs_from_specification")
+    with manifest_validation("sources"):
+        sources = [source_path(p) for p in sequence(manifest["sources"])]
+        require(bool(sources) and len(set(sources)) == len(sources), "source_list_invalid")
+        for path in sources:
+            require(source_path(path).startswith("rtl/") and path in files, "source_unavailable")
+        require(set(sources) == {p for p in files if p.startswith("rtl/") and p.endswith((".sv", ".v"))},
+                "unlisted_rtl_source")
+    with manifest_validation("test_modules"):
+        modules = [name(m) for m in sequence(manifest["test_modules"])]
+        require(bool(modules) and len(set(modules)) == len(modules), "test_modules_invalid")
+        for module in modules:
+            require("dv/" + name(module) + ".py" in files, "test_module_unavailable")
+    with manifest_validation("expected_tests"):
+        tests = [name(t) for t in sequence(manifest["expected_tests"])]
+        require(bool(tests) and len(set(tests)) == len(tests), "expected_tests_invalid")
+        for test in tests:
+            name(test)
+    with manifest_validation("requirement_tests"):
+        links = sequence(manifest["requirement_tests"])
+        covered = []
+        for item in links:
+            row = object_value(item, {"requirement_id", "tests"})
+            covered.append(stable_id(row["requirement_id"]))
+            linked_tests = sequence(row["tests"])
+            require(bool(linked_tests) and all(t in tests for t in linked_tests), "test_link_invalid")
+        require(len(covered) == len(set(covered)) and set(covered) == {r["id"] for r in spec["requirements"]},
+                "requirement_test_links_incomplete")
+    with manifest_validation("seed"):
+        require(type(manifest["seed"]) is int and 0 <= manifest["seed"] < 2**31, "seed_invalid")
     return manifest
 
 

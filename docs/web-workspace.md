@@ -144,6 +144,27 @@ opted-in detailed capture; History exposes only an allowlisted validation rule
 (for example `source_path_invalid`), never raw exception text. Existing approved
 specifications and completed stages remain saved for an explicit retry.
 
+Verification-test generation uses explicit `manifest.test_file_paths`, for example
+`dv/test_fifo.py`. The provider adapter maps only exact flat file references to
+the bare module names used by the saved manifest and cocotb. It also accepts that
+exact spelling from older responses in `test_modules`; it never trims, searches,
+relocates files, or changes generated code. All selected test files must exist.
+Reviewed change proposals use the same transport and retain exact saved manifest
+identity after decoding.
+
+The DV context identifies the approved requirement IDs, top module and complete
+RTL source inventory. Assumption and decision IDs cannot substitute for approved
+requirements. Python syntax is checked without executing the generated code;
+syntax errors and recognized manifest errors are reported together using fixed
+rules and bounded source locations, never Python exception text. A received DV
+proposal that fails one of these local checks can
+make at most two correction calls within the original request deadline and call/
+spend budgets. Each attempt retains its own usage, safe failure rule and opted-in
+capture. Files and the manifest are saved together only after all checks pass;
+unknown failures, provider failures and file/review boundary violations stop the
+operation. Reconnect does not replay correction calls, and simulation remains a
+separately selected action.
+
 Plain navigation phrases such as “continue”, “ok can we continue?” and “ok can
 we code?” show the next step or open its review instead of asking the provider
 to draft the same specification again. **Show next step** beside the composer

@@ -210,10 +210,10 @@ class HardwareSpecificationTest(unittest.TestCase):
             "improvement_intent": "dv", "specification": specification()})
         feature_id, feature_schema = _schema("change_planning", {
             "improvement_intent": "feature", "specification": specification()})
-        self.assertEqual(legacy_id, "openrtl.design.change_planning.v2")
+        self.assertEqual(legacy_id, "openrtl.design.change_planning.v7")
         self.assertNotIn("hardware_specification",
                          legacy_schema["properties"]["specification"]["required"])
-        self.assertEqual(feature_id, "openrtl.design.change_planning.v6")
+        self.assertEqual(feature_id, "openrtl.design.change_planning.v10")
         self.assertIn("hardware_specification",
                       feature_schema["properties"]["specification"]["required"])
 

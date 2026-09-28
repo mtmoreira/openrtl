@@ -34,6 +34,10 @@ from openrtl.adapters.design_specification_transport import (
     transport_context, transport_schema, uses_specification_transport,
 )
 from openrtl.adapters.design_reference_transport import decode_reference_model_output
+from openrtl.adapters.design_manifest_transport import (
+    decode_manifest_output, manifest_transport_context, manifest_transport_schema,
+    uses_manifest_transport,
+)
 from openrtl.application.design_agent import DESIGN_PROMPT_VERSION, DesignTraceRecorder, ExpertReply
 from openrtl.domain.design_discovery import DISCOVERY_REPLY_SENTINEL
 from openrtl.domain.design_session import JsonObject, MAX_CONTEXT_BYTES, STAGES, canonical, require, text
@@ -162,7 +166,7 @@ _INSTRUCTIONS = {
     "reference_model": "Write an independent executable Python reference model and model/test_model.py unittest tests. Derive behavior from requirements, not RTL. Use only the standard library. Use model as a namespace package; do not add imports needing installation.",
     "rtl": "Write synthesizable SystemVerilog in rtl/. Implement every approved requirement, parameters only if specified. Respect exact approved top and port names. No file IO, DPI, system calls, includes outside rtl/, or external dependencies.",
     "assertions": "Add a new rtl/ assertions module with bind statements for the approved top, without overwriting the RTL engineer's files. Assert meaningful requirements and reset/corner cases. Use Verilator-supported SystemVerilog. No file IO, DPI, system calls or external includes.",
-    "dv": "Write cocotb 2.0.1 tests in dv/, independently from the reference model and verification plan. Use from model.<module> import ... for the reference. Supply a manifest listing all .sv/.v RTL paths from artifact_digests, bare Python test module names, every expected cocotb test function name, explicit seed and requirement-to-test links. Test all approved requirements and boundaries; do not fabricate passing results. No external dependencies beyond cocotb and standard library.",
+    "dv": "Write cocotb 2.0.1 tests in dv/, independently from the reference model and verification plan. Use from model.<module> import ... for the reference. Supply a manifest listing all .sv/.v RTL paths from artifact_digests, exact flat dv/ Python test file paths, every expected cocotb test function name, explicit seed and requirement-to-test links. Test all approved specification requirements and boundaries; do not fabricate passing results. No external dependencies beyond cocotb and standard library.",
     "diagnosis": "Diagnose the failing simulation evidence. Return changes to existing rtl/ files only. Do not edit models, tests, specifications, manifests or expected results. Preserve interfaces and fix the cause; every candidate is rerun before review.",
     "signoff": "Independently review requirements, RTL, reference model, tests, assertions and real simulation evidence. Check adequacy, not merely process success. Any untested requirement, mismatch or unresolved issue means revise with findings. Never claim synthesis, formal proof, exhaustive coverage or PPA optimization.",
     "explain": "Explain the available design evidence at the requested detail. Cite only existing artifact paths and valid one-based lines. Clearly separate observed simulation evidence from inference. Do not propose applied changes or claim tests not present in evidence.",
@@ -275,6 +279,26 @@ def _instructions(stage: str, context: JsonObject) -> str:
             " OpenRTL restores the fixed IDs and ordering when saving. Supply the engineering content"
             " for every record; never omit a not_applicable record or its concrete explanation."
         )
+    if uses_manifest_transport(stage):
+        instruction += (
+            " The provider manifest uses test_file_paths, not test_modules. Return exact flat"
+            " project-relative Python test paths, for example dv/test_fifo.py; OpenRTL derives"
+            " the bare cocotb module name test_fifo. Use only dv/<identifier>.py, with 1-128 ASCII"
+            " letters, digits or underscores in identifier, starting with a letter or underscore."
+            " Do not use absolute paths, nested directories, dot segments or dotted import names."
+            " manifest.top must exactly equal specification.top (or specification.rtl_top_module_name"
+            " for feature proposals). expected_tests contains bare cocotb function identifiers."
+            " Every requirement_tests.requirement_id must be an exact specification.requirements[].id;"
+            " engineering_memory IDs are not approved requirements. Cover every specification requirement"
+            " exactly once and link it to existing expected_tests names. When generating the dv stage"
+            " for a reviewed change_scope, preserve its exact manifest and test paths. If dv_correction"
+            " is present, correct the"
+            " rejected candidate according to validation_code, validation_feedback and every additional_feedback"
+            " item while preserving the approved specification, settled decisions and reviewed file scope."
+            " Return syntactically valid Python: compound statements such as for, if and while must"
+            " start on a new line with an indented body, never after a semicolon. Do not remove checks"
+            " to make a syntax error disappear and do not claim tests ran."
+        )
     return instruction
 
 
@@ -345,23 +369,22 @@ def _schema(stage: str, context: JsonObject, *, ollama: bool = False) -> tuple[s
     include_hardware_specification = (stage != "change_planning" or feature_change or
                                       "hardware_specification" in existing)
     fixed_records = uses_specification_transport(stage, context)
-    if stage == "reference_model":
+    if stage in ("reference_model", "dv"):
         schema_version = ".ollama.v2" if ollama else ".v2"
+    elif stage == "change_planning":
+        version = (10 if fixed_records else 9 if include_hardware_specification else
+                   8 if include_readiness else 7)
+        schema_version = (".ollama.v" if ollama else ".v") + str(version)
     elif fixed_records:
-        schema_version = ".ollama.v6" if ollama else ".v11" if stage == "discovery" else ".v6"
-    elif ollama:
-        schema_version = (".ollama.v4" if include_hardware_specification else
-                          ".ollama.v2" if include_readiness else ".ollama.v1")
-        if stage != "change_planning":
-            schema_version = ".ollama.v1"
+        schema_version = ".ollama.v6" if ollama else ".v11"
     else:
-        schema_version = ((".v4" if include_hardware_specification else
-                           ".v3" if include_readiness else ".v2") if stage == "change_planning"
-                          else ".v1")
+        schema_version = ".ollama.v1" if ollama else ".v1"
     schema = response_schema(stage, include_readiness=include_readiness,
                              include_hardware_specification=include_hardware_specification)
     if fixed_records:
         schema = transport_schema(schema)
+    if uses_manifest_transport(stage):
+        schema = manifest_transport_schema(schema)
     return ("openrtl.design." + stage + schema_version,
             _ollama_schema(schema) if ollama else schema)
 
@@ -369,7 +392,11 @@ def _schema(stage: str, context: JsonObject, *, ollama: bool = False) -> tuple[s
 def _provider_context(context: JsonObject) -> tuple[JsonObject, float | None]:
     """Consume process-local timing without serializing it to a provider or capture."""
     payload = dict(context)
-    deadline = payload.pop("discovery_deadline", None)
+    require(not ("discovery_deadline" in payload and "expert_deadline" in payload),
+            "expert_timeout_invalid")
+    discovery_deadline = payload.pop("discovery_deadline", None)
+    expert_deadline = payload.pop("expert_deadline", None)
+    deadline = expert_deadline if expert_deadline is not None else discovery_deadline
     require(deadline is None or (type(deadline) is float and math.isfinite(deadline)),
             "expert_timeout_invalid")
     return payload, deadline
@@ -381,7 +408,7 @@ def _remaining_timeout(configured: int, deadline: float | None) -> float:
     remaining = deadline - time.monotonic()
     if remaining <= 0:
         raise AgentRigError(Failure(kind=FailureKind.DEADLINE_EXCEEDED,
-                                   message="Design discovery deadline exceeded",
+                                   message="Design expert deadline exceeded",
                                    code="openrtl.discovery.deadline_exceeded"))
     return min(float(configured), remaining)
 
@@ -410,6 +437,8 @@ class AgentRigDesignExpert:
         fixed_records = uses_specification_transport(stage, context)
         if fixed_records:
             context = transport_context(context)
+        if uses_manifest_transport(stage):
+            context = manifest_transport_context(context)
         payload = {"instruction": _instructions(stage, context),
                    "security": _SECURITY_INSTRUCTION,
                    "context": context}
@@ -447,6 +476,8 @@ class AgentRigDesignExpert:
         output = _specification_output(result.output, fixed_records=fixed_records)
         if stage == "reference_model":
             output = _reference_model_output(output)
+        if uses_manifest_transport(stage):
+            output = decode_manifest_output(output)
         return ExpertReply(output, result.model.provider, result.model.model_id,
                            result.usage.input_tokens, result.usage.output_tokens,
                            result.usage.cached_input_tokens, result.usage.reasoning_tokens)
@@ -476,6 +507,8 @@ class OllamaDesignExpert:
         fixed_records = uses_specification_transport(stage, context)
         if fixed_records:
             context = transport_context(context)
+        if uses_manifest_transport(stage):
+            context = manifest_transport_context(context)
         schema_id, _ = _schema(stage, context, ollama=True)
         payload: JsonObject = {"context": context}
         require(len(canonical(payload)) <= MAX_CONTEXT_BYTES, "expert_input_exceeds_bound")
@@ -516,6 +549,8 @@ class OllamaDesignExpert:
         output = _specification_output(output, fixed_records=fixed_records)
         if stage == "reference_model":
             output = _reference_model_output(output)
+        if uses_manifest_transport(stage):
+            output = decode_manifest_output(output)
         return ExpertReply(output, "ollama", self.model,
                            execution.usage.input_tokens, execution.usage.output_tokens)
 

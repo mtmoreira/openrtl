@@ -19,13 +19,16 @@ from openrtl.domain.design_delegation import specification_warnings, validate_de
 from openrtl.domain.design_imports import baseline_plan, digest_value, validate_change_plan
 from openrtl.domain.design_coaching import analysis_input_digest, validate_analysis, validate_intent, validate_proposal
 from openrtl.domain.discovery_validation import DiscoveryValidationError, identifier_validation_feedback
-from openrtl.domain.artifact_validation import artifact_validation_code
+from openrtl.domain.artifact_validation import (
+    ManifestValidationError, artifact_validation_code, dv_validation_feedback,
+)
+from openrtl.domain.dv_validation import validate_dv_files
 from openrtl.domain.design_discovery import (
     DISCOVERY_REPLY_SENTINEL, discovery_memory, validate_discovery,
 )
 
-DESIGN_CONTEXT_SCHEMA = "openrtl.design-context.v8"
-DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v12"
+DESIGN_CONTEXT_SCHEMA = "openrtl.design-context.v9"
+DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v13"
 PREFERRED_CLARIFICATION_ROUNDS = 3
 MAX_QUESTIONS_PER_ROUND = 3
 
@@ -94,12 +97,15 @@ class DesignPolicy:
     provider_model: str | None = None
     max_output_tokens: int = 16000
     max_discovery_corrections: int = 2
+    max_dv_corrections: int = 2
 
     def __post_init__(self) -> None:
         require(type(self.max_calls) is int and 1 <= self.max_calls <= 200, "call_budget_invalid")
         require(type(self.max_repairs) is int and 0 <= self.max_repairs <= 5, "repair_budget_invalid")
         require(type(self.max_discovery_corrections) is int and
                 0 <= self.max_discovery_corrections <= 2, "discovery_correction_budget_invalid")
+        require(type(self.max_dv_corrections) is int and
+                0 <= self.max_dv_corrections <= 2, "dv_correction_budget_invalid")
         require(type(self.max_output_tokens) is int and 256 <= self.max_output_tokens <= 32768,
                 "output_budget_invalid")
         if self.provider_model is not None:
@@ -531,13 +537,22 @@ class DesignAgent:
                                           if row["kind"] == "question"],
                 "after_preferred_limit": "ask_only_for_a_concrete_correctness_or_interface_blocker",
             }
+        if stage == "dv" and state["spec"] is not None:
+            pack["manifest_contract"] = {
+                "rtl_top_module_name": state["spec"]["top"],
+                "rtl_sources": sorted(p for p in state["files"]
+                                      if p.startswith("rtl/") and p.endswith((".sv", ".v"))),
+                "required_requirement_ids": [row["id"] for row in state["spec"]["requirements"]],
+            }
         require(len(canonical(pack)) <= MAX_CONTEXT_BYTES, "expert_context_exceeds_bound")
         return pack
 
     async def _generate(self, state: JsonObject, stage: str,
                         message: str | None = None, *, intent: str | None = None,
                         discovery_correction: JsonObject | None = None,
-                        discovery_deadline: float | None = None) -> tuple[JsonObject, JsonObject]:
+                        discovery_deadline: float | None = None,
+                        dv_correction: JsonObject | None = None,
+                        expert_deadline: float | None = None) -> tuple[JsonObject, JsonObject]:
         require(self.expert is not None, "expert_not_configured")
         state = self._limits(state)
         require(state["calls"] < state["limits"]["max_calls"], "expert_call_budget_exhausted")
@@ -546,6 +561,10 @@ class DesignAgent:
             pack["discovery_correction"] = discovery_correction
         if discovery_deadline is not None:
             pack["discovery_deadline"] = discovery_deadline
+        if dv_correction is not None:
+            pack["dv_correction"] = dv_correction
+        if expert_deadline is not None:
+            pack["expert_deadline"] = expert_deadline
         require(len(canonical(pack)) <= MAX_CONTEXT_BYTES, "expert_context_exceeds_bound")
         reserve = 0
         selected_provider = None
@@ -578,7 +597,7 @@ class DesignAgent:
         start_fields: JsonObject = {"operation_id": operation, "role": ROLES[stage],
                                    "context_digest": content_digest({
                                        key: value for key, value in pack.items()
-                                       if key != "discovery_deadline"}),
+                                       if key not in ("discovery_deadline", "expert_deadline")}),
                                    "context_schema": DESIGN_CONTEXT_SCHEMA,
                                    "prompt_version": DESIGN_PROMPT_VERSION,
                                    "tool_calls": 0, "shell_commands": 0}
@@ -671,50 +690,75 @@ class DesignAgent:
         if stage == "diagnosis":
             state = self._limits(state)
             require(state["repairs"] < state["limits"]["max_repairs"], "repair_budget_exhausted")
-        result, started = await self._generate(state, stage)
-        try:
-            if stage == "signoff":
-                return self._signoff(started, result)
-            contribution = object_value(result, {"summary", "files", "manifest"})
-            text(contribution["summary"], maximum=8000)
-            files = validate_files(contribution["files"], stage)
-            previous_files = self.store.contents(started)
-            if stage == "diagnosis":
-                # M36 repairs RTL only. Revising a model/test requires explicit user revision.
-                require(all(f["path"].startswith("rtl/") and f["path"] in previous_files for f in files),
-                        "repair_outside_existing_rtl")
-                require(any(previous_files[f["path"]] != f["content"] for f in files), "repair_has_no_change")
-                if started["change_plan"] is not None:
-                    allowed = {p for s in ("rtl", "assertions") for p in started["change_plan"]["stage_paths"][s]}
-                    require(all(f["path"] in allowed for f in files), "repair_outside_reviewed_change_scope")
-            elif started["change_plan"] is not None:
-                require({f["path"] for f in files} == set(started["change_plan"]["stage_paths"][stage]),
-                        "change_stage_paths_differ_from_review")
-            else:
-                require(not any(f["path"] in previous_files for f in files), "artifact_owner_conflict")
-            combined = {**previous_files, **{f["path"]: f["content"] for f in files}}
-            require(len(combined) <= 128 and sum(len(c.encode()) for c in combined.values()) <= MAX_CONTEXT_BYTES,
-                    "project_artifacts_exceed_bound")
-            updated = copy.deepcopy(started)
-            if stage == "dv":
+        attempts = self.policy.max_dv_corrections if stage == "dv" else 0
+        deadline = time.monotonic() + getattr(self.expert, "timeout_seconds", 120) if stage == "dv" else None
+        correction: JsonObject | None = None
+        for attempt in range(attempts + 1):
+            # Each received, invalid manifest is accounted and retained before a
+            # bounded new proposal. Provider failures never enter this loop's catch.
+            result, started = await self._generate(
+                state, stage, dv_correction=correction, expert_deadline=deadline)
+            try:
+                return self._accept_contribution(started, stage, result)
+            except (ValueError, KeyError, TypeError) as error:
+                code = artifact_validation_code(error)
+                feedback = dv_validation_feedback(error)
+                self._failed(started, "expert_output_invalid", validation_code=code)
+                if (stage != "dv" or not feedback or attempt == attempts or
+                        deadline is None or time.monotonic() >= deadline):
+                    raise ValueError("expert_output_invalid") from None
+                correction = {"attempt": attempt + 1, "validation_code": code,
+                              "validation_feedback": feedback[0], "candidate": copy.deepcopy(result)}
+                if len(feedback) > 1:
+                    correction["additional_feedback"] = feedback[1:]
+                state = self._idle()
+        raise AssertionError("bounded DV proposal loop did not terminate")
+
+    def _accept_contribution(self, started: JsonObject, stage: str, result: JsonObject) -> JsonObject:
+        if stage == "signoff":
+            return self._signoff(started, result)
+        contribution = object_value(result, {"summary", "files", "manifest"})
+        text(contribution["summary"], maximum=8000)
+        files = validate_files(contribution["files"], stage)
+        previous_files = self.store.contents(started)
+        if stage == "diagnosis":
+            # M36 repairs RTL only. Revising a model/test requires explicit user revision.
+            require(all(f["path"].startswith("rtl/") and f["path"] in previous_files for f in files),
+                    "repair_outside_existing_rtl")
+            require(any(previous_files[f["path"]] != f["content"] for f in files), "repair_has_no_change")
+            if started["change_plan"] is not None:
+                allowed = {p for s in ("rtl", "assertions") for p in started["change_plan"]["stage_paths"][s]}
+                require(all(f["path"] in allowed for f in files), "repair_outside_reviewed_change_scope")
+        elif started["change_plan"] is not None:
+            require({f["path"] for f in files} == set(started["change_plan"]["stage_paths"][stage]),
+                    "change_stage_paths_differ_from_review")
+        else:
+            require(not any(f["path"] in previous_files for f in files), "artifact_owner_conflict")
+        combined = {**previous_files, **{f["path"]: f["content"] for f in files}}
+        require(len(combined) <= 128 and sum(len(c.encode()) for c in combined.values()) <= MAX_CONTEXT_BYTES,
+                "project_artifacts_exceed_bound")
+        updated = copy.deepcopy(started)
+        if stage == "dv":
+            require(any(p.startswith("model/test_") for p in combined), "independent_model_tests_missing")
+            manifest_error = None
+            try:
                 updated["manifest"] = validate_manifest(contribution["manifest"], combined, started["spec"])
-                if started["change_plan"] is not None:
-                    require(updated["manifest"] == started["change_plan"]["manifest"], "change_manifest_differs_from_review")
-                require(any(p.startswith("model/test_") for p in combined), "independent_model_tests_missing")
-            else:
-                require(contribution["manifest"] is None, "stage_cannot_replace_simulation_manifest")
-            updated.update(active=None, last_error=None, analysis=None)
-            updated["summaries"][stage] = contribution["summary"]
-            if stage == "diagnosis":
-                updated.update(repairs=started["repairs"] + 1, status="building", review=None)
-            else:
-                updated["stage"] += 1
-            return self.store.save(started, updated, "operation.completed",
-                                   {"role": ROLES[stage], "output_digest": content_digest(result),
-                                    "artifact_count": len(files)}, files=files)
-        except (ValueError, KeyError, TypeError) as error:
-            self._failed(started, "expert_output_invalid", validation_code=artifact_validation_code(error))
-            raise ValueError("expert_output_invalid") from None
+            except ManifestValidationError as error:
+                manifest_error = error
+            if manifest_error is None and started["change_plan"] is not None:
+                require(updated["manifest"] == started["change_plan"]["manifest"], "change_manifest_differs_from_review")
+            validate_dv_files(files, manifest_error=manifest_error)
+        else:
+            require(contribution["manifest"] is None, "stage_cannot_replace_simulation_manifest")
+        updated.update(active=None, last_error=None, analysis=None)
+        updated["summaries"][stage] = contribution["summary"]
+        if stage == "diagnosis":
+            updated.update(repairs=started["repairs"] + 1, status="building", review=None)
+        else:
+            updated["stage"] += 1
+        return self.store.save(started, updated, "operation.completed",
+                               {"role": ROLES[stage], "output_digest": content_digest(result),
+                                "artifact_count": len(files)}, files=files)
 
     async def _simulate(self, state: JsonObject) -> JsonObject:
         require(self.simulator is not None, "isolated_simulator_not_configured")

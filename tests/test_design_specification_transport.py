@@ -7,6 +7,7 @@ from typing import Any
 import unittest
 
 from openrtl.adapters.design_generation import _ollama_schema, _schema, response_schema
+from openrtl.adapters.design_manifest_transport import manifest_transport_schema
 from openrtl.adapters.design_specification_transport import (
     decode_specification_module_name,
     decode_specification_output,
@@ -92,7 +93,8 @@ class DesignSpecificationTransportTest(unittest.TestCase):
             for ollama in (False, True):
                 with self.subTest(stage=stage, ollama=ollama):
                     identifier, schema = _schema(stage, context, ollama=ollama)
-                    suffix = ".ollama.v6" if ollama else ".v11" if stage == "discovery" else ".v6"
+                    suffix = ((".ollama.v6" if ollama else ".v11") if stage == "discovery"
+                              else ".ollama.v10" if ollama else ".v10")
                     self.assertEqual(identifier, expected_id + suffix)
                     spec = schema["properties"]["specification"]
                     if stage == "discovery":
@@ -365,10 +367,10 @@ class DesignSpecificationTransportTest(unittest.TestCase):
                         identifier, actual = _schema("change_planning", context, ollama=ollama)
                         expected = response_schema("change_planning", include_readiness=with_readiness,
                                                    include_hardware_specification=with_hardware)
+                        expected = manifest_transport_schema(expected)
                         if ollama:
                             expected = _ollama_schema(expected)
-                        version = (4 if with_hardware else 2 if with_readiness else 1) if ollama else (
-                            4 if with_hardware else 3 if with_readiness else 2)
+                        version = 9 if with_hardware else 8 if with_readiness else 7
                         self.assertEqual(identifier, "openrtl.design.change_planning." +
                                          ("ollama." if ollama else "") + "v" + str(version))
                         self.assertEqual(actual, expected)
