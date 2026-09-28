@@ -24,6 +24,30 @@ ARTIFACT_VALIDATION_CODES = frozenset({
 })
 
 
+class DuplicateContributionPathError(ValueError):
+    """Validated file-index pairs, with no rejected paths or artifact content."""
+
+    def __init__(self, duplicate_locations: list[tuple[int, int]]) -> None:
+        if (type(duplicate_locations) is not list or not 1 <= len(duplicate_locations) <= 63 or
+                any(type(pair) is not tuple or len(pair) != 2 or
+                    type(pair[0]) is not int or type(pair[1]) is not int or
+                    not 0 <= pair[0] < pair[1] < 64 for pair in duplicate_locations) or
+                len(set(duplicate_locations)) != len(duplicate_locations)):
+            raise ValueError("duplicate_contribution_diagnostic_invalid")
+        super().__init__("contribution_ownership_invalid")
+        self.duplicate_locations = tuple(duplicate_locations)
+
+
+def document_validation_feedback(error: object) -> list[dict[str, str | int]]:
+    if type(error) is not DuplicateContributionPathError:
+        return []
+    return [{"field": f"files[{duplicate}].path", "duplicate_of": f"files[{first}].path",
+             "expected": "Return a fresh complete proposal with exactly one unambiguous file entry "
+                         "per path. Resolve competing versions explicitly while preserving all "
+                         "required content and reviewed requirements; do not omit required artifacts."}
+            for first, duplicate in error.duplicate_locations]
+
+
 # Only errors reached after file ownership and contribution checks may request
 # a new DV proposal. These trusted locations/rules contain no rejected values.
 _MANIFEST_RULES = {
@@ -109,7 +133,8 @@ def artifact_validation_code(error: object) -> str | None:
     """Extract only a fixed local rule, without formatting arbitrary exceptions."""
     if not isinstance(error, ValueError):
         return None
-    if type(error) not in (ValueError, ManifestValidationError, DVValidationError) or len(error.args) != 1:
+    if type(error) not in (ValueError, ManifestValidationError, DVValidationError,
+                          DuplicateContributionPathError) or len(error.args) != 1:
         return None
     code = error.args[0]
     return code if type(code) is str and code in ARTIFACT_VALIDATION_CODES else None

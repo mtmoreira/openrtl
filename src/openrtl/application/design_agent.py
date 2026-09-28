@@ -20,15 +20,16 @@ from openrtl.domain.design_imports import baseline_plan, digest_value, validate_
 from openrtl.domain.design_coaching import analysis_input_digest, validate_analysis, validate_intent, validate_proposal
 from openrtl.domain.discovery_validation import DiscoveryValidationError, identifier_validation_feedback
 from openrtl.domain.artifact_validation import (
-    ManifestValidationError, artifact_validation_code, dv_validation_feedback,
+    DuplicateContributionPathError, ManifestValidationError, artifact_validation_code,
+    document_validation_feedback, dv_validation_feedback,
 )
 from openrtl.domain.dv_validation import validate_dv_files
 from openrtl.domain.design_discovery import (
     DISCOVERY_REPLY_SENTINEL, discovery_memory, validate_discovery,
 )
 
-DESIGN_CONTEXT_SCHEMA = "openrtl.design-context.v9"
-DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v13"
+DESIGN_CONTEXT_SCHEMA = "openrtl.design-context.v10"
+DESIGN_PROMPT_VERSION = "openrtl.design.instructions.v14"
 PREFERRED_CLARIFICATION_ROUNDS = 3
 MAX_QUESTIONS_PER_ROUND = 3
 
@@ -98,6 +99,7 @@ class DesignPolicy:
     max_output_tokens: int = 16000
     max_discovery_corrections: int = 2
     max_dv_corrections: int = 2
+    max_document_corrections: int = 2
 
     def __post_init__(self) -> None:
         require(type(self.max_calls) is int and 1 <= self.max_calls <= 200, "call_budget_invalid")
@@ -106,6 +108,8 @@ class DesignPolicy:
                 0 <= self.max_discovery_corrections <= 2, "discovery_correction_budget_invalid")
         require(type(self.max_dv_corrections) is int and
                 0 <= self.max_dv_corrections <= 2, "dv_correction_budget_invalid")
+        require(type(self.max_document_corrections) is int and
+                0 <= self.max_document_corrections <= 2, "document_correction_budget_invalid")
         require(type(self.max_output_tokens) is int and 256 <= self.max_output_tokens <= 32768,
                 "output_budget_invalid")
         if self.provider_model is not None:
@@ -552,6 +556,7 @@ class DesignAgent:
                         discovery_correction: JsonObject | None = None,
                         discovery_deadline: float | None = None,
                         dv_correction: JsonObject | None = None,
+                        document_correction: JsonObject | None = None,
                         expert_deadline: float | None = None) -> tuple[JsonObject, JsonObject]:
         require(self.expert is not None, "expert_not_configured")
         state = self._limits(state)
@@ -563,6 +568,8 @@ class DesignAgent:
             pack["discovery_deadline"] = discovery_deadline
         if dv_correction is not None:
             pack["dv_correction"] = dv_correction
+        if document_correction is not None:
+            pack["document_correction"] = document_correction
         if expert_deadline is not None:
             pack["expert_deadline"] = expert_deadline
         require(len(canonical(pack)) <= MAX_CONTEXT_BYTES, "expert_context_exceeds_bound")
@@ -690,21 +697,27 @@ class DesignAgent:
         if stage == "diagnosis":
             state = self._limits(state)
             require(state["repairs"] < state["limits"]["max_repairs"], "repair_budget_exhausted")
-        attempts = self.policy.max_dv_corrections if stage == "dv" else 0
-        deadline = time.monotonic() + getattr(self.expert, "timeout_seconds", 120) if stage == "dv" else None
+        document_stage = stage in ("architecture", "verification_plan")
+        attempts = (self.policy.max_dv_corrections if stage == "dv" else
+                    self.policy.max_document_corrections if document_stage else 0)
+        deadline = (time.monotonic() + getattr(self.expert, "timeout_seconds", 120)
+                    if stage == "dv" or document_stage else None)
         correction: JsonObject | None = None
         for attempt in range(attempts + 1):
-            # Each received, invalid manifest is accounted and retained before a
+            # Each received, invalid proposal is accounted and retained before a
             # bounded new proposal. Provider failures never enter this loop's catch.
             result, started = await self._generate(
-                state, stage, dv_correction=correction, expert_deadline=deadline)
+                state, stage, dv_correction=correction if stage == "dv" else None,
+                document_correction=correction if document_stage else None,
+                expert_deadline=deadline)
             try:
                 return self._accept_contribution(started, stage, result)
             except (ValueError, KeyError, TypeError) as error:
                 code = artifact_validation_code(error)
-                feedback = dv_validation_feedback(error)
+                feedback = (document_validation_feedback(error) if document_stage else
+                            dv_validation_feedback(error) if stage == "dv" else [])
                 self._failed(started, "expert_output_invalid", validation_code=code)
-                if (stage != "dv" or not feedback or attempt == attempts or
+                if (not feedback or attempt == attempts or
                         deadline is None or time.monotonic() >= deadline):
                     raise ValueError("expert_output_invalid") from None
                 correction = {"attempt": attempt + 1, "validation_code": code,
@@ -712,14 +725,24 @@ class DesignAgent:
                 if len(feedback) > 1:
                     correction["additional_feedback"] = feedback[1:]
                 state = self._idle()
-        raise AssertionError("bounded DV proposal loop did not terminate")
+        raise AssertionError("bounded contribution proposal loop did not terminate")
 
     def _accept_contribution(self, started: JsonObject, stage: str, result: JsonObject) -> JsonObject:
         if stage == "signoff":
             return self._signoff(started, result)
         contribution = object_value(result, {"summary", "files", "manifest"})
         text(contribution["summary"], maximum=8000)
-        files = validate_files(contribution["files"], stage)
+        duplicate_error = None
+        try:
+            files = validate_files(contribution["files"], stage)
+        except DuplicateContributionPathError as error:
+            if stage not in ("architecture", "verification_plan"):
+                raise
+            # The exact domain diagnostic is emitted only after every row,
+            # root, content and contribution bound has passed. Keep all rows
+            # intact to check saved ownership and reviewed scope before retry.
+            duplicate_error = error
+            files = cast(list[JsonObject], contribution["files"])
         previous_files = self.store.contents(started)
         if stage == "diagnosis":
             # M36 repairs RTL only. Revising a model/test requires explicit user revision.
@@ -734,9 +757,19 @@ class DesignAgent:
                     "change_stage_paths_differ_from_review")
         else:
             require(not any(f["path"] in previous_files for f in files), "artifact_owner_conflict")
-        combined = {**previous_files, **{f["path"]: f["content"] for f in files}}
-        require(len(combined) <= 128 and sum(len(c.encode()) for c in combined.values()) <= MAX_CONTEXT_BYTES,
+        # Validate the largest competing size for each path, never choose a
+        # competing content. No content dictionary is constructed until path
+        # uniqueness has passed. Replacements do not count the old file twice.
+        candidate_sizes: dict[str, int] = {}
+        for row in files:
+            candidate_sizes[row["path"]] = max(candidate_sizes.get(row["path"], 0), len(row["content"].encode()))
+        combined_sizes = {**{p: len(c.encode()) for p, c in previous_files.items()}, **candidate_sizes}
+        require(len(combined_sizes) <= 128 and sum(combined_sizes.values()) <= MAX_CONTEXT_BYTES,
                 "project_artifacts_exceed_bound")
+        if duplicate_error is not None:
+            require(contribution["manifest"] is None, "stage_cannot_replace_simulation_manifest")
+            raise duplicate_error
+        combined = {**previous_files, **{f["path"]: f["content"] for f in files}}
         updated = copy.deepcopy(started)
         if stage == "dv":
             require(any(p.startswith("model/test_") for p in combined), "independent_model_tests_missing")

@@ -209,21 +209,31 @@ def validate_manifest(value: object, files: dict[str, str], spec: JsonObject) ->
 
 
 def validate_files(value: object, stage: str) -> list[JsonObject]:
+    from openrtl.domain.artifact_validation import DuplicateContributionPathError
+
     files = sequence(value)
     require(bool(files), "contribution_files_missing")
     prefixes = {"architecture": ("docs/",), "verification_plan": ("docs/",),
                 "reference_model": ("model/",), "rtl": ("rtl/",), "assertions": ("rtl/",),
                 "dv": ("dv/",), "diagnosis": ("rtl/", "dv/", "model/")}
-    seen = set()
+    seen: dict[str, int] = {}
+    duplicates = []
     result = []
-    for item in files:
+    for index, item in enumerate(files):
         row = object_value(item, {"path", "content"})
         path = source_path(row["path"])
-        require(path.startswith(prefixes[stage]) and path not in seen, "contribution_ownership_invalid")
-        seen.add(path)
+        require(path.startswith(prefixes[stage]), "contribution_ownership_invalid")
+        if path in seen:
+            duplicates.append((seen[path], index))
+        else:
+            seen[path] = index
         text(row["content"])
         result.append(row)
     require(sum(len(r["content"].encode()) for r in result) <= MAX_CONTEXT_BYTES, "contribution_too_large")
+    # A duplicate is correctable only after all rows pass the security and size
+    # boundaries. Never select, merge, or discard either competing artifact.
+    if duplicates:
+        raise DuplicateContributionPathError(duplicates)
     return result
 
 

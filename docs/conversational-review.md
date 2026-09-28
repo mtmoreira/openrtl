@@ -61,7 +61,7 @@ inventing readiness evidence; ask the authorized design lead to complete the
 checklist before using normal conversational approval or the normal batch route.
 Readiness is a versioned extension (`openrtl.design-readiness.v1`); previous
 stored specs and their approval hashes are not rewritten. Role context is now
-`openrtl.design-context.v9`, with v11 OpenAI and v6 Ollama discovery response schemas.
+`openrtl.design-context.v10`, with v11 OpenAI and v6 Ollama discovery response schemas.
 Provider-proposed feature changes use the new document format; DV-only and
 optimization proposals retain their exact specification, including a legacy
 shape. An older baseline remains unchanged unless a complete feature proposal is
@@ -100,6 +100,33 @@ request. Resolving every saved question without proposing a specification is a
 correctable validation failure rather than another empty discovery turn.
 
 These are offline-tested lifecycle guarantees, not live model qualification.
+
+## Duplicate document proposals
+
+Architecture and verification-plan turns can correct a duplicate file path in
+at most two additional proposals (`DesignPolicy.max_document_corrections`, zero
+disables correction). Multiple distinct documentation files remain supported,
+including exact reviewed change sets. OpenRTL never selects, merges or silently
+overwrites competing versions. Every corrected proposal must independently pass
+the same deterministic validation as the initial proposal.
+
+Correction is eligible only for a typed duplicate diagnostic after every file's
+path, stage root, content and bounds have passed, and after saved-artifact
+ownership, exact reviewed scope, project bounds and null-manifest checks. A
+duplicate cannot mask a later unsafe entry. Wrong roots, unauthorized overwrites,
+scope violations and non-document ownership failures remain terminal. The
+historical safe code `contribution_ownership_invalid` is retained; that code
+alone never authorizes another call.
+
+All attempts share one stage deadline and consume the ordinary call/spend
+budgets. `document_correction` contains index-only guidance and the unchanged
+rejected candidate, not accepted memory or authority. Full rejected text remains
+available only with explicit private capture; ordinary events remain content-free.
+Exhaustion, provider failure, unknown usage or an oversized correction context
+stops without replacing approved or generated artifacts. Restart never silently
+replays the failed operation. Context v10 and prompt v14 add this policy without
+changing saved sessions or provider response schemas. Synthetic provider tests
+exercise the capture shape; they do not qualify live-model reliability.
 M46 engineering qualification and M47 release remain pending.
 
 The [import/evolution guide](import-evolution.md) covers explicit multiple file
