@@ -1,0 +1,246 @@
+{
+  "schema": "openrtl.milestone-evidence.v1",
+  "milestone_id": "document-recovery-v1",
+  "base_commit": "1b79ecb6f6c347084f7554778ffc206f75f1a614",
+  "qualified_commit": "5d230029314478b1fb753c81bec11b24441849f7",
+  "qualification_lane": "owner-offline",
+  "review_state": "local-contracts-validated-live-provider-qualification-pending",
+  "implementation_slice_complete": true,
+  "qualification_scope": "Bound correction of duplicate architecture and verification-plan paths only after contribution and reviewed-scope security checks. Never choose, merge or deduplicate competing documents locally. Preserve strict validation, multi-file support, metering, shared deadlines and opt-in private capture.",
+  "locator_roots": {
+    "openrtl-primary-checkout": {
+      "kind": "declared-external-checkout",
+      "repository": "openrtl",
+      "resolution": "Resolve against the primary checkout; retained artifacts are local and not distributed."
+    }
+  },
+  "artifacts": [
+    {
+      "artifact_id": "document-recovery.local.1",
+      "locator": "build/retained-evidence/document-recovery-v1/run-0u6W8uIK/source.sha256",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "4ae12b024df55385376a3662c1e45c321809ca0ba357a2cb256febe0be970605",
+      "size_bytes": 1117,
+      "producer": "document-recovery-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "document-recovery.local.2",
+      "locator": "build/retained-evidence/document-recovery-v1/run-0u6W8uIK/delivery-tools.sha256",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "90541639e045f9f5d08b885e14108094b706537fda07746696ae56346ae18956",
+      "size_bytes": 256,
+      "producer": "document-recovery-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "document-recovery.local.3",
+      "locator": "build/retained-evidence/document-recovery-v1/run-0u6W8uIK/runtime.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "dd5f86d613e7c4ec755123718ae07f43c3c41558ff1bfeebafb3335894e0cc1b",
+      "size_bytes": 63,
+      "producer": "document-recovery-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "document-recovery.local.4",
+      "locator": "build/retained-evidence/document-recovery-v1/run-0u6W8uIK/focused.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "a807f9b02c0705e5ad625a2ccc9fe769100b2dc41f336dc8aed0528cc360a4cf",
+      "size_bytes": 393,
+      "producer": "document-recovery-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "document-recovery.local.5",
+      "locator": "build/retained-evidence/document-recovery-v1/run-0u6W8uIK/frontend.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "96b715628f12715f2555e08024eae263fb04be9285b5b7777838384fdc556697",
+      "size_bytes": 3205,
+      "producer": "document-recovery-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "document-recovery.local.6",
+      "locator": "build/retained-evidence/document-recovery-v1/run-0u6W8uIK/typing.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "71144743c83babea384888a735db0c4daba3d4d7b7942b6839984bd5c21b52bb",
+      "size_bytes": 43,
+      "producer": "document-recovery-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "document-recovery.local.7",
+      "locator": "build/retained-evidence/document-recovery-v1/run-0u6W8uIK/full.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "7951c52ee3cb5221c9bb33ab02a452f26859a5487e44b6db6a785234b567fef0",
+      "size_bytes": 1742,
+      "producer": "document-recovery-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "document-recovery.local.8",
+      "locator": "build/retained-evidence/document-recovery-v1/run-0u6W8uIK/canary.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "6dd5c04298cefe79950ded4403877720fc91f937d781d9b6bad5aa77235ff537",
+      "size_bytes": 42,
+      "producer": "document-recovery-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "document-recovery.local.9",
+      "locator": "build/retained-evidence/document-recovery-v1/run-0u6W8uIK/canary/canary.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "98174240e26a8777243883cdb59cc9c30d521b07aa20a186994d2d031cb77c82",
+      "size_bytes": 83497,
+      "producer": "document-recovery-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "document-recovery.local.10",
+      "locator": "build/retained-evidence/document-recovery-v1/run-0u6W8uIK/canary/evidence.json",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "openrtl.verilator-canary-evidence.v1",
+      "media_type": "application/json",
+      "sha256": "f3e1e8f6129f095ea60617bdc0144d792b0ede756345eec23ecbaa3eea998391",
+      "size_bytes": 1006,
+      "producer": "document-recovery-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "document-recovery.local.11",
+      "locator": "build/retained-evidence/document-recovery-v1/run-0u6W8uIK/canary/results.xml",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "application/xml",
+      "sha256": "d83002edc137cd8dff51518bbf7905731cb752229437bc1e207fd669ff7fcd88",
+      "size_bytes": 434,
+      "producer": "document-recovery-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "document-recovery.local.12",
+      "locator": "build/retained-evidence/document-recovery-v1/run-0u6W8uIK/canary/waves.vcd",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "3472b20dd63cc6fe6cacc6b5109f33dd1c922928b78a4686f502010daf79d271",
+      "size_bytes": 44303,
+      "producer": "document-recovery-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    }
+  ],
+  "validation_outcomes": {
+    "focused": {
+      "suite_test_counts": [
+        292
+      ],
+      "exit_code": 0
+    },
+    "full_repository_and_examples": {
+      "suite_test_counts": [
+        800,
+        3,
+        3
+      ],
+      "exit_code": 0
+    },
+    "frontend": {
+      "tests": 32,
+      "exit_code": 0
+    },
+    "typing_changed_sources": {
+      "files": 4,
+      "exit_code": 0
+    },
+    "source_binding": {
+      "files": 11,
+      "unchanged_after_validation": true
+    },
+    "verilator_cocotb_canary": {
+      "status": "passed",
+      "tests": 1,
+      "exit_code": 0
+    },
+    "provider_dependency": {
+      "version": "0.3.1.dev13",
+      "wheel_sha256": "b77cf547002361632f6fa3b6437287ea92f4fe69108c9a5ac837fce9c0b369d3",
+      "source": "verified-wheel-extracted-for-validation-without-installation"
+    }
+  },
+  "authorization_boundary": {
+    "local_implementation_and_commits": true,
+    "local_simulation": true,
+    "provider_calls": false,
+    "credential_values_handled": false,
+    "saved_customer_project_mutations": false,
+    "downloads": false,
+    "installation": false,
+    "publication": false,
+    "production_authorized": false
+  },
+  "qualification_limits": [
+    "Synthetic fixtures and the existing RTL canary only; no customer project, private prompt, provider response or reasoning is copied into these artifacts.",
+    "Bounded recovery does not establish live-model reliability, generated design correctness, or fresh-provider-run success.",
+    "Typing is limited to the four changed production modules. The second full gate and integrated smoke run after this parent-bound manifest is prepared, with their logs retained separately.",
+    "Canary copies preserve original bytes and historical paths; a passing existing canary is not live-agent design qualification."
+  ],
+  "pending": [
+    "m46-live-rtl-qualification",
+    "m47-release"
+  ]
+}
