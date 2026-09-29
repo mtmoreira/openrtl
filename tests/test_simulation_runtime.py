@@ -12,8 +12,9 @@ import os
 import stat
 from pathlib import Path
 import tempfile
+from typing import Callable, cast
 import unittest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 from openrtl.adapters.design_simulation import IsolatedDesignSimulator
 from openrtl.adapters.workload_transport import LimaWorkloadTransport
@@ -21,8 +22,9 @@ from openrtl.adapters.runtime_selection import inspect_selection, local_identity
 from openrtl.adapters.runtime_selftest import collateral, selftest_digest, verify_evidence
 from openrtl.adapters import runtime_store
 from openrtl.domain.design_session import JsonObject, content_digest
-from openrtl.domain.simulation_runtime import PROFILE_SCHEMA, RESOURCE_DEFAULTS, resource_arguments, validate_profile
-from openrtl.runtime_cli import add_runtime_command, ready_profile, run_runtime_command
+from openrtl.domain.simulation_runtime import (PROFILE_SCHEMA, RESOURCE_DEFAULTS, resource_arguments,
+                                               validate_profile, validate_receipt)
+from openrtl.runtime_cli import add_runtime_command, ready_profile, run_runtime_command, status as runtime_status
 
 
 def profile() -> JsonObject:
@@ -69,6 +71,17 @@ class RuntimeContractTest(unittest.TestCase):
         candidate["resources"]["output_mib"] = 1024
         with self.assertRaisesRegex(ValueError, "output_memory"):
             validate_profile(candidate)
+
+    def test_receipt_optionally_binds_one_exact_workload_transport(self) -> None:
+        receipt = {"schema": "openrtl.runtime-selftest.v1", "attempt": "a"*32, "operation": "b"*32,
+                   "profile_digest": "sha256:" + "c"*64, "selftest_digest": "sha256:" + "d"*64,
+                   "transport_digest": "sha256:" + "e"*64, "status": "running"}
+        self.assertEqual(validate_receipt(receipt), receipt)
+        for value in (None, "e"*64, "sha256:bad"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                validate_receipt({**receipt, "transport_digest": value})
+        with self.assertRaises(ValueError):
+            validate_receipt({**receipt, "transport_identity": {"instance": "untrusted"}})
 
 
 class RuntimeTemporaryTest(unittest.TestCase):
@@ -275,6 +288,11 @@ class RuntimeSimulationTest(RuntimeTemporaryTest):
         self.assertIn("--user=65534:65534", creates[0])
         self.assertEqual(transport.released, ["e"*32])
         self.assertEqual(commands.index(creates[1]), commands.index(creates[0]) + 3)
+        transport_digest = content_digest(transport.identity)
+        verify_evidence(self.root, profile(), "e"*32, report,
+                        transport_digest=transport_digest)
+        with self.assertRaisesRegex(ValueError, "runtime_selftest_intent_changed"):
+            verify_evidence(self.root, profile(), "e"*32, report)
 
     def test_lima_transport_copies_and_checks_guest_bytes_without_host_permission_repair(self) -> None:
         executable = self.root / "limactl"
@@ -387,6 +405,36 @@ class RuntimeSimulationTest(RuntimeTemporaryTest):
         with patch("openrtl.runtime_cli.load", side_effect=[profile(), receipt]), self.assertRaisesRegex(ValueError, "stale"):
             ready_profile(self.root)
 
+    def test_saved_transport_receipt_requires_the_exact_current_identity(self) -> None:
+        report, _ = self.run_fixture()
+        identity = {"schema": "unit-guest-transport", "instance": "unit-only"}
+        digest = content_digest(identity)
+        intent = self.root / "runs" / ("d"*32) / "intent.json"
+        value = json.loads(intent.read_bytes())
+        value.update(probe_name="openrtl-design-" + "d"*32 + "-probe", transport_digest=digest)
+        intent.write_bytes(json.dumps(value).encode())
+        receipt = {"schema": "openrtl.runtime-selftest.v1", "attempt": "f"*32, "operation": "d"*32,
+                   "profile_digest": content_digest(profile()), "selftest_digest": selftest_digest(profile()),
+                   "transport_digest": digest, "report_digest": content_digest(report), "status": "passed"}
+        with patch("openrtl.runtime_cli._attempt", return_value=self.root), \
+                patch("openrtl.runtime_cli.verify_local_identity"), \
+                patch("openrtl.runtime_cli.load", side_effect=[profile(), receipt, profile(), receipt]):
+            self.assertEqual(ready_profile(self.root, transport_identity=identity), profile())
+        for selected in (None, {**identity, "instance": "changed"}):
+            with self.subTest(selected=selected), patch("openrtl.runtime_cli._attempt", return_value=self.root), \
+                    patch("openrtl.runtime_cli.verify_local_identity"), \
+                    patch("openrtl.runtime_cli.load", side_effect=[profile(), receipt, profile(), receipt]), \
+                    self.assertRaisesRegex(ValueError, "transport_changed"):
+                ready_profile(self.root, transport_identity=selected)
+
+        with patch("openrtl.runtime_cli._attempt", return_value=self.root), \
+                patch("openrtl.runtime_cli.verify_local_identity"), \
+                patch("openrtl.runtime_cli.load",
+                      side_effect=[profile(), receipt, profile(), receipt, profile(), receipt]):
+            observed = runtime_status(self.root)
+        self.assertTrue(observed["local_selftest_verified"])
+        self.assertFalse(observed["execution_authorized"])
+
 
 class RuntimeCommandTest(unittest.TestCase):
     def arguments(self, values: list[str]) -> argparse.Namespace:
@@ -410,6 +458,16 @@ class RuntimeCommandTest(unittest.TestCase):
             writer.assert_not_called()
             self.assertIn("explicit_consent", emit.call_args.args[0])
 
+    def test_partial_guest_transport_stops_before_state_lock_or_attempt(self) -> None:
+        arguments = self.arguments(["self-test", "--allow-runtime-contact",
+                                    "--lima-executable", "/unit-only/limactl"])
+        with patch("openrtl.runtime_cli.writer") as writer, \
+                patch("openrtl.runtime_cli._new_attempt") as attempt, patch("builtins.print") as emit:
+            self.assertEqual(run_runtime_command(arguments), 2)
+        writer.assert_not_called()
+        attempt.assert_not_called()
+        self.assertIn("runtime_guest_transport_required_together", emit.call_args.args[0])
+
     def test_legacy_simulation_selection_and_runtime_state_are_exclusive(self) -> None:
         from openrtl.cli import parser
         args = parser().parse_args(["resume", "--project", "/unit-only/project", "--runtime-state", "/unit-only/state"])
@@ -431,6 +489,30 @@ class RuntimeCommandTest(unittest.TestCase):
             args = parser().parse_args(forwarded)
             self.assertEqual(args.state_dir, Path("/unit-only/private state"))
             self.assertEqual(_forwarded_arguments([*prefix, "batch", "--help"]), ["batch", "--help"])
+
+    def test_ui_readiness_is_bound_to_the_selected_guest_transport(self) -> None:
+        from openrtl.cli import main
+        transport = Mock()
+        transport.identity = {"schema": "unit-guest-transport", "instance": "managed-unit"}
+        simulator = object()
+        def serve(*args: object, **kwargs: object) -> None:
+            factory = cast(Callable[[], object], kwargs["simulator_factory"])
+            self.assertIs(factory(), simulator)
+        with patch("openrtl.adapters.design_web.serve", side_effect=serve), \
+                patch("openrtl.adapters.workload_transport.LimaWorkloadTransport",
+                      return_value=transport) as transport_factory, \
+                patch("openrtl.runtime_cli.ready_profile", return_value=profile()) as ready, \
+                patch("openrtl.adapters.design_simulation.IsolatedDesignSimulator",
+                      return_value=simulator) as simulator_factory:
+            result = main(["ui", "--project", "/unit-only/project", "--allow-simulation",
+                           "--runtime-state", "/unit-only/runtime", "--lima-executable", "/unit-only/limactl",
+                           "--lima-state-root", "/unit-only/lima", "--lima-instance", "managed-unit"])
+        self.assertEqual(result, 0)
+        transport_factory.assert_called_once_with(Path("/unit-only/limactl"),
+                                                  Path("/unit-only/lima"), "managed-unit")
+        ready.assert_called_once_with(Path("/unit-only/runtime"), transport_identity=transport.identity)
+        simulator_factory.assert_called_once_with(Path("/unit-only/project"), profile(),
+                                                  workload_transport=transport)
 
 
 class RuntimeStoreTest(unittest.TestCase):
@@ -507,6 +589,90 @@ class RuntimeRecoveryTest(RuntimeTemporaryTest):
             with self.assertRaises(asyncio.CancelledError):
                 asyncio.run(_selftest(argparse.Namespace(allow_runtime_contact=True), self.root))
         self.assertEqual([row["status"] for row in recorded], ["not-started", "running", "needs-recovery"])
+
+    def test_interrupted_transport_selftest_binds_identity_through_uncertainty(self) -> None:
+        from openrtl.runtime_cli import _selftest
+        transport = Mock()
+        transport.identity = {"schema": "unit-guest-transport", "instance": "unit-only"}
+        recorded: list[JsonObject] = []
+        with patch("openrtl.runtime_cli._workload_transport", return_value=transport), \
+                patch("openrtl.runtime_cli.load", return_value=None), \
+                patch("openrtl.runtime_cli._profile", return_value=profile()), \
+                patch("openrtl.runtime_cli._new_attempt", return_value=self.root), \
+                patch("openrtl.runtime_cli.save", side_effect=lambda state, name, value: recorded.append(dict(value))), \
+                patch("openrtl.runtime_cli.IsolatedDesignSimulator") as simulator:
+            simulator.return_value.simulate = AsyncMock(side_effect=asyncio.CancelledError())
+            with self.assertRaises(asyncio.CancelledError):
+                asyncio.run(_selftest(argparse.Namespace(allow_runtime_contact=True), self.root))
+        self.assertEqual([row["transport_digest"] for row in recorded],
+                         [content_digest(transport.identity)] * 3)
+        simulator.assert_called_once_with(self.root, profile(), workload_transport=transport)
+
+    def test_recovery_refuses_a_changed_transport_before_simulator_contact(self) -> None:
+        from openrtl.runtime_cli import _recover
+        receipt = {"schema": "openrtl.runtime-selftest.v1", "attempt": "a"*32, "operation": "b"*32,
+                   "profile_digest": content_digest(profile()), "selftest_digest": selftest_digest(profile()),
+                   "transport_digest": content_digest({"schema": "unit", "instance": "original"}),
+                   "status": "needs-recovery"}
+        with patch("openrtl.runtime_cli._workload_transport", return_value=None), \
+                patch("openrtl.runtime_cli.load", return_value=receipt), \
+                patch("openrtl.runtime_cli._profile", return_value=profile()), \
+                patch("openrtl.runtime_cli.IsolatedDesignSimulator") as simulator, \
+                patch("openrtl.runtime_cli.save") as save, \
+                self.assertRaisesRegex(ValueError, "runtime_recovery_transport_changed"):
+            asyncio.run(_recover(argparse.Namespace(allow_runtime_contact=True), self.root))
+        simulator.assert_not_called()
+        save.assert_not_called()
+
+    def test_exact_transport_recovery_cleans_without_replaying_selftest(self) -> None:
+        from openrtl.runtime_cli import _recover
+        transport = Mock()
+        transport.identity = {"schema": "unit-guest-transport", "instance": "unit-only"}
+        receipt = {"schema": "openrtl.runtime-selftest.v1", "attempt": "a"*32, "operation": "b"*32,
+                   "profile_digest": content_digest(profile()), "selftest_digest": selftest_digest(profile()),
+                   "transport_digest": content_digest(transport.identity), "status": "needs-recovery"}
+        intent = self.root / "runs" / ("b"*32) / "intent.json"
+        intent.parent.mkdir(parents=True)
+        intent.write_text("{}")
+        with patch("openrtl.runtime_cli._workload_transport", return_value=transport), \
+                patch("openrtl.runtime_cli.load", return_value=receipt), \
+                patch("openrtl.runtime_cli._profile", return_value=profile()), \
+                patch("openrtl.runtime_cli._attempt", return_value=self.root), \
+                patch("openrtl.runtime_cli.IsolatedDesignSimulator") as simulator, \
+                patch("openrtl.runtime_cli.save") as save:
+            simulator.return_value.abandon = AsyncMock()
+            result = asyncio.run(_recover(argparse.Namespace(allow_runtime_contact=True), self.root))
+        simulator.assert_called_once_with(self.root, profile(), workload_transport=transport)
+        simulator.return_value.abandon.assert_awaited_once_with("b"*32, selftest_digest(profile()))
+        self.assertEqual(result["status"], "recovered-without-replaying-self-test")
+        saved = save.call_args.args[2]
+        self.assertEqual(saved["status"], "recovered")
+        self.assertEqual(saved["transport_digest"], content_digest(transport.identity))
+
+    def test_successful_transport_selftest_verifies_and_saves_exact_binding(self) -> None:
+        from openrtl.runtime_cli import _selftest
+        transport = Mock()
+        transport.identity = {"schema": "unit-guest-transport", "instance": "unit-only"}
+        report: JsonObject = {"schema": "openrtl.design-simulation.v2", "status": "passed"}
+        recorded: list[JsonObject] = []
+        with patch("openrtl.runtime_cli._workload_transport", return_value=transport), \
+                patch("openrtl.runtime_cli.load", return_value=None), \
+                patch("openrtl.runtime_cli._profile", return_value=profile()), \
+                patch("openrtl.runtime_cli._new_attempt", return_value=self.root), \
+                patch("openrtl.runtime_cli.uuid.uuid4", return_value=Mock(hex="c"*32)), \
+                patch("openrtl.runtime_cli.save",
+                      side_effect=lambda state, name, value: recorded.append(dict(value))), \
+                patch("openrtl.runtime_cli.verify_evidence") as verify, \
+                patch("openrtl.runtime_cli.IsolatedDesignSimulator") as simulator:
+            simulator.return_value.simulate = AsyncMock(return_value=report)
+            result = asyncio.run(_selftest(argparse.Namespace(allow_runtime_contact=True), self.root))
+        digest = content_digest(transport.identity)
+        simulator.assert_called_once_with(self.root, profile(), workload_transport=transport)
+        verify.assert_called_once_with(self.root, profile(), "c"*32, report,
+                                       transport_digest=digest)
+        self.assertEqual([row["status"] for row in recorded], ["not-started", "running", "passed"])
+        self.assertTrue(all(row["transport_digest"] == digest for row in recorded))
+        self.assertEqual(result["status"], "self-test-passed")
 
 
 if __name__ == "__main__":

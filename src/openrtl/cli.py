@@ -522,7 +522,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             from openrtl.runtime_cli import ready_profile
             transport = LimaWorkloadTransport(arguments.lima_executable,
                                               arguments.lima_state_root, arguments.lima_instance)
-            profile = ready_profile(arguments.runtime_state)
+            profile = ready_profile(arguments.runtime_state, transport_identity=transport.identity)
             return IsolatedDesignSimulator(arguments.project, profile, workload_transport=transport)
         try:
             serve(arguments.project, create=arguments.create, port=arguments.port,

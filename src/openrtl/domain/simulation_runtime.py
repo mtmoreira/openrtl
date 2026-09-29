@@ -86,6 +86,8 @@ def validate_receipt(value: object) -> JsonObject:
     require(isinstance(value, dict), "runtime_receipt_invalid")
     assert isinstance(value, dict)
     fields = {"schema", "attempt", "operation", "profile_digest", "selftest_digest", "status"}
+    if "transport_digest" in value:
+        fields.add("transport_digest")
     if value.get("status") == "passed":
         fields.add("report_digest")
     result = object_value(value, fields)
@@ -97,6 +99,8 @@ def validate_receipt(value: object) -> JsonObject:
                 "runtime_receipt_invalid")
     for key in ("profile_digest", "selftest_digest"):
         digest(result[key])
+    if "transport_digest" in result:
+        digest(result["transport_digest"])
     if result["status"] == "passed":
         digest(result["report_digest"])
     return dict(result)

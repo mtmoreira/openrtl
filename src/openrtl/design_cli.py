@@ -14,6 +14,7 @@ from typing import Callable, cast
 
 from openrtl.adapters.design_session_store import DesignSessionStore, safe_root
 from openrtl.adapters.design_imports import import_design_files
+from openrtl.adapters.workload_transport import WorkloadTransport
 from openrtl.application.design_agent import DesignAgent, DesignExpert, DesignPolicy, design_input_digest
 from openrtl.application.design_batch import bind_delegation, run_batch
 from openrtl.application.design_conversation import render_spec
@@ -42,6 +43,9 @@ def add_design_commands(subcommands: argparse._SubParsersAction[argparse.Argumen
             selected.add_argument("--allow-simulation", action="store_true")
             selected.add_argument("--simulation-profile", type=Path)
             selected.add_argument("--runtime-state", type=Path, help="use a privately selected runtime with reverified self-test evidence")
+            selected.add_argument("--lima-executable", type=Path)
+            selected.add_argument("--lima-state-root", type=Path)
+            selected.add_argument("--lima-instance")
         if command == "batch":
             selected.add_argument("--create", action="store_true")
             seed = selected.add_mutually_exclusive_group()
@@ -468,18 +472,32 @@ def run_design_command(arguments: argparse.Namespace) -> int:
                 "choose_one_simulation_selection")
         require(arguments.allow_simulation == (arguments.simulation_profile is not None or arguments.runtime_state is not None),
                 "simulation_profile_and_authorization_required_together")
+        transport_values = (arguments.lima_executable, arguments.lima_state_root, arguments.lima_instance)
+        require(all(value is None for value in transport_values) or
+                (arguments.allow_simulation and arguments.runtime_state is not None and
+                 arguments.simulation_profile is None and all(value is not None for value in transport_values)),
+                "simulation_runtime_and_guest_transport_required_together")
         if arguments.allow_simulation:
             from openrtl.adapters.design_simulation import IsolatedDesignSimulator
             simulation_profile: object
+            transport: WorkloadTransport | None = None
             if arguments.runtime_state is not None:
                 from openrtl.runtime_cli import ready_profile
-                simulation_profile = ready_profile(arguments.runtime_state)
+                if all(value is not None for value in transport_values):
+                    from openrtl.adapters.workload_transport import LimaWorkloadTransport
+                    transport = LimaWorkloadTransport(cast(Path, arguments.lima_executable),
+                                                      cast(Path, arguments.lima_state_root),
+                                                      cast(str, arguments.lima_instance))
+                simulation_profile = ready_profile(
+                    arguments.runtime_state,
+                    transport_identity=transport.identity if transport is not None else None)
             else:
                 simulation_profile = _json_file(arguments.simulation_profile)
                 require(not isinstance(simulation_profile, dict) or
                         simulation_profile.get("schema") != "openrtl.design-container.v2",
                         "runtime_state_required_for_qualified_profile")
-            simulator = IsolatedDesignSimulator(arguments.project, simulation_profile)
+            simulator = IsolatedDesignSimulator(arguments.project, simulation_profile,
+                                                 workload_transport=transport)
         policy = DesignPolicy(arguments.max_calls, arguments.max_repairs,
                               selector,
                               arguments.max_output_tokens)

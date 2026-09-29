@@ -78,9 +78,16 @@ Hashes establish local consistency, not independent authentication of execution.
 
 After an actual passing self-test, an explicitly authorized design invocation can
 use `--allow-simulation --runtime-state /absolute/private/OpenRTL-state` instead
-of hand-written `--simulation-profile` JSON. Version-2 profiles require that
-state route and a current self-test; legacy version-1 explicit profiles remain
-an advanced alpha interface and do not gain new readiness claims.
+of hand-written `--simulation-profile` JSON. A runtime reached through the owned
+Lima guest must run `runtime self-test` with the exact `--lima-executable`,
+`--lima-state-root` and `--lima-instance` selection later supplied to the design
+or web invocation. The self-test receipt binds that transport identity, and
+readiness fails closed if it is omitted or changed. Explicit recovery of an
+interrupted transport-bound self-test requires the same three fields and never
+replays the test. `runtime status` rehashes the saved evidence without restoring
+transport or execution authority. Version-2 profiles require that state route
+and a current self-test; legacy version-1 explicit profiles remain an advanced
+alpha interface and do not gain new readiness claims.
 
 ## Simulator image source
 

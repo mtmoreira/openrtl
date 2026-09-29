@@ -15,6 +15,7 @@ from openrtl.adapters.design_simulation import IsolatedDesignSimulator
 from openrtl.adapters.runtime_selection import local_identity, select_runtime, verify_local_identity
 from openrtl.adapters.runtime_selftest import collateral, selftest_digest, verify_evidence
 from openrtl.adapters.runtime_store import load, save, writer
+from openrtl.adapters.workload_transport import LimaWorkloadTransport, WorkloadTransport
 from openrtl.domain.design_session import JsonObject, content_digest, require
 from openrtl.domain.simulation_runtime import PROFILE_SCHEMA, RESOURCE_DEFAULTS, validate_profile, validate_receipt
 from openrtl.onboarding import _open_state, default_state_dir
@@ -79,6 +80,10 @@ def add_runtime_command(subcommands: argparse._SubParsersAction[argparse.Argumen
             command.add_argument("--operation-id", help="optional 32 lowercase hex review identity")
         if name in ("select", "self-test", "recover"):
             command.add_argument("--allow-runtime-contact", action="store_true")
+        if name in ("self-test", "recover"):
+            command.add_argument("--lima-executable", type=Path)
+            command.add_argument("--lima-state-root", type=Path)
+            command.add_argument("--lima-instance")
         if name == "select":
             command.add_argument("--docker", required=True)
             command.add_argument("--socket", required=True)
@@ -118,7 +123,27 @@ def _attempt(state: Path, receipt: JsonObject) -> Path:
     return state.absolute() / "runtime-checks" / attempt
 
 
-def ready_profile(state: Path) -> JsonObject:
+def _transport_arguments(arguments: argparse.Namespace) -> tuple[Path, Path, str] | None:
+    values = (getattr(arguments, "lima_executable", None),
+              getattr(arguments, "lima_state_root", None),
+              getattr(arguments, "lima_instance", None))
+    require(all(value is None for value in values) or all(value is not None for value in values),
+            "runtime_guest_transport_required_together")
+    if all(value is None for value in values):
+        return None
+    executable, state_root, instance = values
+    assert isinstance(executable, Path) and isinstance(state_root, Path) and isinstance(instance, str)
+    return executable, state_root, instance
+
+
+def _workload_transport(arguments: argparse.Namespace) -> WorkloadTransport | None:
+    selection = _transport_arguments(arguments)
+    if selection is None:
+        return None
+    return LimaWorkloadTransport(*selection)
+
+
+def _verified_profile(state: Path) -> tuple[JsonObject, JsonObject]:
     profile = _profile(state)
     receipt = load(state, "runtime-selftest.json")
     require(receipt is not None, "runtime_selftest_required")
@@ -132,10 +157,21 @@ def ready_profile(state: Path) -> JsonObject:
     report = json.loads(_read(project / "runs" / receipt["operation"] / "evidence/report.json", 64000))
     require(isinstance(report, dict), "runtime_selftest_report_invalid")
     require(receipt.get("report_digest") == content_digest(report), "runtime_selftest_report_changed")
-    verify_evidence(project, profile, receipt["operation"], report)
+    transport_digest = receipt.get("transport_digest")
+    assert transport_digest is None or isinstance(transport_digest, str)
+    verify_evidence(project, profile, receipt["operation"], report,
+                    transport_digest=transport_digest)
     verify_local_identity(profile)
     require(load(state, "runtime.json") == profile and load(state, "runtime-selftest.json") == receipt,
             "runtime_selection_changed_during_review")
+    return profile, receipt
+
+
+def ready_profile(state: Path, *, transport_identity: JsonObject | None = None) -> JsonObject:
+    profile, receipt = _verified_profile(state)
+    selected_transport = content_digest(transport_identity) if transport_identity is not None else None
+    require(receipt.get("transport_digest") == selected_transport,
+            "runtime_selftest_transport_changed")
     return profile
 
 
@@ -149,7 +185,7 @@ def status(state: Path) -> JsonObject:
         receipt = validate_receipt(receipt)
     verified = False
     if receipt is not None and receipt.get("status") == "passed":
-        ready_profile(state)
+        _verified_profile(state)
         verified = True
     return {"schema": "openrtl.runtime-status.v1", "status": receipt.get("status") if receipt else "self-test-required",
             "selection_digest": content_digest(profile), "architecture": profile["architecture"],
@@ -197,21 +233,26 @@ async def _select(arguments: argparse.Namespace, state: Path) -> JsonObject:
 
 async def _selftest(arguments: argparse.Namespace, state: Path) -> JsonObject:
     require(arguments.allow_runtime_contact is True, "runtime_contact_requires_explicit_consent")
+    transport = _workload_transport(arguments)
     _no_active_receipt(state)
     profile = _profile(state)
     project = _new_attempt(state)
     operation = uuid.uuid4().hex
+    transport_digest = content_digest(transport.identity) if transport is not None else None
     receipt: JsonObject = {"schema": RECEIPT_SCHEMA, "attempt": project.name, "operation": operation,
         "profile_digest": content_digest(profile), "selftest_digest": selftest_digest(profile), "status": "not-started"}
+    if transport_digest is not None:
+        receipt["transport_digest"] = transport_digest
     # Persist uncertainty before creating a simulator or making any daemon call.
     save(state, "runtime-selftest.json", receipt)
     try:
-        runtime = IsolatedDesignSimulator(project, profile)
+        runtime = IsolatedDesignSimulator(project, profile, workload_transport=transport)
         receipt["status"] = "running"
         save(state, "runtime-selftest.json", receipt)
         files, manifest = collateral(profile)
         report = await runtime.simulate(files, manifest, selftest_digest(profile), operation)
-        verify_evidence(project, profile, operation, report)
+        verify_evidence(project, profile, operation, report,
+                        transport_digest=transport_digest)
         receipt.update(status="passed", report_digest=content_digest(report))
         save(state, "runtime-selftest.json", receipt)
     except BaseException:
@@ -227,6 +268,7 @@ async def _selftest(arguments: argparse.Namespace, state: Path) -> JsonObject:
 
 async def _recover(arguments: argparse.Namespace, state: Path) -> JsonObject:
     require(arguments.allow_runtime_contact is True, "runtime_contact_requires_explicit_consent")
+    transport = _workload_transport(arguments)
     receipt = load(state, "runtime-selftest.json")
     require(receipt is not None, "runtime_recovery_not_pending")
     assert receipt is not None
@@ -234,11 +276,14 @@ async def _recover(arguments: argparse.Namespace, state: Path) -> JsonObject:
     require(receipt["status"] in ("running", "needs-recovery"), "runtime_recovery_not_pending")
     profile = _profile(state)
     require(receipt.get("profile_digest") == content_digest(profile), "runtime_recovery_selection_changed")
+    selected_transport = content_digest(transport.identity) if transport is not None else None
+    require(receipt.get("transport_digest") == selected_transport,
+            "runtime_recovery_transport_changed")
     project = _attempt(state, receipt)
     from openrtl.adapters.design_session_store import safe_root
     intent = safe_root(project / "runs" / receipt["operation"] / "intent.json")
     require(intent.is_file(), "runtime_intent_missing_manual_reconciliation_required")
-    runtime = IsolatedDesignSimulator(project, profile)
+    runtime = IsolatedDesignSimulator(project, profile, workload_transport=transport)
     await runtime.abandon(receipt["operation"], receipt["selftest_digest"])
     receipt["status"] = "recovered"
     save(state, "runtime-selftest.json", receipt)
@@ -333,6 +378,8 @@ def run_runtime_command(arguments: argparse.Namespace) -> int:
         else:
             if arguments.runtime_command in ("select", "self-test", "recover"):
                 require(arguments.allow_runtime_contact is True, "runtime_contact_requires_explicit_consent")
+            if arguments.runtime_command in ("self-test", "recover"):
+                _transport_arguments(arguments)
             state = arguments.state_dir if arguments.state_dir is not None else default_state_dir()
             if arguments.runtime_command == "status":
                 result = status(state)
@@ -401,6 +448,9 @@ def run_runtime_command(arguments: argparse.Namespace) -> int:
             "runtime_intent_missing_manual_reconciliation_required": "Ownership evidence is missing. Manual reconciliation is required; no container was guessed or removed.",
             "runtime_selection_missing": "Use runtime plan, then select an approved owned endpoint and image.",
             "runtime_selftest_required": "Explicitly run the fixed runtime self-test before using this selection for designs.",
+            "runtime_guest_transport_required_together": "Select all Lima workload transport fields together, or omit all of them for a reviewed host-local runtime.",
+            "runtime_selftest_transport_changed": "The selected workload transport differs from the one qualified by the fixed self-test. Re-run the self-test for this exact transport.",
+            "runtime_recovery_transport_changed": "Recover with the exact workload transport recorded by the interrupted self-test.",
         }
         code = str(error) if type(error) is ValueError and str(error) in hints else "runtime_local_validation_failed"
         print("Runtime operation stopped: " + code + ". " + hints.get(code,

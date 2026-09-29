@@ -278,6 +278,13 @@ self-test-verified runtime state and an owned Lima guest transport:
   --lima-instance managed-EXACT_INSTANCE_ID
 ```
 
+The fixed runtime self-test must have been run with that exact Lima executable,
+state root and instance. Its receipt binds the workload transport used to copy
+and independently verify the test inputs inside the guest. A host-local
+self-test, or a receipt for a different guest selection, cannot authorize this
+web invocation. Runtime status may verify saved evidence locally, but it does
+not restore the transport choice or execution permission.
+
 This selection authorizes runtime contact only when the designer explicitly
 submits the displayed run. The transport copies task-owned input and control
 files to the selected running guest without changing host staging permissions

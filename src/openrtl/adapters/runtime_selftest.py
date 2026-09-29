@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import re
 
 from openrtl.adapters.design_session_store import safe_root
 from openrtl.adapters.waveforms import VcdIndex
@@ -77,10 +78,13 @@ def _read(path: Path, bound: int) -> bytes:
     return data
 
 
-def verify_evidence(project: Path, profile: JsonObject, operation: str, report: JsonObject) -> None:
+def verify_evidence(project: Path, profile: JsonObject, operation: str, report: JsonObject,
+                    *, transport_digest: str | None = None) -> None:
     """Rehash all artifacts and fixed inputs; a report-shaped object is insufficient."""
-    import re
     require(re.fullmatch(r"[a-f0-9]{32}", operation) is not None, "runtime_operation_invalid")
+    require(transport_digest is None or
+            re.fullmatch(r"sha256:[a-f0-9]{64}", transport_digest) is not None,
+            "runtime_transport_digest_invalid")
     files, manifest = collateral(profile)
     require(report.get("schema") == "openrtl.design-simulation.v2" and report.get("status") == "passed" and
             report.get("evidence_kind") == "isolated_verilator_cocotb" and report.get("error_code") is None and
@@ -92,10 +96,15 @@ def verify_evidence(project: Path, profile: JsonObject, operation: str, report: 
                                       "runner_digest": "sha256:" + hashlib.sha256(_read(runner, 64000)).hexdigest()},
             "runtime_selftest_binding_changed")
     run = safe_root(project / "runs" / operation)
-    require(json.loads(_read(run / "intent.json", 64000)) == {
+    intent: JsonObject = {
         "schema": "openrtl.design-runtime-intent.v1", "operation_id": operation,
         "container_name": "openrtl-design-" + operation, "profile_digest": content_digest(profile),
-        "input_digest": selftest_digest(profile)}, "runtime_selftest_intent_changed")
+        "input_digest": selftest_digest(profile)}
+    if transport_digest is not None:
+        intent.update(probe_name="openrtl-design-" + operation + "-probe",
+                      transport_digest=transport_digest)
+    require(json.loads(_read(run / "intent.json", 64000)) == intent,
+            "runtime_selftest_intent_changed")
     require({path.relative_to(run / "input").as_posix() for path in (run / "input").rglob("*")
              if not path.is_dir()} == set(files), "runtime_selftest_input_manifest_changed")
     for name, content in files.items():
