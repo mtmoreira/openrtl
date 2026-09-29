@@ -1,0 +1,87 @@
+{
+  "schema": "openrtl.milestone-evidence.v1",
+  "milestone_id": "simulator-transport-readiness-v1",
+  "base_commit": "d61b575571397ce57041c13d7779a1436fc6997b",
+  "qualified_commit": "1bd84a5e0ea4043ffc83c0a3b92bd3a4b26bf1fd",
+  "review_state": "implementation-validated-live-runtime-restoration-pending",
+  "qualification_lane": "owner-offline",
+  "milestone_complete": false,
+  "implementation_slice_complete": true,
+  "qualification_scope": "Runtime self-test receipts bind the exact selected Lima workload transport; evidence verification, interrupted-run recovery, CLI design simulation and web simulation fail closed when that transport is omitted or changed.",
+  "locator_roots": {
+    "openrtl-primary-checkout": {
+      "kind": "declared-external-checkout",
+      "repository": "openrtl",
+      "resolution": "Resolve against the primary checkout; retained artifacts are local and not distributed."
+    }
+  },
+  "artifacts": [
+    {
+      "artifact_id": "simulator-transport-readiness.local.1",
+      "locator": "build/retained-evidence/simulator-transport-readiness-v1/run-20260929T222519Z-45911/validation.report.txt",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "684c0ffa6a305fd7760d4c1f6ffe2da139355e5dfadee0304adf595ad9d7f984",
+      "size_bytes": 43218,
+      "producer": "openrtl-simulator-transport-delivery-v2",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    }
+  ],
+  "validation_outcomes": {
+    "full_repository_and_examples": {
+      "suite_test_counts": [
+        808,
+        3,
+        3
+      ],
+      "exit_code": 0
+    },
+    "frontend": {
+      "tests": 32,
+      "exit_code": 0
+    },
+    "source_compilation_and_architecture": {
+      "exit_code": 0
+    },
+    "source_binding": {
+      "files": 8,
+      "unchanged_after_validation": true
+    },
+    "verilator_cocotb_canary": {
+      "status": "not-selected",
+      "exit_code": null
+    },
+    "provider_dependency": {
+      "version": "0.3.1.dev13",
+      "wheel_sha256": "b77cf547002361632f6fa3b6437287ea92f4fe69108c9a5ac837fce9c0b369d3",
+      "source": "verified-wheel-extracted-for-validation-without-installation"
+    }
+  },
+  "authorization_boundary": {
+    "local_implementation_and_commits": true,
+    "local_simulation": false,
+    "provider_calls": false,
+    "credential_values_handled": false,
+    "saved_customer_project_mutations": false,
+    "downloads": false,
+    "installation": false,
+    "publication": false,
+    "production_authorized": false
+  },
+  "qualification_limits": [
+    "The owner-offline gate exercised deterministic fixtures only; it did not contact a provider, daemon or Lima guest and did not mutate a saved customer project.",
+    "Transport identity is content-addressed from the reviewed Lima executable path and bytes, private state root and exact managed instance name; a host-local or different guest receipt cannot authorize execution.",
+    "The runtime status command rehashes saved evidence but deliberately restores neither transport choice nor execution authority.",
+    "The live simulator image, rootless daemon, Lima lifecycle and one transport-bound infrastructure self-test remain unqualified by this implementation evidence.",
+    "Detailed telemetry, strict deterministic validation, provider compatibility checks and existing security boundaries remain enabled and unchanged."
+  ],
+  "pending": [
+    "durable-simulator-runtime-restoration-and-transport-bound-selftest",
+    "m46-live-rtl-qualification",
+    "m47-release"
+  ]
+}
