@@ -322,6 +322,27 @@ class RuntimeSimulationTest(RuntimeTemporaryTest):
                        "managed-unit:/tmp/openrtl-workloads/" + "d"*32 + "/"], commands)
         self.assertEqual(commands[-1][-4:], ["rm", "-rf", "--", "/tmp/openrtl-workloads/" + "d"*32])
 
+    def test_lima_transport_uses_only_owned_state_for_home_and_xdg_paths(self) -> None:
+        executable = self.root / "limactl"
+        executable.write_bytes(b"unit only")
+        executable.chmod(0o700)
+        transport = LimaWorkloadTransport(executable, self.root, "managed-unit")
+        process = Mock(returncode=0, stdout=Mock(read=AsyncMock(return_value=b"")),
+                       wait=AsyncMock(), kill=Mock())
+        with patch("openrtl.adapters.workload_transport.asyncio.create_subprocess_exec",
+                   new=AsyncMock(return_value=process)) as create:
+            self.assertEqual(asyncio.run(transport._run(["shell", "managed-unit", "true"])), b"")
+        create.assert_awaited_once_with(
+            str(executable), "--tty=false", "shell", "managed-unit", "true",
+            stdin=asyncio.subprocess.DEVNULL, stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            env={"HOME": str(self.root), "PATH": "/usr/bin:/bin",
+                 "LIMA_HOME": str(self.root / "lima"),
+                 "XDG_CONFIG_HOME": str(self.root / "config"),
+                 "XDG_CACHE_HOME": str(self.root / "cache"),
+                 "LANG": "C", "LC_ALL": "C"}, cwd=self.root)
+        process.kill.assert_not_called()
+
     def test_unreadable_guest_mount_never_starts_design_and_requires_exact_recovery(self) -> None:
         class Transport:
             identity = {"schema": "unit-guest-transport", "instance": "unit-only"}

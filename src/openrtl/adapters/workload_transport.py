@@ -56,7 +56,10 @@ class LimaWorkloadTransport:
             str(self.executable), "--tty=false", *arguments,
             stdin=asyncio.subprocess.DEVNULL, stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
-            env={"PATH": "/usr/bin:/bin", "LIMA_HOME": str(self.state_root / "lima"),
+            env={"HOME": str(self.state_root), "PATH": "/usr/bin:/bin",
+                 "LIMA_HOME": str(self.state_root / "lima"),
+                 "XDG_CONFIG_HOME": str(self.state_root / "config"),
+                 "XDG_CACHE_HOME": str(self.state_root / "cache"),
                  "LANG": "C", "LC_ALL": "C"}, cwd=self.state_root)
         async def collect() -> bytes:
             assert process.stdout is not None
