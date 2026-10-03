@@ -76,6 +76,8 @@ cgroup-v2 resource enforcement and a changing output waveform. Missing cgroup
 controllers or evidence fails closed. The runner, inputs, request, intent and
 all five simulation artifacts remain available under private runtime-check state.
 Hashes establish local consistency, not independent authentication of execution.
+The trusted runner keeps Python isolated and adds only the reviewed image package
+root at `/opt/openrtl/python`; ambient `PYTHONPATH` remains ignored.
 
 After an actual passing self-test, an explicitly authorized design invocation can
 use `--allow-simulation --runtime-state /absolute/private/OpenRTL-state` instead

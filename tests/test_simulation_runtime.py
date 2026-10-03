@@ -11,6 +11,7 @@ import json
 import os
 import stat
 from pathlib import Path
+import subprocess
 import tempfile
 from typing import Callable, cast
 import unittest
@@ -42,6 +43,30 @@ def info(*, rootless: bool = True, architecture: str = "aarch64", daemon: str = 
 
 
 class RuntimeContractTest(unittest.TestCase):
+    def test_inner_runner_preserves_isolation_and_imports_reviewed_image_packages(self) -> None:
+        from openrtl.adapters import _design_runner
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            dependency = root / "reviewed-image-python"
+            package = dependency / "cocotb_tools"
+            package.mkdir(parents=True)
+            (package / "__init__.py").write_text("VALUE = 'reviewed dependency'\n")
+            runner = root / "run.py"
+            runner.write_text(
+                "import cocotb_tools,sys\n"
+                "assert sys.argv == [sys.argv[0], '--simulation']\n"
+                "print(cocotb_tools.VALUE)\n"
+            )
+            with patch.object(_design_runner, "IMAGE_PYTHON_PATH", str(dependency)), \
+                    patch.object(_design_runner, "RUNNER_PATH", str(runner)):
+                argv = _design_runner.isolated_python("--simulation")
+                result = subprocess.run(argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT, env={"PATH": os.environ["PATH"],
+                    "PYTHONPATH": str(root / "ignored-python-path")}, check=False, timeout=10)
+        self.assertEqual(argv[1:3], ["-I", "-c"])
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"reviewed dependency\n")
+
     def test_profile_copies_nested_limits_and_never_contains_authority(self) -> None:
         candidate = profile()
         selected = validate_profile(candidate)

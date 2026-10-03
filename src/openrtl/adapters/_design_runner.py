@@ -15,6 +15,24 @@ import unittest
 from typing import Any
 
 
+IMAGE_PYTHON_PATH = "/opt/openrtl/python"
+RUNNER_PATH = "/control/run.py"
+ISOLATED_BOOTSTRAP = (
+    "import runpy,sys\n"
+    "dependency,script,mode=sys.argv[1:]\n"
+    "sys.path.insert(0,dependency)\n"
+    "sys.argv=[script,mode]\n"
+    "runpy.run_path(script,run_name='__main__')\n"
+)
+
+
+def isolated_python(mode: str) -> list[str]:
+    if mode not in ("--model", "--simulation"):
+        raise ValueError("runner_mode_invalid")
+    return [sys.executable, "-I", "-c", ISOLATED_BOOTSTRAP,
+            IMAGE_PYTHON_PATH, RUNNER_PATH, mode]
+
+
 def worker(request: dict[str, Any]) -> None:
     from cocotb_tools.runner import get_runner
     root = Path("/output/project")
@@ -73,7 +91,7 @@ def main() -> int:
     with Path("/output/runner.log").open("wb") as log:
         try:
             for mode in ("--model", "--simulation"):
-                subprocess.run([sys.executable, "-I", "/control/run.py", mode],
+                subprocess.run(isolated_python(mode),
                                cwd="/output", env=environment, stdout=log, stderr=log,
                                check=True, timeout=int(request["timeout_seconds"]) // 2)
         except (subprocess.SubprocessError, OSError):
