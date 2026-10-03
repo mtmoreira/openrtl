@@ -50,7 +50,8 @@ existing image:
 ```sh
 ./openrtl runtime select --docker /absolute/docker --socket /absolute/private/docker.sock \
   --image sha256:<reviewed-local-image-id> --architecture arm64 \
-  --verilator <reviewed-major.minor> --allow-runtime-contact
+  --python /exact/in-container/python --verilator <reviewed-major.minor> \
+  --allow-runtime-contact
 ./openrtl runtime self-test --allow-runtime-contact
 ```
 

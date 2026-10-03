@@ -89,7 +89,8 @@ def add_runtime_command(subcommands: argparse._SubParsersAction[argparse.Argumen
             command.add_argument("--socket", required=True)
             command.add_argument("--image", required=True, help="exact existing local sha256 image ID; no pull")
             command.add_argument("--architecture", required=True, choices=("amd64", "arm64"))
-            command.add_argument("--python", default="/usr/local/bin/python3", help="absolute in-container interpreter")
+            command.add_argument("--python", required=True,
+                                 help="exact absolute in-container interpreter from the reviewed image")
             command.add_argument("--verilator", required=True, help="exact major.minor tool version")
             command.add_argument("--timeout-seconds", type=int, default=120)
             for key, value in RESOURCE_DEFAULTS.items():

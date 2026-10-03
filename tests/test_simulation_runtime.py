@@ -471,6 +471,18 @@ class RuntimeCommandTest(unittest.TestCase):
         self.assertFalse(result["effects"]["daemon_contact"])
         self.assertFalse(result["m42_complete"])
 
+    def test_runtime_selection_requires_exact_container_python(self) -> None:
+        selection = ["select", "--docker", "/unit-only/docker",
+                     "--socket", "/unit-only/socket", "--image", "sha256:" + "a"*64,
+                     "--architecture", "arm64", "--verilator", "5.046",
+                     "--allow-runtime-contact"]
+        with patch.object(argparse.ArgumentParser, "error",
+                          side_effect=ValueError("missing exact container Python")), \
+                self.assertRaisesRegex(ValueError, "missing exact container Python"):
+            self.arguments(selection)
+        arguments = self.arguments([*selection, "--python", "/usr/bin/python3"])
+        self.assertEqual(arguments.python, "/usr/bin/python3")
+
     def test_mutations_require_consent_before_state_reads_locks_or_processes(self) -> None:
         for command in ("self-test", "recover"):
             with patch("openrtl.runtime_cli.load") as load, patch("openrtl.runtime_cli.writer") as writer, patch("builtins.print") as emit:
