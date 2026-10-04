@@ -62,6 +62,11 @@ class AgentRigCompatibilityTest(unittest.TestCase):
                 workflow = (root / relative).read_text(encoding="utf-8")
                 self.assertEqual(workflow.count(expected), 1)
 
+        compatibility = (
+            root / ".github/workflows/agentrig-0.3-compatibility.yml"
+        ).read_text(encoding="utf-8")
+        self.assertEqual(compatibility.count("timeout-minutes: 30"), 1)
+
     def test_consumed_public_contracts_remain_available(self) -> None:
         tools = build_command_tools(
             workspace="/private/tmp/openrtl-agentrig-compatibility",
