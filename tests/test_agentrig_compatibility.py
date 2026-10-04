@@ -22,6 +22,9 @@ from tools.validate_public_release import (
 )
 
 
+_DEVELOPMENT_AGENTRIG_COMMIT = "f1200ad4d9e1cf6626b84acc9756643be75e56a3"
+
+
 class _LifecycleClient:
     async def create(self, request: object) -> object:
         return request
@@ -47,6 +50,17 @@ class AgentRigCompatibilityTest(unittest.TestCase):
         self.assertEqual(packages["openrtl"]["version"], "0.4.0")
         self.assertEqual(packages["agentrig"]["version"], "0.3.1.dev13")
         self.assertEqual(packages["agentrig"]["source"], {"editable": "../agentrig"})
+
+    def test_current_source_workflows_pin_the_development_agentrig_commit(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        expected = f"ref: {_DEVELOPMENT_AGENTRIG_COMMIT}"
+        for relative in (
+            ".github/workflows/agentrig-0.3-compatibility.yml",
+            ".github/workflows/composed-package-matrix.yml",
+        ):
+            with self.subTest(workflow=relative):
+                workflow = (root / relative).read_text(encoding="utf-8")
+                self.assertEqual(workflow.count(expected), 1)
 
     def test_consumed_public_contracts_remain_available(self) -> None:
         tools = build_command_tools(
