@@ -10,10 +10,13 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = "Apache-2.0"
 dependencies = [
-  "agentrig==0.3.0",
+  "agentrig==0.3.1.dev13",
 ]
 
 [project.optional-dependencies]
+ollama = [
+  "ollama==0.6.2",
+]
 simulation = [
   "cocotb==2.0.1",
 ]
@@ -35,6 +38,20 @@ agentrig = { path = "../agentrig", editable = true }
 
 [tool.uv.build-backend]
 source-include = [
+  "openrtl",
+  "src/openrtl/web/**",
+  "bootstrap/**",
+  "tools/bootstrap_openrtl.py",
+  "tools/bootstrap_sdk.py",
+  "tools/bootstrap_runtime.sh",
+  "tools/verify_onboarding.py",
+  "docs/first-run.md",
+  "docs/managed-simulation.md",
+  "simulation/**",
+  "docs/local-backends.md",
+  "docs/conversational-review.md",
+  "docs/import-evolution.md",
+  "docs/sessions-diagnostics.md",
   "examples/**",
   "tools/__init__.py",
   "tools/fifo_fault_case.py",
@@ -43,8 +60,15 @@ source-include = [
   "tools/composed_package_case.py",
   "tools/composed_package_matrix.py",
   "tools/verilator_canary.py",
+  "tools/validate_simulator_image_source.py",
   "tools/verify_release_install.py",
   "tools/verify_release_examples_v040.py",
+  "tools/verify_design_agent_install.py",
+  "docs/design-agent-alpha.md",
+  "docs/web-workspace.md",
+  "docs/design-imports.md",
+  "docs/design-coaching.md",
+  "docs/design-agent-acceptance.md",
 ]
 source-exclude = ["**/AGENTS.md"]
 wheel-exclude = ["**/AGENTS.md"]

@@ -1,0 +1,49 @@
+{
+  "schema": "openrtl.simulator-image-source.v1",
+  "purpose": "acquisition-input-only",
+  "platform": {
+    "os": "linux",
+    "architecture": "arm64"
+  },
+  "toolchain": {
+    "verilator": "5.046",
+    "cocotb": "2.0.1",
+    "python_minimum": "3.12"
+  },
+  "base_image": {
+    "repository": "docker.io/verilator/verilator",
+    "tag": "v5.046",
+    "index_digest": "sha256:8003e282e9ff02eb446083eb5a3c512225a269f0a7b46a7e392c99468e890018",
+    "manifest_digest": "sha256:00403822bc4edb5b35b630f72502de5c83fa8ba1b6a8e223045db28f5311ffb0",
+    "maximum_compressed_bytes": 300000000
+  },
+  "python_artifacts": [
+    {
+      "name": "cocotb",
+      "version": "2.0.1",
+      "distribution": "sdist",
+      "filename": "cocotb-2.0.1.tar.gz",
+      "url": "https://files.pythonhosted.org/packages/28/f1/40b6086c1bba60cc7c59ff40815b35a5c364711d1ee86c878a296b0a963b/cocotb-2.0.1.tar.gz",
+      "sha256": "69887748412ff43e98f8579ad6c0da1f6ff19a94d0c3b4d6da472d8e86784e82",
+      "size": 318250
+    },
+    {
+      "name": "find-libpython",
+      "version": "0.5.1",
+      "distribution": "wheel",
+      "filename": "find_libpython-0.5.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/34/1f/1d6079f4f0540aaa368aa20d89d98eda42f081c397a822c547340e32d1e3/find_libpython-0.5.1-py3-none-any.whl",
+      "sha256": "723a8cfe6fed255a1f58b53c62ed556fb340ec0d456e9863ebc01a5cc047607d",
+      "size": 9201
+    }
+  ],
+  "acquisition_policy": {
+    "registry": "docker.io",
+    "python_artifact_host": "files.pythonhosted.org",
+    "empty_registry_client_config": true,
+    "pull_by_manifest_digest": true,
+    "run_containers": false,
+    "build_images": false,
+    "install_packages": false
+  }
+}

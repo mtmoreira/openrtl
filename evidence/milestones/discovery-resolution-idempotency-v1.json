@@ -1,0 +1,247 @@
+{
+  "schema": "openrtl.milestone-evidence.v1",
+  "milestone_id": "discovery-resolution-idempotency-v1",
+  "base_commit": "04da8c542903bdd440473a35613f9a87df560f06",
+  "qualified_commit": "ba59fe0f9a8cd4e344c59ca7b2b0935ba7fee9c7",
+  "review_state": "local-contracts-validated-live-provider-qualification-pending",
+  "qualification_lane": "owner-offline",
+  "milestone_complete": true,
+  "implementation_slice_complete": true,
+  "qualification_scope": "Zero-effect repeated question-resolution acknowledgement, proven by accepted question history and exact saved decision records; no weakening of conflicts or authority.",
+  "locator_roots": {
+    "openrtl-primary-checkout": {
+      "kind": "declared-external-checkout",
+      "repository": "openrtl",
+      "resolution": "Resolve against the primary checkout; retained artifacts are local and not distributed."
+    }
+  },
+  "artifacts": [
+    {
+      "artifact_id": "discovery-resolution-idempotency.local.1",
+      "locator": "build/retained-evidence/discovery-resolution-idempotency-v1/run-kFxBrCPn/source.sha256",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "1e8766983e83512ab2180d596513e31383dc93bf875d350b565440a70e358ad4",
+      "size_bytes": 327,
+      "producer": "owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "discovery-resolution-idempotency.local.2",
+      "locator": "build/retained-evidence/discovery-resolution-idempotency-v1/run-kFxBrCPn/runtime.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "dd5f86d613e7c4ec755123718ae07f43c3c41558ff1bfeebafb3335894e0cc1b",
+      "size_bytes": 63,
+      "producer": "owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "discovery-resolution-idempotency.local.3",
+      "locator": "build/retained-evidence/discovery-resolution-idempotency-v1/run-kFxBrCPn/red.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "58833999d6942d279e2e96f6ae798a0b044fb3a4da38fc5c56ad531a09a63888",
+      "size_bytes": 55,
+      "producer": "owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "discovery-resolution-idempotency.local.4",
+      "locator": "build/retained-evidence/discovery-resolution-idempotency-v1/run-kFxBrCPn/focused.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "7d95e0d6448d7e439062b9e4e38d5b31b4ce0d663a922c9851a79650bd7269e3",
+      "size_bytes": 373,
+      "producer": "owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "discovery-resolution-idempotency.local.5",
+      "locator": "build/retained-evidence/discovery-resolution-idempotency-v1/run-kFxBrCPn/frontend.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "5d202f7689818b6cf858ffb38a037eb87160706b6810bf7023c97b342cc8e50d",
+      "size_bytes": 1003,
+      "producer": "owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "discovery-resolution-idempotency.local.6",
+      "locator": "build/retained-evidence/discovery-resolution-idempotency-v1/run-kFxBrCPn/typing.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "8228fcc5ce46d42d01caf3cd941f4e9c5f2bcc372bb5b147a2f0572d2dd675a8",
+      "size_bytes": 43,
+      "producer": "owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "discovery-resolution-idempotency.local.7",
+      "locator": "build/retained-evidence/discovery-resolution-idempotency-v1/run-kFxBrCPn/full.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "f13ac2be757549685c4b3cb0ee30b07bc77af0b20d7d76d100ab21d699a4a5ac",
+      "size_bytes": 1581,
+      "producer": "owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "discovery-resolution-idempotency.local.8",
+      "locator": "build/retained-evidence/discovery-resolution-idempotency-v1/run-kFxBrCPn/canary.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "6dd5c04298cefe79950ded4403877720fc91f937d781d9b6bad5aa77235ff537",
+      "size_bytes": 42,
+      "producer": "owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "discovery-resolution-idempotency.local.9",
+      "locator": "build/retained-evidence/discovery-resolution-idempotency-v1/run-kFxBrCPn/canary/canary.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "9b6335602c325d7c6de2454c2a7d4fde5ba10c7306f393188bbd7c0643c61b76",
+      "size_bytes": 83483,
+      "producer": "owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "discovery-resolution-idempotency.local.10",
+      "locator": "build/retained-evidence/discovery-resolution-idempotency-v1/run-kFxBrCPn/canary/evidence.json",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "openrtl.verilator-canary-evidence.v1",
+      "media_type": "application/json",
+      "sha256": "b5effce32ae2bcecfdf789010e1ab5dd904eaa6e0ce9ee988c8c92a37c8f0766",
+      "size_bytes": 997,
+      "producer": "owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "discovery-resolution-idempotency.local.11",
+      "locator": "build/retained-evidence/discovery-resolution-idempotency-v1/run-kFxBrCPn/canary/results.xml",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "application/xml",
+      "sha256": "895af4ab6ce433e52f75631cb6495567ecc718320f33746f25f3d571877cdaae",
+      "size_bytes": 435,
+      "producer": "owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "discovery-resolution-idempotency.local.12",
+      "locator": "build/retained-evidence/discovery-resolution-idempotency-v1/run-kFxBrCPn/canary/waves.vcd",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "3472b20dd63cc6fe6cacc6b5109f33dd1c922928b78a4686f502010daf79d271",
+      "size_bytes": 44303,
+      "producer": "owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    }
+  ],
+  "validation_outcomes": {
+    "baseline_reproduction": {
+      "expected_validation_code": "expert_question_resolution_invalid",
+      "confirmed": true
+    },
+    "focused": {
+      "suite_test_counts": [
+        226
+      ],
+      "exit_code": 0
+    },
+    "full_repository_and_examples": {
+      "suite_test_counts": [
+        639,
+        3,
+        3
+      ],
+      "exit_code": 0
+    },
+    "frontend": {
+      "exit_code": 0
+    },
+    "typing": {
+      "exit_code": 0
+    },
+    "source_binding": {
+      "files": 3,
+      "unchanged_after_validation": true
+    },
+    "verilator_cocotb_canary": {
+      "status": "passed",
+      "tests": 1,
+      "exit_code": 0
+    },
+    "provider_dependency": {
+      "version": "0.3.1.dev13",
+      "wheel_sha256": "b77cf547002361632f6fa3b6437287ea92f4fe69108c9a5ac837fce9c0b369d3",
+      "source": "verified-wheel-extracted-for-validation-without-installation"
+    }
+  },
+  "authorization_boundary": {
+    "local_implementation_and_commits": true,
+    "local_simulation": true,
+    "provider_calls": false,
+    "credential_values_handled": false,
+    "downloads": false,
+    "installation": false,
+    "publication": false,
+    "production_authorized": false
+  },
+  "qualification_limits": [
+    "Regression fixtures preserve the captured structural shape with synthetic content. No private prompts, reasoning, or captured project content is committed.",
+    "Synthetic SDK/runtime tests establish local conversion, persistence, accounting, and private capture behavior, not live-model reliability or design quality.",
+    "Retained canary copies match original bytes; its embedded worktree paths are historical after cleanup. Existing RTL canary success is not live agent design qualification."
+  ],
+  "pending": [
+    "m46-live-rtl-qualification",
+    "m47-release"
+  ]
+}

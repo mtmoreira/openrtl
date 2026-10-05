@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenRTL workspace</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-icon">O</span><span>OpenRTL <small>Design workspace</small></span></div>
+    <div class="top-meta"><span id="project-label">Local project</span><span id="revision-label">Revision —</span><span id="status-label">Connecting</span></div>
+  </header>
+  <div class="workspace">
+    <nav class="navigator" aria-label="Project navigation">
+      <h2>Engineering state</h2>
+      <section><h3>Source files</h3><div id="file-list" class="stack muted">No source files yet.</div></section>
+      <section><h3>Planned structure</h3><div id="planned-list" class="stack muted">No plan yet.</div></section>
+      <section><h3>Elaborated instances</h3><div id="elaborated-list" class="stack muted">No compiler index yet.</div></section>
+      <section><h3>DV and requirements</h3><div id="link-list" class="stack muted">No verification links yet.</div></section>
+      <section><h3>History</h3><div id="history-list" class="stack muted">No history yet.</div></section>
+      <section><h3>Requirements &amp; questions</h3><div id="memory-list" class="stack muted">No design facts yet.</div></section>
+      <section><h3>Operations</h3><div id="operation-list" class="stack muted">No operations yet.</div></section>
+      <section><h3>Evidence</h3><div id="evidence-list" class="stack muted">No simulation yet.</div></section>
+    </nav>
+    <main class="document">
+      <div class="document-heading"><div><span class="eyebrow">PROJECT</span><h1>Design overview</h1></div><span id="digest-label" class="digest">No approved design</span></div>
+      <button id="create-project-button" type="button" hidden>Create this project</button>
+      <button id="upgrade-project-button" type="button" hidden>Upgrade this project session</button>
+      <section id="workflow-card" class="surface workflow-card" tabindex="-1" aria-label="Next engineering step">
+        <div class="section-title"><h2 id="workflow-title">Next step</h2><span>Review → implement → simulate → accept</span></div>
+        <p id="workflow-message" role="status">Loading the saved project workflow.</p>
+        <div id="workflow-plan" class="stack muted"></div>
+        <button id="workflow-action" type="button" hidden>Continue</button>
+      </section>
+      <section class="surface">
+        <div class="section-title"><h2>Provider settings</h2><span>Remote or local structured inference</span></div>
+        <form id="provider-form" class="provider-form" autocomplete="off">
+          <label for="provider-kind">Inference provider</label>
+          <select id="provider-kind" required><option value="openai">OpenAI API</option><option value="ollama">Ollama on this computer</option></select>
+          <div id="provider-openai-settings" class="provider-fields">
+            <label for="provider-model">Compatible OpenAI model</label><select id="provider-model"></select>
+            <label for="provider-spend">Project spend ceiling (USD)</label><input id="provider-spend" inputmode="decimal" pattern="[0-9]+\.[0-9]{2}" placeholder="20.00">
+            <label for="provider-key">Replace API key for this running server</label><input id="provider-key" type="password" maxlength="4096" autocomplete="off" placeholder="Leave blank to keep current source">
+          </div>
+          <div id="provider-ollama-settings" class="provider-fields" hidden>
+            <label for="provider-ollama-model">Installed Ollama model name</label><input id="provider-ollama-model" maxlength="128" autocomplete="off" placeholder="For example: qwen3:8b">
+            <p class="muted">OpenRTL uses the fixed local endpoint at 127.0.0.1:11434 and validates structured output on each call. It does not download models.</p>
+          </div>
+          <label for="provider-timeout">Request deadline (seconds)</label>
+          <input id="provider-timeout" type="number" min="1" max="300" step="1" value="120" required aria-describedby="provider-timeout-help">
+          <p id="provider-timeout-help" class="muted">Allow 1–300 seconds per OpenAI request. A timeout may leave external completion uncertain.</p>
+          <label class="provider-toggle"><input id="provider-detailed-capture" type="checkbox" aria-describedby="provider-capture-help">Capture detailed operation records locally</label>
+          <p id="provider-capture-help" class="capture-disclosure">Optional capture stores submitted prompts, model requests and outputs, provider-returned reasoning, and available file, tool/process and usage records on this computer. These records may contain sensitive project content. Credentials are excluded; inaccessible model internals cannot be captured. Only future operations are captured. Turning this off or restarting the server stops new capture and does not erase saved records.</p>
+          <label class="provider-toggle"><input id="provider-enabled" type="checkbox">Enable provider calls for this workspace</label>
+          <button type="submit">Save provider settings</button>
+        </form>
+        <div id="provider-status" class="muted">Provider settings are loading.</div>
+        <div id="provider-recovery" hidden><p>A previous OpenAI call has uncertain cost. Reconciliation keeps its full reservation in the project estimate. Check your provider bill separately before another call.</p><button id="provider-reconcile-button" type="button">Keep reservation and unblock settings</button></div>
+      </section>
+      <section class="surface"><div class="section-title"><h2>Current specification</h2><button id="review-button" type="button">Review proposal</button></div><div id="specification" class="stack muted">Describe your circuit to begin.</div></section>
+      <section class="surface"><div class="section-title"><h2>Source inspection</h2><span id="source-identity">Select a source file</span></div><pre id="source-content" class="source-content">Source is available after a generated revision is saved.</pre><div class="source-actions"><button id="attach-source-button" type="button" hidden>Attach source to conversation</button><button id="diff-source-button" type="button" hidden>Compare with previous revision</button></div></section>
+      <section class="surface"><div class="section-title"><h2>Proposed change</h2><button id="change-review-button" type="button">Review change</button></div><div id="proposal-content" class="stack muted">No change proposal.</div></section>
+      <section class="surface"><div class="section-title"><h2>Simulation workbench</h2><button id="simulation-review-button" type="button">Review run configuration</button></div><div id="simulation-plan" class="stack muted">A complete reviewed baseline and selected simulator are required.</div><button id="simulation-run-button" type="button" hidden>Run displayed simulation</button><button id="simulation-recover-button" type="button" hidden>Reconcile interrupted simulation</button><div id="simulation-result" class="stack muted">No run evidence yet.</div></section>
+      <section class="surface" aria-label="Recorded waveform viewer"><div class="section-title"><h2>Recorded waveforms</h2><span>Run-bound VCD inspection</span></div><div id="waveform-run-list" class="wave-run-list muted">No recorded runs yet.</div><div id="waveform-status" class="muted">Choose a run with retained trace evidence.</div><div class="wave-controls"><label>Search signals <input id="waveform-search" type="search" maxlength="128" placeholder="Module or signal" disabled></label><div id="waveform-signal-list" class="wave-signal-list muted">No signals loaded.</div><label>Start (fs) <input id="waveform-start" type="number" min="0" step="1" disabled></label><label>End (fs) <input id="waveform-end" type="number" min="0" step="1" disabled></label><label>Radix <select id="waveform-radix" disabled><option value="bin">Binary</option><option value="hex">Hexadecimal</option><option value="dec">Unsigned decimal</option></select></label><button id="waveform-load" type="button" disabled>Load window</button><button id="waveform-zoom-in" type="button" disabled>Zoom in</button><button id="waveform-zoom-out" type="button" disabled>Zoom out</button><button id="waveform-pan-left" type="button" disabled>Pan left</button><button id="waveform-pan-right" type="button" disabled>Pan right</button></div><div id="waveform-chart" class="wave-chart" role="img" aria-label="Selected waveform signals"></div><div class="wave-controls"><label>Cursor A (fs) <input id="waveform-cursor-a" type="number" min="0" step="1" disabled></label><label>Cursor B (fs) <input id="waveform-cursor-b" type="number" min="0" step="1" disabled></label></div><div id="waveform-values" class="stack muted">Cursor values will appear here.</div><div class="source-actions"><button id="waveform-save" type="button" disabled>Save selection in this browser</button><button id="waveform-attach" type="button" disabled>Attach run and interval to conversation</button></div></section>
+      <section class="surface"><div class="section-title"><h2>Review card</h2><span>Approval applies only to the displayed revision</span></div><div id="review-card" class="stack muted">No review requested.</div><button id="approve-button" type="button" hidden>Approve displayed specification</button></section>
+      <section class="surface"><div class="section-title"><h2>Activity</h2><span>Bounded, reconnectable events</span></div><div id="activity-list" class="stack muted">No activity yet.</div><div id="history-detail" class="history-detail muted">Select a history or activity row to inspect its saved execution trace.</div></section>
+    </main>
+    <aside class="conversation" aria-label="Design conversation">
+      <div class="conversation-heading"><div><span class="eyebrow">DESIGN LEAD</span><h2>Conversation</h2></div><span class="live-dot" aria-hidden="true"></span></div>
+      <div id="conversation-list" class="messages" role="log" aria-live="polite" aria-relevant="additions text"><div class="message system"><strong class="message-identity">System</strong><div class="message-text">Describe a circuit in your own words. OpenRTL will ask about missing details and show a specification for review.</div></div></div>
+      <form id="chat-form" class="composer"><button id="workflow-navigation" type="button">Show next step</button><label for="chat-input">Your request</label><textarea id="chat-input" rows="3" maxlength="16000" placeholder="For example: I need a counter with a reset and enable…"></textarea><label for="chat-kind">Message type</label><select id="chat-kind"><option value="question">Ask about the design</option><option value="change">Propose a reviewed change</option></select><div class="composer-footer"><span id="composer-status">Provider unavailable until explicitly selected at launch.</span><button type="submit">Send</button></div></form>
+    </aside>
+  </div>
+</body>
+</html>

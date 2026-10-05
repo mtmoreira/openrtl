@@ -1,0 +1,681 @@
+{
+  "artifacts": [
+    {
+      "bytes": 21,
+      "id": "artifact-001",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/agentrig-bootstrap-wheel-verify.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "14656b24f2af738984327187fb0b450e1574ea258ec7cdfaab1da13fa17e736f",
+      "validation": "passed"
+    },
+    {
+      "bytes": 66,
+      "id": "artifact-002",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/agentrig-context.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "1a075a2fd2e67b3a09df29dd2acb5679d3bd88a672a4370cc2254bb4e18fdbb8",
+      "validation": "passed"
+    },
+    {
+      "bytes": 46,
+      "id": "artifact-003",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/agentrig-dependency-bridge.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "b09825fc7fc2ae567f83f4c269241ecd3644b0e1722ee8a943c9231c5ed244d4",
+      "validation": "passed"
+    },
+    {
+      "bytes": 145,
+      "id": "artifact-004",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/agentrig-focused.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "037efad9798666fd56a94614c3520110c75dd3c241e792350c9292b2e531b1ad",
+      "validation": "passed"
+    },
+    {
+      "bytes": 168953,
+      "id": "artifact-005",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/agentrig-full-buck.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "5979d6f56e97aa126aeca86364ed7eed7d5559143f88e54171fdf7093743466f",
+      "validation": "passed"
+    },
+    {
+      "bytes": 642,
+      "id": "artifact-006",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/agentrig-full-unit.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "6d1ba12dac5128e408a885229b9555903a6a022fcefddb6ce3a8840e813cc333",
+      "validation": "passed"
+    },
+    {
+      "bytes": 116,
+      "id": "artifact-007",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/agentrig-lock-check.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "b7bb02f9b070a193e7dd780802d6cc2021391179c6629cf831fc3f834c978305",
+      "validation": "passed"
+    },
+    {
+      "bytes": 120,
+      "id": "artifact-008",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/agentrig-sdk-process-integration.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "1ad5b86ec0cca2b21437b31c5424094f077dd304b8b2b7ce9c7fb00ed8eb5b1a",
+      "validation": "passed"
+    },
+    {
+      "bytes": 418,
+      "id": "artifact-009",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/agentrig-typecheck.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "c10d2015789fae444f56fb0ffe57bdf81b522b2e86ba2f02c07622bac2d98489",
+      "validation": "passed"
+    },
+    {
+      "bytes": 226829,
+      "id": "artifact-010",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/agentrig-wheel/agentrig-0.3.1.dev13-py3-none-any.whl"
+      },
+      "media_type": "application/zip",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "b77cf547002361632f6fa3b6437287ea92f4fe69108c9a5ac837fce9c0b369d3",
+      "validation": "passed"
+    },
+    {
+      "bytes": 194,
+      "id": "artifact-011",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/agentrig-wheel-build.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "1da03fc673afb09de0e979c2340c6a4628f2d7d31db1e7755ab24ab95509dfee",
+      "validation": "passed"
+    },
+    {
+      "bytes": 751,
+      "id": "artifact-012",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/bootstrap-pin.after.json"
+      },
+      "media_type": "application/json",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "79089706b16540c4422446b8fd5fd07256bda2d9c77a11d14d5f7ab7c47a6c3a",
+      "validation": "passed"
+    },
+    {
+      "bytes": 751,
+      "id": "artifact-013",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/bootstrap-pin.before.json"
+      },
+      "media_type": "application/json",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "42cfe5490854c5e01d32618b4a217f5383a4d55c08e7c51fe9e6706486a7007b",
+      "validation": "passed"
+    },
+    {
+      "bytes": 60,
+      "id": "artifact-014",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/buck-project-root.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "2487e058ae9739b2dfc5aa3e7c95a3881f07a9695a739ac2befef2ad990d4460",
+      "validation": "passed"
+    },
+    {
+      "bytes": 324,
+      "id": "artifact-015",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/controller.json"
+      },
+      "media_type": "application/json",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "b88fa3760cbf7f616d598869de36e5ef064de34df6cc160e697683175ff6ab53",
+      "validation": "passed"
+    },
+    {
+      "bytes": 35,
+      "id": "artifact-016",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/existing-toolchain.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "eb84be2cf2f9910ca9b5afdf18ae0491f244cfb58264fc448e2a5f6cdb09a612",
+      "validation": "passed"
+    },
+    {
+      "bytes": 0,
+      "id": "artifact-017",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/frontend-syntax.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "validation": "passed"
+    },
+    {
+      "bytes": 800,
+      "id": "artifact-018",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/frontend-tests.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "ac8cfdf2e6947dcc69b97e31eaa5f7881e6253754d04c4ee15a90639fb88d3db",
+      "validation": "passed"
+    },
+    {
+      "bytes": 81,
+      "id": "artifact-019",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/offline-wheel-consumer.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "60640d965550cceaa45e74fc97fb72f83e6ceff18f15ffd5e5abaeedb674cf21",
+      "validation": "passed"
+    },
+    {
+      "bytes": 98,
+      "id": "artifact-020",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/openrtl-capture-regression.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "8c4aba4686004091230355e2700abd3221685abc29a406425c8fb3cde452435f",
+      "validation": "passed"
+    },
+    {
+      "bytes": 1478,
+      "id": "artifact-021",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/openrtl-full-gate.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "925d0fc9f55ed1995ae3a9b29cba769e90b909b6c74be410972a05212c8000fa",
+      "validation": "passed"
+    },
+    {
+      "bytes": 115,
+      "id": "artifact-022",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/openrtl-lock-check.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "f0d768071718a8c83f84ded1b971fe6c6c42daf28d137074d129c4a161f870ee",
+      "validation": "passed"
+    },
+    {
+      "bytes": 306443,
+      "id": "artifact-023",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/openrtl-wheel/openrtl-0.4.0-py3-none-any.whl"
+      },
+      "media_type": "application/zip",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "60de4a69ddf5226944da5b931a2dbd01c6a6f6049565d38c033c863b170b6744",
+      "validation": "passed"
+    },
+    {
+      "bytes": 186,
+      "id": "artifact-024",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/openrtl-wheel-build.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "5d57847f90aeb89d1c442f71b9ea1bf8e44345eca9c6b4e6446b57e775f20c9c",
+      "validation": "passed"
+    },
+    {
+      "bytes": 76,
+      "id": "artifact-025",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/packaged-bootstrap-onboarding.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "5474325edd46dd16b45472d67dc2e5f39e6e741b333755b94f9bd0f1cafe74c8",
+      "validation": "passed"
+    },
+    {
+      "bytes": 58,
+      "id": "artifact-026",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/pinned-buck-version.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "b965418c08838fc0375ce7b475a4c4ef382dcbca9fe0c4de64d37742f32e9b24",
+      "validation": "passed"
+    },
+    {
+      "bytes": 140071,
+      "id": "artifact-027",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/source-manifest.json"
+      },
+      "media_type": "application/json",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "9229e2942c97b165b913f2f7b7a2b2d5ae29cde83509836a94b78efc2c80efc0",
+      "validation": "passed"
+    },
+    {
+      "bytes": 41,
+      "id": "artifact-028",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/source-wheel-identity.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "52851d32b2a9360784ff809a446324a6a88b7b53363dac96ef9c12a8d065963f",
+      "validation": "passed"
+    },
+    {
+      "bytes": 55,
+      "id": "artifact-029",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/stop-owned-buck-daemon.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "8f898716ac81e9e043165afae71f5b723d05b9eab6e46b666b54c582b29005bd",
+      "validation": "passed"
+    },
+    {
+      "bytes": 53,
+      "id": "artifact-030",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/uv-version.log"
+      },
+      "media_type": "text/plain",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "583259bbc545cb6b3681a2ab1a1e9abd57e8758dfb8d1849d874fa4a0087b55c",
+      "validation": "passed"
+    },
+    {
+      "bytes": 8372,
+      "id": "artifact-031",
+      "lane": "detailed-telemetry-nonlive",
+      "locator": {
+        "kind": "external-absolute",
+        "path": "/Users/matheustrev/work/openrtl/build/retained-evidence/web-detailed-telemetry-delivery-v1/run-49d1c00l/validation-receipt.json"
+      },
+      "media_type": "application/json",
+      "producer": "openrtl-detailed-telemetry-owner-controller",
+      "retention": "retained-local",
+      "review": "reviewed-local",
+      "schema": "retained-validation-artifact.v1",
+      "sha256": "039f6a3f23c4a2683d52e240bf90b3731286a543f73ac988975e02a766dbb81a",
+      "validation": "passed"
+    }
+  ],
+  "authorization": {
+    "M46": "pending",
+    "M47": "pending",
+    "credentials": false,
+    "live_runtime": false,
+    "local_git_delivery": true,
+    "production_authorized": false,
+    "provider_calls": false,
+    "publication": false,
+    "remote_git": false,
+    "toolchain_downloads_authorized": true
+  },
+  "base": "c954ff7cdbcd69185ce192aa4d3fc546d337c871",
+  "branch": "codex/web-detailed-telemetry",
+  "cross_repository_order": [
+    "agentrig",
+    "openrtl"
+  ],
+  "lane": "detailed-telemetry-nonlive",
+  "qualified_parent": "3b32bee712e099178d368cbdb5d1e4107c2e3aff",
+  "repository": "openrtl",
+  "schema": "openrtl.detailed-telemetry-attestation.v1",
+  "source_manifest": {
+    "bootstrap/dependencies.json": {
+      "executable": false,
+      "sha256": "79089706b16540c4422446b8fd5fd07256bda2d9c77a11d14d5f7ab7c47a6c3a",
+      "size": 751
+    },
+    "docs/web-workspace.md": {
+      "executable": false,
+      "sha256": "a4d6211b23a17897973be76f5f0efe416f1a0a472ac955d4cdb4ddcfda0e46d6",
+      "size": 14261
+    },
+    "pyproject.toml": {
+      "executable": false,
+      "sha256": "33249deb68bba8958e04235b3f4fb2c4cf15c0e2acf97ea122c21685c94885e3",
+      "size": 1882
+    },
+    "src/openrtl/adapters/design_generation.py": {
+      "executable": false,
+      "sha256": "ad77dbb5c8aaed78977ec96bea667a4918a55d90434d227d2693eba9fe46e988",
+      "size": 23799
+    },
+    "src/openrtl/adapters/design_simulation.py": {
+      "executable": false,
+      "sha256": "2645ea5a9e118b3ada76d76137d0afb05640427704155ae4c94733fbe6b2f5a6",
+      "size": 25047
+    },
+    "src/openrtl/adapters/design_telemetry.py": {
+      "executable": false,
+      "sha256": "3742a52db5a9516bad059c12c20aee5535bc9fd44f19b4e8f69c19b16fec7efd",
+      "size": 1673
+    },
+    "src/openrtl/adapters/design_trace_store.py": {
+      "executable": false,
+      "sha256": "66325142013eec7235d3b6b4ccdc1b079bca7ce44bf7888f48d2eac583f04b54",
+      "size": 9452
+    },
+    "src/openrtl/adapters/design_web.py": {
+      "executable": false,
+      "sha256": "06242944c4d976ff05d40a5d646bb3a8c328b94422cef028425d448676d557fe",
+      "size": 29606
+    },
+    "src/openrtl/application/design_agent.py": {
+      "executable": false,
+      "sha256": "ec3297d82d8e901882c29b2531f9dac0bd2b58e8bb1f8c3767b89e9b128b3e14",
+      "size": 46235
+    },
+    "src/openrtl/application/design_diagnostics.py": {
+      "executable": false,
+      "sha256": "77a0c1775f151342926fe04788c3c90005c4fb8ab138c6ae328e80f3f1d5ae9a",
+      "size": 7367
+    },
+    "src/openrtl/application/design_workspace.py": {
+      "executable": false,
+      "sha256": "108738cae1e3e48bb34fedc194c81d86bbe66c7bb8619b92eb2c77a78b0c9e1a",
+      "size": 35445
+    },
+    "src/openrtl/application/provider_failures.py": {
+      "executable": false,
+      "sha256": "2d32e6c553b2fbedaeba527c0d7c38bf73e8461e8926b680dcba6be94a4061a8",
+      "size": 3532
+    },
+    "src/openrtl/cli.py": {
+      "executable": false,
+      "sha256": "5e1bedaed8ae2a0c8eec9604ecae2148c31c71e2f45122a1f8874355e09f007e",
+      "size": 72817
+    },
+    "src/openrtl/design_cli.py": {
+      "executable": false,
+      "sha256": "da231b0c4fd5ff6e1dcd3ea83f43655a687f2029471444d6885d1219e76e7f2f",
+      "size": 35492
+    },
+    "src/openrtl/domain/design_events.py": {
+      "executable": false,
+      "sha256": "bdd7414f9770d1a738ebc7631d1731978282b7d421f8a736c0501a7a39471a14",
+      "size": 2238
+    },
+    "src/openrtl/domain/provider_failures.py": {
+      "executable": false,
+      "sha256": "4c60947851db1752bb57209aead6e4f24c918db21c4316e7c4d6e405f9e323a3",
+      "size": 770
+    },
+    "src/openrtl/onboarding.py": {
+      "executable": false,
+      "sha256": "96b4189c820eb31ce64fc09b03493ccb71e2f7750631563258d9b97154315ddc",
+      "size": 18965
+    },
+    "src/openrtl/web/app.css": {
+      "executable": false,
+      "sha256": "5ac4ef3cda21826d1ddd17ee06e137fcee7b16696220bfca5970ecc5e5199934",
+      "size": 9898
+    },
+    "src/openrtl/web/app.js": {
+      "executable": false,
+      "sha256": "423e241547c78afa23c6550a11ceafb5a5c97d7aeaca5b4a91f263b5c271ce69",
+      "size": 53361
+    },
+    "src/openrtl/web/index.html": {
+      "executable": false,
+      "sha256": "b7b130018a9855a57a4a1027d7d2b56da7ff8e77bdff4caedbaa32c41c516bac",
+      "size": 10563
+    },
+    "tests/test_agentrig_compatibility.py": {
+      "executable": false,
+      "sha256": "62c98e27f8b4357ee24979d4bfeb719b95e890d7b738fb6c0fb4672be417a8b8",
+      "size": 3087
+    },
+    "tests/test_bootstrap_openrtl.py": {
+      "executable": false,
+      "sha256": "d73c2d9b887e36d18c5fc267e6745fc2c707ace68cd192f9eb83fab10f6e7ed3",
+      "size": 35685
+    },
+    "tests/test_design_generation.py": {
+      "executable": false,
+      "sha256": "05aa07ba4c616b4d88c07ad0287d7c302e5fb346013c111e3fe6ab8771abaa0d",
+      "size": 9124
+    },
+    "tests/test_design_simulation_traces.py": {
+      "executable": false,
+      "sha256": "b5adc3bca5977064bce8768874252de8c3419fa9b53f192f8b560571510ab631",
+      "size": 10245
+    },
+    "tests/test_design_traces.py": {
+      "executable": false,
+      "sha256": "69c07c5b7725e1996c135685aeb3a56bd0be1fbd5b11a20db0ca53077b7e1afb",
+      "size": 15430
+    },
+    "tests/test_design_web.py": {
+      "executable": false,
+      "sha256": "2a4be3a5215a64fffbdd206f56a89a2589f61c236e57105ce3e4b708f2504f42",
+      "size": 20565
+    },
+    "tests/test_provider_controls.py": {
+      "executable": false,
+      "sha256": "5f0d3c1e346cfb40b06126e12dc3bd55688eaeb8f924bc944e290a501953bc20",
+      "size": 14623
+    },
+    "tests/test_web_frontend.cjs": {
+      "executable": false,
+      "sha256": "88cd153b6e66b0ad4586aa12733a8981f143c1d650fdce8673a281258979b4a4",
+      "size": 9779
+    },
+    "tools/bootstrap_openrtl.py": {
+      "executable": false,
+      "sha256": "43b10c9386bba333b651af962cd72ad13366150b2dfba83c0da95497f700085b",
+      "size": 19595
+    },
+    "tools/verify_onboarding.py": {
+      "executable": false,
+      "sha256": "efbdd2d91de91c8b6e6096f504615101f77c5db9bc7ebad012b75ee71813997d",
+      "size": 10873
+    },
+    "uv.lock": {
+      "executable": false,
+      "sha256": "683ed0013dd6ddf3d5bb84476e96e8a9758621cd9ae9cc1d10f92c2d5be7448e",
+      "size": 100058
+    }
+  },
+  "source_signature": "f8f2e5940037e2c5d3ffa21d00452fcd072a64cdcbc0551b7910c488bc379bd5",
+  "validation": "passed"
+}

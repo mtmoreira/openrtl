@@ -1,0 +1,126 @@
+{
+  "schema": "openrtl.milestone-evidence.v1",
+  "milestone_id": "specification-template-v1",
+  "base_commit": "d3e82855608cc2fea56c2ce88c587b1c20bec689",
+  "qualified_commit": "de67d732e368632d4c94cdab2b3dc2875a49076a",
+  "review_state": "local-contracts-validated-live-provider-qualification-pending",
+  "qualification_lane": "owner-offline",
+  "milestone_complete": true,
+  "implementation_slice_complete": true,
+  "qualification_scope": "Versioned block-neutral hardware specification, legacy compatibility, provider schema, and complete CLI/web review contracts only.",
+  "locator_roots": {
+    "openrtl-primary-checkout": {
+      "kind": "declared-external-checkout",
+      "repository": "openrtl",
+      "resolution": "Resolve relative to the retained primary checkout; collateral is not distributed with a clone."
+    }
+  },
+  "artifacts": [
+    {
+      "artifact_id": "specification-template.local.1",
+      "locator": "build/retained-evidence/specification-template-v1/run-yB1jiFCL/source.sha256",
+      "locator_base": "openrtl-primary-checkout",
+      "media_type": "text/plain",
+      "sha256": "f0890cbf8a161e092870321de40d8d582e0b1e3e86bd33b3e8869d4c2d36b20a",
+      "size_bytes": 2277,
+      "producer": "owner-validation-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "specification-template.local.2",
+      "locator": "build/retained-evidence/specification-template-v1/run-yB1jiFCL/focused.log",
+      "locator_base": "openrtl-primary-checkout",
+      "media_type": "text/plain",
+      "sha256": "9d9d71acf5d7aa887f8bcc6ba20ddf452363735c47b97a3195332a22c6c81929",
+      "size_bytes": 337,
+      "producer": "owner-validation-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "passed"
+    },
+    {
+      "artifact_id": "specification-template.local.3",
+      "locator": "build/retained-evidence/specification-template-v1/run-yB1jiFCL/frontend.log",
+      "locator_base": "openrtl-primary-checkout",
+      "media_type": "text/plain",
+      "sha256": "7670fd99e24ccb4c894a3ed8207d578744ac2387c28e9e8eaf8141acbcad91e5",
+      "size_bytes": 1005,
+      "producer": "owner-validation-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "passed"
+    },
+    {
+      "artifact_id": "specification-template.local.4",
+      "locator": "build/retained-evidence/specification-template-v1/run-yB1jiFCL/typing.log",
+      "locator_base": "openrtl-primary-checkout",
+      "media_type": "text/plain",
+      "sha256": "049f51b850512be193c74d3fbb731e25fbc6374a66560d8ec0d6569d79c88ea6",
+      "size_bytes": 44,
+      "producer": "owner-validation-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "passed"
+    },
+    {
+      "artifact_id": "specification-template.local.5",
+      "locator": "build/retained-evidence/specification-template-v1/run-yB1jiFCL/full.log",
+      "locator_base": "openrtl-primary-checkout",
+      "media_type": "text/plain",
+      "sha256": "335356ece58a8bc85a648596ebdde869d6f020206a8fd09a1b86279491649173",
+      "size_bytes": 1545,
+      "producer": "owner-validation-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "passed"
+    }
+  ],
+  "validation_outcomes": {
+    "focused": {
+      "tests": 190,
+      "exit_code": 0
+    },
+    "frontend": {
+      "tests": 10,
+      "exit_code": 0
+    },
+    "strict_typing": {
+      "files": 11,
+      "exit_code": 0
+    },
+    "full_suite": {
+      "tests": 603,
+      "exit_code": 0
+    },
+    "source_binding": {
+      "files": 23,
+      "unchanged_after_validation": true
+    },
+    "verilator_cocotb_canary": "not_selected"
+  },
+  "authorization_boundary": {
+    "local_implementation_and_commits": true,
+    "provider_calls": false,
+    "credential_values_handled": false,
+    "downloads": false,
+    "installation": false,
+    "publication": false,
+    "production_authorized": false
+  },
+  "qualification_limits": [
+    "The synthetic parameterized FIFO fixture demonstrates review coverage, not newly generated or simulated RTL.",
+    "Schema and scripted-provider tests prove deterministic local handling, not live Ollama compliance or design quality.",
+    "No provider call, runtime installation, release, publication, or remote Git action was performed."
+  ],
+  "pending": [
+    "m46-live-rtl-qualification",
+    "m47-release"
+  ]
+}

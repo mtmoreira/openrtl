@@ -1,0 +1,238 @@
+{
+  "schema": "openrtl.milestone-evidence.v1",
+  "milestone_id": "dv-manifest-contract-v1",
+  "base_commit": "7760f147fd0838dc729d8fede8c71f68f3be2259",
+  "qualified_commit": "6e0ff9c6b22a17785bb4011f115a51be7cce91fb",
+  "qualification_lane": "owner-offline",
+  "continuation_provenance": {
+    "script_version": "openrtl-dv-manifest-deliver-v2",
+    "prior_failed_report_sha256": "0d757395ced017a3762f774fc077dc4d13a0adb18272e00077a3ecd93f6de913",
+    "reconciled_cause": "two-stale-schema-version-test-expectations",
+    "source_files": 17
+  },
+  "review_state": "local-contracts-validated-live-provider-qualification-pending",
+  "milestone_complete": true,
+  "implementation_slice_complete": true,
+  "qualification_scope": "Expose the exact approved requirement and RTL inventory contract to DV; combine typed manifest feedback and nonexecuting Python compiler diagnostics in bounded correction proposals before saving DV artifacts. Full private candidates, strict deterministic validation, file ownership, reviewed change scope, independent-model checks, metering and shared deadlines remain enforced. Resource failures remain terminal.",
+  "locator_roots": {
+    "openrtl-primary-checkout": {
+      "kind": "declared-external-checkout",
+      "repository": "openrtl",
+      "resolution": "Resolve against the primary checkout; retained artifacts are local and not distributed."
+    }
+  },
+  "artifacts": [
+    {
+      "artifact_id": "dv-manifest-contract.local.1",
+      "locator": "build/retained-evidence/dv-manifest-contract-v1/run-TE7UJJDE/source.sha256",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "1869555323d1ec318e5ea1e6fd8856591e8527b34743556b2764202f77d5bfcd",
+      "size_bytes": 1715,
+      "producer": "dv-manifest-owner-delivery-v2",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "dv-manifest-contract.local.2",
+      "locator": "build/retained-evidence/dv-manifest-contract-v1/run-TE7UJJDE/runtime.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "dd5f86d613e7c4ec755123718ae07f43c3c41558ff1bfeebafb3335894e0cc1b",
+      "size_bytes": 63,
+      "producer": "dv-manifest-owner-delivery-v2",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "dv-manifest-contract.local.3",
+      "locator": "build/retained-evidence/dv-manifest-contract-v1/run-TE7UJJDE/focused.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "9eaf3b2311662d4778379099ce4605dd4ebe39de1abe336127e078c56e00b142",
+      "size_bytes": 348,
+      "producer": "dv-manifest-owner-delivery-v2",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "dv-manifest-contract.local.4",
+      "locator": "build/retained-evidence/dv-manifest-contract-v1/run-TE7UJJDE/frontend.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "14973677cb3545389b65217e002cd43da7486f1ff618f156a27944d9ab2ca937",
+      "size_bytes": 3207,
+      "producer": "dv-manifest-owner-delivery-v2",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "dv-manifest-contract.local.5",
+      "locator": "build/retained-evidence/dv-manifest-contract-v1/run-TE7UJJDE/typing.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "ab35ee42183d4d6d3ba483825ab037d18a5a15622d03be01d82220b1564851ff",
+      "size_bytes": 43,
+      "producer": "dv-manifest-owner-delivery-v2",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "dv-manifest-contract.local.6",
+      "locator": "build/retained-evidence/dv-manifest-contract-v1/run-TE7UJJDE/full.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "0ba3fccd62d24c5a9d5cd96f328f1d898f5c56d24440b2c1357559b2bdfb567d",
+      "size_bytes": 1697,
+      "producer": "dv-manifest-owner-delivery-v2",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "dv-manifest-contract.local.7",
+      "locator": "build/retained-evidence/dv-manifest-contract-v1/run-TE7UJJDE/canary.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "6dd5c04298cefe79950ded4403877720fc91f937d781d9b6bad5aa77235ff537",
+      "size_bytes": 42,
+      "producer": "dv-manifest-owner-delivery-v2",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "dv-manifest-contract.local.8",
+      "locator": "build/retained-evidence/dv-manifest-contract-v1/run-TE7UJJDE/canary/canary.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "5d059fee85f92fcb1a97517714b694891d5e90fca32f746164f1757ad4eab130",
+      "size_bytes": 83339,
+      "producer": "dv-manifest-owner-delivery-v2",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "dv-manifest-contract.local.9",
+      "locator": "build/retained-evidence/dv-manifest-contract-v1/run-TE7UJJDE/canary/evidence.json",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "openrtl.verilator-canary-evidence.v1",
+      "media_type": "application/json",
+      "sha256": "2fb43c58247c558ebc33e274c45365b7bbb1abc6b638adadf62e4da8ef290da8",
+      "size_bytes": 988,
+      "producer": "dv-manifest-owner-delivery-v2",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "dv-manifest-contract.local.10",
+      "locator": "build/retained-evidence/dv-manifest-contract-v1/run-TE7UJJDE/canary/results.xml",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "application/xml",
+      "sha256": "a155aa33277affdf8492b0875f412ef648773a0c6c3092dd4cdc39cd3772a4c3",
+      "size_bytes": 423,
+      "producer": "dv-manifest-owner-delivery-v2",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "dv-manifest-contract.local.11",
+      "locator": "build/retained-evidence/dv-manifest-contract-v1/run-TE7UJJDE/canary/waves.vcd",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "3472b20dd63cc6fe6cacc6b5109f33dd1c922928b78a4686f502010daf79d271",
+      "size_bytes": 44303,
+      "producer": "dv-manifest-owner-delivery-v2",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    }
+  ],
+  "validation_outcomes": {
+    "focused": {
+      "suite_test_counts": [
+        247
+      ],
+      "exit_code": 0
+    },
+    "full_repository_and_examples": {
+      "suite_test_counts": [
+        755,
+        3,
+        3
+      ],
+      "exit_code": 0
+    },
+    "frontend": {
+      "exit_code": 0
+    },
+    "typing_changed_sources": {
+      "files": 6,
+      "exit_code": 0
+    },
+    "source_binding": {
+      "files": 17,
+      "unchanged_after_validation": true
+    },
+    "verilator_cocotb_canary": {
+      "status": "passed",
+      "tests": 1,
+      "exit_code": 0
+    },
+    "provider_dependency": {
+      "version": "0.3.1.dev13",
+      "wheel_sha256": "b77cf547002361632f6fa3b6437287ea92f4fe69108c9a5ac837fce9c0b369d3",
+      "source": "verified-wheel-extracted-for-validation-without-installation"
+    }
+  },
+  "authorization_boundary": {
+    "local_implementation_and_commits": true,
+    "local_simulation": true,
+    "provider_calls": false,
+    "credential_values_handled": false,
+    "saved_customer_project_mutations": false,
+    "downloads": false,
+    "installation": false,
+    "publication": false,
+    "production_authorized": false
+  },
+  "qualification_limits": [
+    "Synthetic fixtures and the existing RTL canary are the only evidence; no customer project content, private prompts, provider responses or reasoning are retained here.",
+    "Bounded recovery cannot guarantee valid live model output, generated design correctness, or success of a fresh provider run.",
+    "Typing covers the changed production modules. Existing unrelated typing issues are outside this change.",
+    "Retained canary copies preserve original bytes; embedded worktree paths become historical after cleanup. This canary is not live agent design qualification."
+  ],
+  "pending": [
+    "m46-live-rtl-qualification",
+    "m47-release"
+  ]
+}

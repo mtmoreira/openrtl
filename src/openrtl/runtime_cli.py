@@ -1,0 +1,459 @@
+"""Local runtime selection and self-test. Managed VM adoption remains explicit."""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import json
+import os
+from pathlib import Path
+import re
+import sys
+import uuid
+
+from openrtl.adapters.design_simulation import IsolatedDesignSimulator
+from openrtl.adapters.runtime_selection import local_identity, select_runtime, verify_local_identity
+from openrtl.adapters.runtime_selftest import collateral, selftest_digest, verify_evidence
+from openrtl.adapters.runtime_store import load, save, writer
+from openrtl.adapters.workload_transport import LimaWorkloadTransport, WorkloadTransport
+from openrtl.domain.design_session import JsonObject, content_digest, require
+from openrtl.domain.simulation_runtime import PROFILE_SCHEMA, RESOURCE_DEFAULTS, validate_profile, validate_receipt
+from openrtl.onboarding import _open_state, default_state_dir
+
+
+RECEIPT_SCHEMA = "openrtl.runtime-selftest.v1"
+
+
+def add_runtime_command(subcommands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    runtime = subcommands.add_parser("runtime", help="plan, select or explicitly test one isolated runtime")
+    runtime.add_argument("--state-dir", type=Path)
+    commands = runtime.add_subparsers(dest="runtime_command", required=True)
+    for name in ("plan", "status", "select", "self-test", "recover", "backends", "backend-plan",
+                 "backend-operation", "backend-artifacts", "backend-config", "managed-config",
+                 "managed-plan", "managed-apply", "retirement-plan", "retirement-apply",
+                 "retirement-status"):
+        command = commands.add_parser(name)
+        command.add_argument("--state-dir", type=Path, default=argparse.SUPPRESS)
+        command.add_argument("--json", action="store_true")
+        if name == 'backend-config':
+            command.add_argument('--backend', required=True)
+            command.add_argument('--policy-json', required=True,
+                                 help='bounded configuration audit policy; reads explicit local files only')
+        if name == "managed-config":
+            command.add_argument("--backend", required=True, choices=("lima-vz-managed",))
+            command.add_argument("--executable", type=Path, required=True)
+            command.add_argument("--state-root", type=Path, required=True)
+            command.add_argument("--instance-id", required=True)
+        if name in ("managed-plan", "managed-apply"):
+            command.add_argument("--backend", required=True)
+            command.add_argument("--action", required=True, choices=("inspect", "prepare", "start", "stop"))
+            command.add_argument("--config-json", required=True)
+            command.add_argument("--operation-id", required=True)
+        if name == "managed-apply":
+            command.add_argument("--plan-digest", required=True)
+            command.add_argument("--reconcile", action="store_true")
+            command.add_argument("--timeout-seconds", type=int, default=240)
+            command.add_argument("--allow-local-write", action="store_true")
+            command.add_argument("--allow-runtime-contact", action="store_true")
+            command.add_argument("--allow-runtime-start", action="store_true")
+            command.add_argument("--allow-private-key-creation", action="store_true")
+        if name in ("retirement-plan", "retirement-apply"):
+            command.add_argument("--backend", required=True)
+            command.add_argument("--action", required=True, choices=("retire", "inspect"))
+            command.add_argument("--config-json", required=True)
+            command.add_argument("--operation-id", required=True)
+        if name == "retirement-apply":
+            command.add_argument("--plan-digest", required=True)
+            command.add_argument("--timeout-seconds", type=int, default=120)
+            command.add_argument("--allow-local-write", action="store_true")
+            command.add_argument("--allow-runtime-contact", action="store_true")
+            command.add_argument("--allow-guest-socket-remove", action="store_true")
+        if name == 'backend-artifacts':
+            command.add_argument('--artifact-root', type=Path, required=True,
+                                 help='private directory containing only the declared public artifact files')
+            command.add_argument('--manifest-json', required=True,
+                                 help='bounded explicit artifact manifest; reads files only, never installs')
+        if name == "backend-plan":
+            command.add_argument("--backend", required=True)
+            command.add_argument("--action", required=True, choices=("inspect", "prepare", "start", "stop"))
+            command.add_argument("--config-json", required=True, help="bounded explicit backend configuration; review only")
+            command.add_argument("--operation-id", help="optional 32 lowercase hex review identity")
+        if name in ("select", "self-test", "recover"):
+            command.add_argument("--allow-runtime-contact", action="store_true")
+        if name in ("self-test", "recover"):
+            command.add_argument("--lima-executable", type=Path)
+            command.add_argument("--lima-state-root", type=Path)
+            command.add_argument("--lima-instance")
+        if name == "select":
+            command.add_argument("--docker", required=True)
+            command.add_argument("--socket", required=True)
+            command.add_argument("--image", required=True, help="exact existing local sha256 image ID; no pull")
+            command.add_argument("--architecture", required=True, choices=("amd64", "arm64"))
+            command.add_argument("--python", required=True,
+                                 help="exact absolute in-container interpreter from the reviewed image")
+            command.add_argument("--verilator", required=True, help="exact major.minor tool version")
+            command.add_argument("--timeout-seconds", type=int, default=120)
+            for key, value in RESOURCE_DEFAULTS.items():
+                command.add_argument("--" + key.replace("_", "-"), type=int, default=value)
+
+
+def plan() -> JsonObject:
+    return {"schema": "openrtl.runtime-plan.v1", "host": sys.platform,
+            "existing_runtime": "Explicit current-user rootless Docker only; no daemon discovery or contact by default",
+            "managed_runtime": "Optional replaceable lifecycle and retirement control in SDK candidate; exact effects and live ports remain explicit",
+            "image": "One owned arm64 image passed the fixed local self-test; use an exact observed local content ID, with no automatic pull or published-image claim",
+            "resources": dict(RESOURCE_DEFAULTS),
+            "next_step": "Select a reviewed owned endpoint and exact image, then explicitly run or reverify its fixed self-test",
+            "effects": {"daemon_contact": False, "installation": False, "provider_calls": False},
+            "m42_complete": False, "m46": "pending", "m47": "pending"}
+
+
+def _profile(state: Path) -> JsonObject:
+    selected = load(state, "runtime.json")
+    require(selected is not None, "runtime_selection_missing")
+    return validate_profile(selected)
+
+
+def _attempt(state: Path, receipt: JsonObject) -> Path:
+    validate_receipt(receipt)
+    require(receipt.get("schema") == RECEIPT_SCHEMA and
+            all(isinstance(receipt.get(key), str) and re.fullmatch(r"[a-f0-9]{32}", receipt[key]) is not None
+                for key in ("attempt", "operation")), "runtime_receipt_invalid")
+    attempt = receipt["attempt"]
+    assert isinstance(attempt, str)
+    return state.absolute() / "runtime-checks" / attempt
+
+
+def _transport_arguments(arguments: argparse.Namespace) -> tuple[Path, Path, str] | None:
+    values = (getattr(arguments, "lima_executable", None),
+              getattr(arguments, "lima_state_root", None),
+              getattr(arguments, "lima_instance", None))
+    require(all(value is None for value in values) or all(value is not None for value in values),
+            "runtime_guest_transport_required_together")
+    if all(value is None for value in values):
+        return None
+    executable, state_root, instance = values
+    assert isinstance(executable, Path) and isinstance(state_root, Path) and isinstance(instance, str)
+    return executable, state_root, instance
+
+
+def _workload_transport(arguments: argparse.Namespace) -> WorkloadTransport | None:
+    selection = _transport_arguments(arguments)
+    if selection is None:
+        return None
+    return LimaWorkloadTransport(*selection)
+
+
+def _verified_profile(state: Path) -> tuple[JsonObject, JsonObject]:
+    profile = _profile(state)
+    receipt = load(state, "runtime-selftest.json")
+    require(receipt is not None, "runtime_selftest_required")
+    assert receipt is not None
+    receipt = validate_receipt(receipt)
+    require(receipt["status"] == "passed", "runtime_selftest_required")
+    project = _attempt(state, receipt)
+    require(receipt.get("profile_digest") == content_digest(profile) and
+            receipt.get("selftest_digest") == selftest_digest(profile), "runtime_selftest_stale")
+    from openrtl.adapters.runtime_selftest import _read
+    report = json.loads(_read(project / "runs" / receipt["operation"] / "evidence/report.json", 64000))
+    require(isinstance(report, dict), "runtime_selftest_report_invalid")
+    require(receipt.get("report_digest") == content_digest(report), "runtime_selftest_report_changed")
+    transport_digest = receipt.get("transport_digest")
+    assert transport_digest is None or isinstance(transport_digest, str)
+    verify_evidence(project, profile, receipt["operation"], report,
+                    transport_digest=transport_digest)
+    verify_local_identity(profile)
+    require(load(state, "runtime.json") == profile and load(state, "runtime-selftest.json") == receipt,
+            "runtime_selection_changed_during_review")
+    return profile, receipt
+
+
+def ready_profile(state: Path, *, transport_identity: JsonObject | None = None) -> JsonObject:
+    profile, receipt = _verified_profile(state)
+    selected_transport = content_digest(transport_identity) if transport_identity is not None else None
+    require(receipt.get("transport_digest") == selected_transport,
+            "runtime_selftest_transport_changed")
+    return profile
+
+
+def status(state: Path) -> JsonObject:
+    selected = load(state, "runtime.json")
+    if selected is None:
+        return {**plan(), "status": "unconfigured", "local_selftest_verified": False}
+    profile = validate_profile(selected)
+    receipt = load(state, "runtime-selftest.json")
+    if receipt is not None:
+        receipt = validate_receipt(receipt)
+    verified = False
+    if receipt is not None and receipt.get("status") == "passed":
+        _verified_profile(state)
+        verified = True
+    return {"schema": "openrtl.runtime-status.v1", "status": receipt.get("status") if receipt else "self-test-required",
+            "selection_digest": content_digest(profile), "architecture": profile["architecture"],
+            "resources": profile["resources"], "local_selftest_verified": verified,
+            "daemon_contact": False, "execution_authorized": False,
+            "notice": "Local consistency only; daemon/image identity is checked again before execution",
+            "m42_complete": False, "m46": "pending", "m47": "pending"}
+
+
+def _new_attempt(state: Path) -> Path:
+    attempt = state.absolute() / "runtime-checks" / uuid.uuid4().hex
+    descriptor = _open_state(attempt, create=True)
+    os.close(descriptor)
+    return attempt
+
+
+def _no_active_receipt(state: Path) -> None:
+    prior = load(state, "runtime-selftest.json")
+    if prior is not None:
+        prior = validate_receipt(prior)
+    require(prior is None or prior.get("status") in ("passed", "recovered", "not-started"),
+            "runtime_recovery_required_before_retry_or_reselection")
+
+
+async def _select(arguments: argparse.Namespace, state: Path) -> JsonObject:
+    require(arguments.allow_runtime_contact is True, "runtime_contact_requires_explicit_consent")
+    # Validate syntax before inspecting even the selected local paths.
+    candidate = validate_profile({"schema": PROFILE_SCHEMA, "docker_executable": arguments.docker,
+        "socket": arguments.socket, "image_id": arguments.image, "python_executable": arguments.python,
+        "verilator_version": arguments.verilator, "timeout_seconds": arguments.timeout_seconds,
+        "architecture": arguments.architecture, "resources": {key: getattr(arguments, key) for key in RESOURCE_DEFAULTS},
+        "docker_sha256": "sha256:" + "0" * 64, "socket_identity": {"device": 0, "inode": 0, "uid": 0},
+        "daemon_id": "unobserved", "ownership": "current-user-rootless"})
+    _no_active_receipt(state)
+    candidate.update(local_identity(arguments.docker, arguments.socket))
+    attempt = _new_attempt(state)
+    config = attempt / "docker-config"
+    config.mkdir(mode=0o700)
+    runtime = IsolatedDesignSimulator(attempt, candidate)
+    selected = await select_runtime(candidate, config, runtime._process, authorized=True)
+    save(state, "runtime.json", selected)
+    return {"status": "selected-self-test-required", "selection_digest": content_digest(selected),
+            "execution_authorized": False, "installation": False, "image_pull": False}
+
+
+async def _selftest(arguments: argparse.Namespace, state: Path) -> JsonObject:
+    require(arguments.allow_runtime_contact is True, "runtime_contact_requires_explicit_consent")
+    transport = _workload_transport(arguments)
+    _no_active_receipt(state)
+    profile = _profile(state)
+    project = _new_attempt(state)
+    operation = uuid.uuid4().hex
+    transport_digest = content_digest(transport.identity) if transport is not None else None
+    receipt: JsonObject = {"schema": RECEIPT_SCHEMA, "attempt": project.name, "operation": operation,
+        "profile_digest": content_digest(profile), "selftest_digest": selftest_digest(profile), "status": "not-started"}
+    if transport_digest is not None:
+        receipt["transport_digest"] = transport_digest
+    # Persist uncertainty before creating a simulator or making any daemon call.
+    save(state, "runtime-selftest.json", receipt)
+    try:
+        runtime = IsolatedDesignSimulator(project, profile, workload_transport=transport)
+        receipt["status"] = "running"
+        save(state, "runtime-selftest.json", receipt)
+        files, manifest = collateral(profile)
+        report = await runtime.simulate(files, manifest, selftest_digest(profile), operation)
+        verify_evidence(project, profile, operation, report,
+                        transport_digest=transport_digest)
+        receipt.update(status="passed", report_digest=content_digest(report))
+        save(state, "runtime-selftest.json", receipt)
+    except BaseException:
+        if receipt["status"] != "not-started":
+            receipt["status"] = "needs-recovery"
+            receipt.pop("report_digest", None)
+        save(state, "runtime-selftest.json", receipt)
+        raise
+    return {"status": "self-test-passed", "selection_digest": content_digest(profile),
+            "evidence": str(project), "evidence_kind": "fixed-infrastructure-selftest-not-agent-designed-rtl",
+            "execution_authorized": False, "m46": "pending", "m47": "pending"}
+
+
+async def _recover(arguments: argparse.Namespace, state: Path) -> JsonObject:
+    require(arguments.allow_runtime_contact is True, "runtime_contact_requires_explicit_consent")
+    transport = _workload_transport(arguments)
+    receipt = load(state, "runtime-selftest.json")
+    require(receipt is not None, "runtime_recovery_not_pending")
+    assert receipt is not None
+    receipt = validate_receipt(receipt)
+    require(receipt["status"] in ("running", "needs-recovery"), "runtime_recovery_not_pending")
+    profile = _profile(state)
+    require(receipt.get("profile_digest") == content_digest(profile), "runtime_recovery_selection_changed")
+    selected_transport = content_digest(transport.identity) if transport is not None else None
+    require(receipt.get("transport_digest") == selected_transport,
+            "runtime_recovery_transport_changed")
+    project = _attempt(state, receipt)
+    from openrtl.adapters.design_session_store import safe_root
+    intent = safe_root(project / "runs" / receipt["operation"] / "intent.json")
+    require(intent.is_file(), "runtime_intent_missing_manual_reconciliation_required")
+    runtime = IsolatedDesignSimulator(project, profile, workload_transport=transport)
+    await runtime.abandon(receipt["operation"], receipt["selftest_digest"])
+    receipt["status"] = "recovered"
+    save(state, "runtime-selftest.json", receipt)
+    return {"status": "recovered-without-replaying-self-test", "evidence_retained": True, "execution_authorized": False}
+
+
+def run_runtime_command(arguments: argparse.Namespace) -> int:
+    try:
+        if arguments.runtime_command == "plan":
+            result = plan()
+        elif arguments.runtime_command in ("backends", "backend-plan"):
+            from openrtl.adapters.backend_setup import backends, review_backend
+            result = (backends() if arguments.runtime_command == "backends" else
+                      review_backend(arguments.backend, arguments.action, arguments.config_json,
+                                     arguments.operation_id or uuid.uuid4().hex))
+        elif arguments.runtime_command == 'backend-operation':
+            from openrtl.adapters.backend_setup import backend_operation_status
+            result = backend_operation_status(arguments.state_dir or default_state_dir())
+        elif arguments.runtime_command == 'backend-artifacts':
+            from openrtl.adapters.backend_setup import audit_backend_bundle
+            result = audit_backend_bundle(arguments.artifact_root, arguments.manifest_json)
+        elif arguments.runtime_command == 'backend-config':
+            from openrtl.adapters.backend_setup import audit_backend_configuration
+            result = audit_backend_configuration(arguments.backend, arguments.policy_json)
+        elif arguments.runtime_command == "managed-config":
+            from openrtl.adapters.lima_managed import audit_lima_artifact_closure
+            require(arguments.backend == "lima-vz-managed", "runtime_backend_unavailable")
+            closure = audit_lima_artifact_closure(arguments.executable, arguments.state_root)
+            result = {
+                "schema": "openrtl.managed-backend-configuration.v1",
+                "backend": arguments.backend,
+                "configuration": closure.configuration(arguments.instance_id),
+                "artifact_closure_sha256": closure.artifact_closure_sha256,
+                "runtime_contact": False,
+                "execution_authorized": False,
+                "ready_for_simulation": False,
+                "m46": "pending",
+                "m47": "pending",
+            }
+        elif arguments.runtime_command == "managed-plan":
+            from openrtl.adapters.managed_backend import plan_managed_backend
+            result = plan_managed_backend(
+                arguments.backend, arguments.action, arguments.config_json,
+                arguments.operation_id, arguments.state_dir or default_state_dir(),
+            )
+        elif arguments.runtime_command == "managed-apply":
+            from openrtl.adapters.managed_backend import apply_managed_backend
+            grants = frozenset(
+                effect for effect, allowed in (
+                    ("local_write", arguments.allow_local_write),
+                    ("runtime_contact", arguments.allow_runtime_contact),
+                    ("runtime_start", arguments.allow_runtime_start),
+                    ("private_key_creation", arguments.allow_private_key_creation),
+                ) if allowed
+            )
+            result = asyncio.run(apply_managed_backend(
+                arguments.backend, arguments.action, arguments.config_json,
+                arguments.operation_id, arguments.plan_digest, grants,
+                arguments.state_dir or default_state_dir(), reconcile=arguments.reconcile,
+                timeout_seconds=arguments.timeout_seconds,
+            ))
+        elif arguments.runtime_command == "retirement-plan":
+            from openrtl.adapters.guest_retirement import plan_guest_retirement
+            result = plan_guest_retirement(
+                arguments.backend,
+                arguments.action,
+                arguments.config_json,
+                arguments.operation_id,
+            )
+        elif arguments.runtime_command == "retirement-apply":
+            from openrtl.adapters.guest_retirement import apply_guest_retirement
+            grants = frozenset(
+                effect for effect, allowed in (
+                    ("local_write", arguments.allow_local_write),
+                    ("runtime_contact", arguments.allow_runtime_contact),
+                    ("guest_socket_remove", arguments.allow_guest_socket_remove),
+                ) if allowed
+            )
+            result = apply_guest_retirement(
+                arguments.backend,
+                arguments.action,
+                arguments.config_json,
+                arguments.operation_id,
+                arguments.plan_digest,
+                grants,
+                arguments.state_dir or default_state_dir(),
+                timeout_seconds=arguments.timeout_seconds,
+            )
+        elif arguments.runtime_command == "retirement-status":
+            from openrtl.adapters.guest_retirement import guest_retirement_status
+            result = guest_retirement_status(arguments.state_dir or default_state_dir())
+        else:
+            if arguments.runtime_command in ("select", "self-test", "recover"):
+                require(arguments.allow_runtime_contact is True, "runtime_contact_requires_explicit_consent")
+            if arguments.runtime_command in ("self-test", "recover"):
+                _transport_arguments(arguments)
+            state = arguments.state_dir if arguments.state_dir is not None else default_state_dir()
+            if arguments.runtime_command == "status":
+                result = status(state)
+            else:
+                action = {"select": _select, "self-test": _selftest, "recover": _recover}[arguments.runtime_command]
+                with writer(state):
+                    result = asyncio.run(action(arguments, state))
+        if arguments.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        elif arguments.runtime_command in ("backends", "backend-plan", "backend-operation", "backend-artifacts",
+                                            "backend-config", "managed-config", "managed-plan", "managed-apply",
+                                            "retirement-plan", "retirement-apply", "retirement-status"):
+            print(json.dumps(result, indent=2, sort_keys=True))
+        elif arguments.runtime_command == "plan":
+            print("Simulation setup: select a reviewed runtime owned by your account and an exact existing image.")
+            print("This candidate can inspect current-user rootless Docker and explicitly control a registered managed backend.")
+            print("Default limits: 2 CPUs, 2048 MiB memory, 128 processes and 256 MiB output.")
+            print("No daemon was contacted. Downloads, installation, lifecycle effects and each fixed self-test remain explicit.")
+        elif arguments.runtime_command == "status":
+            print("Runtime: " + str(result["status"]))
+            print("Fixed self-test evidence: " + ("verified locally" if result["local_selftest_verified"] else "not verified"))
+            print("No daemon was contacted and no execution permission was restored.")
+        elif arguments.runtime_command == "select":
+            print("Runtime selected. Review and explicitly run runtime self-test before using it for designs.")
+            print("No image was pulled and no container was started.")
+        elif arguments.runtime_command == "self-test":
+            print("Fixed runtime self-test passed. Evidence: " + str(result["evidence"]))
+            print("This checks infrastructure; it does not establish agent-generated RTL correctness.")
+        else:
+            print("Recorded runtime operation reconciled. Evidence retained; the self-test was not replayed.")
+        return 0
+    except KeyboardInterrupt:
+        print("Runtime operation interrupted. Evidence is retained; run runtime status before an explicit recovery.")
+        return 130
+    except (OSError, ValueError, TypeError, KeyError) as error:
+        hints = {
+            "runtime_backend_config_audit_invalid": "The explicit backend configuration audit failed. Check the reviewed policy, private files, image pin and absence of overrides. No runtime selection changed.",
+            "runtime_backend_artifacts_invalid": "The declared local artifact bundle cannot be verified. Check its exact manifest, hashes and private file permissions; no installation occurred.",
+            "runtime_backend_journal_invalid": "The local backend operation record cannot be verified. Preserve it for review; no runtime was contacted.",
+            "runtime_backend_journal_busy": "Another managed lifecycle or retirement operation owns the backend fence. Wait for it to finish; do not remove its lock.",
+            "runtime_backend_sdk_candidate_required": "This optional command needs the reviewed local AgentRig SDK candidate. The published bootstrap and existing runtime commands remain available.",
+            "runtime_backend_configuration_invalid": "Review the backend's exact configuration, action, pins and resource bounds. No state or runtime was changed.",
+            "runtime_backend_plan_changed": "The managed backend plan differs from the reviewed digest. Generate and review a fresh plan; no runtime action was taken.",
+            "runtime_backend_authority_required": "Grant exactly the effects listed by the reviewed managed backend plan. Saved state never restores authority.",
+            "runtime_backend_execution_failed": "The managed backend action failed with a bounded diagnostic. Inspect the retained operation before any recovery.",
+            "runtime_backend_unavailable": "Select an explicitly registered backend; no fallback or discovery is performed.",
+            "runtime_retirement_backend_unavailable": "Select an explicitly registered retirement backend; no fallback or discovery is performed.",
+            "runtime_retirement_sdk_candidate_required": "This optional retirement command needs the reviewed local AgentRig SDK candidate. The pinned public launcher remains available without managed retirement.",
+            "runtime_retirement_configuration_invalid": "Review the exact endpoint identity, backend generation binding and operation ID. No state or runtime was changed.",
+            "runtime_retirement_plan_changed": "The retirement plan differs from the reviewed digest. Generate and review a fresh plan; no runtime action was taken.",
+            "runtime_retirement_authority_required": "Grant exactly the effects listed by the retirement plan. Recovery inspection cannot authorize socket removal.",
+            "runtime_retirement_backend_blocked": "This backend has no authenticated generation fence and retirement ports registered. No journal or runtime action was created.",
+            "runtime_retirement_reconciliation_required": "The retirement journal is uncertain. Use the same endpoint and operation with a fresh inspect plan; never replay retirement.",
+            "runtime_retirement_journal_invalid": "The retirement journal cannot be verified. Preserve it for review; no runtime action was taken.",
+            "runtime_retirement_journal_busy": "Another retirement operation owns the journal. Wait for it to finish; do not remove its lock.",
+            "runtime_retirement_operation_reused": "This retirement operation is already settled. Saved results confer no new authority.",
+            "runtime_retirement_execution_failed": "The retirement adapter failed with a bounded diagnostic. Preserve the uncertain journal and reconcile by fresh observation only.",
+            "runtime_contact_requires_explicit_consent": "Review the selected endpoint and effects, then explicitly allow runtime contact.",
+            "runtime_ownership_unqualified": "Use a reviewed current-user rootless runtime. Shared Docker Desktop or an unqualified VM is not selected automatically.",
+            "runtime_socket_not_current_user": "Select your own private socket; do not change another account's runner or global Docker context.",
+            "runtime_local_identity_changed": "The executable or endpoint changed. Preserve pending operations and review the runtime before reselection.",
+            "runtime_image_or_architecture_changed": "The selected image or architecture differs from the reviewed pin. No image was pulled.",
+            "runtime_pinned_image_unavailable": "The exact local image is unavailable. Image acquisition requires a separate reviewed action.",
+            "runtime_writer_active": "Another runtime operation owns this state. Wait for it to finish; do not remove its lock.",
+            "runtime_recovery_required_before_retry_or_reselection": "Inspect retained state and use explicit runtime recover before retrying or changing selection.",
+            "runtime_intent_missing_manual_reconciliation_required": "Ownership evidence is missing. Manual reconciliation is required; no container was guessed or removed.",
+            "runtime_selection_missing": "Use runtime plan, then select an approved owned endpoint and image.",
+            "runtime_selftest_required": "Explicitly run the fixed runtime self-test before using this selection for designs.",
+            "runtime_guest_transport_required_together": "Select all Lima workload transport fields together, or omit all of them for a reviewed host-local runtime.",
+            "runtime_selftest_transport_changed": "The selected workload transport differs from the one qualified by the fixed self-test. Re-run the self-test for this exact transport.",
+            "runtime_recovery_transport_changed": "Recover with the exact workload transport recorded by the interrupted self-test.",
+        }
+        code = str(error) if type(error) is ValueError and str(error) in hints else "runtime_local_validation_failed"
+        print("Runtime operation stopped: " + code + ". " + hints.get(code,
+              "Check the reviewed pins, bounded resources, private state and retained evidence. No fallback, download or automatic retry occurred."))
+        return 2

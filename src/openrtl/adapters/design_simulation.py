@@ -1,0 +1,396 @@
+"""Opt-in local container execution of untrusted design collateral, never a shell."""
+
+from __future__ import annotations
+
+import asyncio
+import base64
+from contextvars import ContextVar
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import stat
+import uuid
+import xml.etree.ElementTree as ET
+from typing import TYPE_CHECKING
+
+from openrtl.adapters.design_session_store import safe_root
+from openrtl.adapters.design_telemetry import event_sink, private_capture
+from openrtl.domain.design_session import JsonObject, canonical, content_digest, object_value, require, source_path
+from openrtl.domain.simulation_runtime import PROFILE_SCHEMA, resource_arguments, validate_profile
+
+if TYPE_CHECKING:
+    from agentrig.core import RunContext
+    from openrtl.adapters.workload_transport import WorkloadTransport
+    from openrtl.application.design_agent import DesignTraceRecorder
+
+
+def parse_test_results(data: bytes, expected: list[str]) -> list[str]:
+    require(len(data) <= 2 * 1024 * 1024 and b"<!DOCTYPE" not in data.upper() and
+            b"<!ENTITY" not in data.upper(), "test_xml_invalid")
+    root = ET.fromstring(data)
+    require(root.tag in ("testsuites", "testsuite"), "test_xml_root_invalid")
+    cases = list(root.iter("testcase"))
+    require(bool(cases) and all(not any(c.tag in ("failure", "error", "skipped") for c in case)
+                              for case in cases), "simulation_tests_failed_or_skipped")
+    names = [case.attrib.get("name", "") for case in cases]
+    require(len(names) == len(set(names)) and set(names) == set(expected), "simulation_test_manifest_mismatch")
+    for suite in root.iter("testsuite"):
+        require(all(suite.attrib.get(k, "0") in ("0", "0.0") for k in ("failures", "errors", "skipped")),
+                "simulation_suite_failed")
+    return names
+
+
+def _trace_output(data: bytes) -> tuple[str, bool]:
+    """Do not retain base64 artifact bodies that bypass ordinary text redaction."""
+    rendered = data.decode("utf-8", errors="replace")
+    try:
+        payload = json.loads(rendered)
+    except (ValueError, TypeError, RecursionError):
+        return rendered, False
+    if isinstance(payload, dict) and isinstance(payload.get("artifacts"), dict):
+        payload["artifacts"] = {name: "[omitted: encoded artifact; inspect saved evidence]"
+                                for name in payload["artifacts"]}
+        return json.dumps(payload, sort_keys=True), True
+    return rendered, False
+
+
+class IsolatedDesignSimulator:
+    trace_store: DesignTraceRecorder | None = None
+
+    def __init__(self, project: Path, profile: object,
+                 workload_transport: WorkloadTransport | None = None) -> None:
+        self.project = safe_root(project)
+        self.workload_transport = workload_transport
+        self._trace_context: ContextVar[RunContext | None] = ContextVar("design_simulation_trace", default=None)
+        if isinstance(profile, dict) and profile.get("schema") == PROFILE_SCHEMA:
+            from openrtl.adapters.runtime_selection import verify_local_identity
+            self.profile = validate_profile(profile)
+            verify_local_identity(self.profile)
+            return
+        selected = object_value(profile, {"schema", "docker_executable", "socket", "image_id",
+                                          "python_executable", "verilator_version", "timeout_seconds"})
+        require(selected["schema"] == "openrtl.design-container.v1", "simulation_profile_unrecognized")
+        for key in ("docker_executable", "socket", "python_executable"):
+            require(isinstance(selected[key], str) and selected[key].startswith("/") and
+                    "\x00" not in selected[key] and ".." not in Path(selected[key]).parts,
+                    "simulation_profile_path_invalid")
+        require(re.fullmatch(r"sha256:[a-f0-9]{64}", selected["image_id"]) is not None, "local_image_pin_required")
+        require(isinstance(selected["verilator_version"], str) and
+                re.fullmatch(r"[0-9]+\.[0-9]+", selected["verilator_version"]) is not None,
+                "verilator_version_pin_required")
+        require(type(selected["timeout_seconds"]) is int and 10 <= selected["timeout_seconds"] <= 600,
+                "simulation_timeout_invalid")
+        require(Path(selected["docker_executable"]).is_file() and os.access(selected["docker_executable"], os.X_OK),
+                "selected_docker_unavailable")
+        require(stat.S_ISSOCK(Path(selected["socket"]).stat().st_mode), "selected_local_socket_unavailable")
+        self.profile = selected
+
+    async def _process(self, argv: list[str], config: Path, timeout: int,
+                       bound: int = 48 * 1024 * 1024) -> tuple[int, bytes]:
+        variable = getattr(self, "_trace_context", None)
+        root = variable.get() if variable is not None else None
+        capture = root.private_trace_capture if root is not None else None
+        if capture is None or not capture.include_process:
+            return await self._execute_process(argv, config, timeout, bound)
+        assert root is not None
+        context = root.derive_child(correlation={"process_id": uuid.uuid4().hex})
+        capture.record(context, kind="process.request", metadata={}, content={
+            "argv": list(argv), "cwd": str(self.project), "timeout_seconds": timeout,
+            "max_output_bytes": bound, "shell": False, "environment": "not captured",
+            "stderr_mode": "merged_into_stdout", "execution_boundary": "host_subprocess",
+            "guest_transport": "not instrumented", "inner_process_argv": "unavailable",
+        })
+        started = context.clock.monotonic()
+        try:
+            code, output = await self._execute_process(argv, config, timeout, bound)
+        except (Exception, asyncio.CancelledError) as error:
+            failure = ("simulation_process_cancelled" if isinstance(error, asyncio.CancelledError) else
+                       "simulation_process_timeout" if isinstance(error, TimeoutError) else
+                       "simulation_process_failed")
+            capture.record(context, kind="process.response", metadata={}, content={
+                "status": "cancelled" if isinstance(error, asyncio.CancelledError) else "failed",
+                "failure_code": failure, "exit_code": None, "stdout": None, "stderr": None,
+                "stderr_mode": "merged_into_stdout", "output_availability": "unavailable_after_failure",
+                "elapsed_ms": max(0, int((context.clock.monotonic() - started) * 1000)),
+            })
+            raise
+        rendered, artifacts_omitted = _trace_output(output)
+        capture.record(context, kind="process.response", metadata={}, content={
+            "status": "completed", "exit_code": code,
+            "stdout": rendered, "stderr": None, "encoded_artifact_bodies_omitted": artifacts_omitted,
+            "stderr_mode": "merged_into_stdout", "output_bytes": len(output),
+            "elapsed_ms": max(0, int((context.clock.monotonic() - started) * 1000)),
+        })
+        return code, output
+
+    async def _execute_process(self, argv: list[str], config: Path, timeout: int,
+                               bound: int = 48 * 1024 * 1024) -> tuple[int, bytes]:
+        """Keep the approved host subprocess lifecycle independent of capture."""
+        if self.profile.get("schema") == PROFILE_SCHEMA:
+            from openrtl.adapters.runtime_selection import verify_local_identity
+            verify_local_identity(self.profile)
+        process = await asyncio.create_subprocess_exec(
+            *argv, stdin=asyncio.subprocess.DEVNULL, stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            env={"PATH": "/usr/bin:/bin", "DOCKER_CONFIG": str(config), "LANG": "C", "LC_ALL": "C"},
+            cwd=self.project,
+        )
+        async def read() -> bytes:
+            assert process.stdout is not None
+            chunks = []
+            size = 0
+            while chunk := await process.stdout.read(65536):
+                size += len(chunk)
+                require(size <= bound, "simulation_output_limit")
+                chunks.append(chunk)
+            await process.wait()
+            return b"".join(chunks)
+        try:
+            data = await asyncio.wait_for(read(), timeout=timeout)
+            assert process.returncode is not None
+            return process.returncode, data
+        finally:
+            if process.returncode is None:
+                process.kill()
+                await process.wait()
+
+    async def simulate(self, files: dict[str, str], manifest: JsonObject,
+                       input_digest: str, operation_id: str) -> JsonObject:
+        from agentrig.core import CancellationSource, RunContext, RunId, SystemClock, Uuid4IdGenerator
+
+        require(re.fullmatch(r"[a-f0-9]{32}", operation_id) is not None, "simulation_operation_invalid")
+        variable = getattr(self, "_trace_context", None)
+        if variable is None:
+            # Some isolated test and recovery fixtures construct this adapter without __init__.
+            variable = self._trace_context = ContextVar("design_simulation_trace", default=None)
+        capture = private_capture(self.trace_store, operation_id)
+        context = None
+        if capture is not None:
+            context = RunContext.create_root(
+                clock=SystemClock(), id_generator=Uuid4IdGenerator(RunId),
+                cancellation=CancellationSource().token,
+                event_sink=event_sink(self.trace_store, operation_id), private_trace_capture=capture,
+                labels={"openrtl_operation": "design_simulation"},
+                correlation={"operation_id": operation_id},
+            )
+        token = variable.set(context)
+        try:
+            return await self._simulate(files, manifest, input_digest, operation_id)
+        finally:
+            variable.reset(token)
+
+    async def _simulate(self, files: dict[str, str], manifest: JsonObject,
+                        input_digest: str, operation_id: str) -> JsonObject:
+        require(re.fullmatch(r"[a-f0-9]{32}", operation_id) is not None, "simulation_operation_invalid")
+        parent = safe_root(self.project / "runs")
+        parent.mkdir(mode=0o700, exist_ok=True)
+        run = parent / operation_id
+        require(not run.exists(), "simulation_run_already_exists")
+        run.mkdir(mode=0o700)
+        inputs, control, config = run / "input", run / "control", run / "docker-config"
+        for directory in (inputs, control, config):
+            directory.mkdir(mode=0o755 if directory != config else 0o700)
+        for relative, content in files.items():
+            path = inputs / source_path(relative)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open("x", encoding="utf-8") as stream:
+                stream.write(content)
+        runtime = {"manifest": manifest, "verilator_version": self.profile["verilator_version"],
+                   "timeout_seconds": self.profile["timeout_seconds"] - 5}
+        (control / "request.json").write_bytes(canonical(runtime))
+        runner = Path(__file__).with_name("_design_runner.py")
+        runner_bytes = runner.read_bytes()
+        (control / "run.py").write_bytes(runner_bytes)
+        prefix = [self.profile["docker_executable"], "--host", "unix://" + self.profile["socket"],
+                  "--config", str(config)]
+        container_name = "openrtl-design-" + operation_id
+        intent = {"schema": "openrtl.design-runtime-intent.v1", "operation_id": operation_id,
+                  "container_name": container_name, "profile_digest": content_digest(self.profile),
+                  "input_digest": input_digest}
+        if self.workload_transport is not None:
+            intent["probe_name"] = container_name + "-probe"
+            intent["transport_digest"] = content_digest(self.workload_transport.identity)
+        # Record ownership before any daemon call, including a lost create response.
+        with (run / "intent.json").open("xb") as stream:
+            stream.write(canonical(intent))
+            stream.flush()
+            os.fsync(stream.fileno())
+        if self.profile.get("schema") == PROFILE_SCHEMA:
+            from openrtl.adapters.runtime_selection import inspect_selection
+            await inspect_selection(self.profile, config, self._process, authorized=True)
+        mount_inputs, mount_control = str(inputs), str(control)
+        if self.workload_transport is not None:
+            mount_inputs, mount_control = await self.workload_transport.stage(operation_id, inputs, control)
+            require(all("," not in value for value in (mount_inputs, mount_control)),
+                    "container_mount_path_invalid")
+            await self._probe_workload(prefix, config, operation_id, mount_inputs, mount_control,
+                                       inputs, control)
+        # A literal local image ID and --pull=never prohibit implicit downloads.
+        argv = prefix + ["create", "--name", container_name, "--label", "openrtl.operation=" + operation_id,
+                         "--pull=never", "--network=none", "--read-only",
+                         "--cap-drop=ALL", "--security-opt=no-new-privileges", "--user=65534:65534",
+                         *resource_arguments(self.profile),
+                         "--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=64m,mode=1777",
+                         "--mount", "type=bind,src=" + mount_inputs + ",dst=/input,readonly",
+                         "--mount", "type=bind,src=" + mount_control + ",dst=/control,readonly",
+                         "--workdir=/output", "--env=HOME=/tmp", "--env=PYTHONNOUSERSITE=1",
+                         "--entrypoint", self.profile["python_executable"], self.profile["image_id"],
+                         "-I", "/control/run.py"]
+        require(all("," not in value for value in (str(run), mount_inputs, mount_control)),
+                "container_mount_path_invalid")
+        code, created = await self._process(argv, config, 30, 8192)
+        container = created.decode("ascii", errors="replace").strip()
+        require(code == 0 and re.fullmatch(r"[a-f0-9]{64}", container) is not None, "container_creation_failed")
+        try:
+            code, raw = await self._process(prefix + ["start", "--attach", container], config,
+                                             self.profile["timeout_seconds"])
+            require(code == 0, "isolated_runner_failed")
+            payload = object_value(json.loads(raw), {"status", "model_tests", "artifacts", "error_code"})
+            require(payload["status"] in ("passed", "failed"), "isolated_runner_status_invalid")
+            require(isinstance(payload["artifacts"], dict), "isolated_artifact_manifest_invalid")
+            allowed = {"results.xml", "model-results.json", "waves.vcd", "runner.log", "toolchain.json"}
+            require(set(payload["artifacts"]).issubset(allowed), "isolated_artifact_path_invalid")
+            artifact_digests: JsonObject = {}
+            decoded: dict[str, bytes] = {}
+            output = run / "evidence"
+            output.mkdir(mode=0o700)
+            for filename, encoded in payload["artifacts"].items():
+                require(isinstance(encoded, str) and len(encoded) <= 24 * 1024 * 1024, "isolated_artifact_bound")
+                data = base64.b64decode(encoded, validate=True)
+                require(len(data) <= 16 * 1024 * 1024, "isolated_artifact_bound")
+                with (output / filename).open("xb") as stream:
+                    stream.write(data)
+                decoded[filename] = data
+                artifact_digests[filename] = {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data),
+                                               "path": "runs/" + operation_id + "/evidence/" + filename}
+            variable = getattr(self, "_trace_context", None)
+            context = variable.get() if variable is not None else None
+            capture = context.private_trace_capture if context is not None else None
+            if capture is not None and capture.include_process and "runner.log" in decoded:
+                artifact = artifact_digests["runner.log"]
+                capture.record(context.derive_child(correlation={"artifact_path": artifact["path"]}),
+                               kind="process.response", metadata={}, content={
+                    "evidence_kind": "decoded_runner_log", "artifact": artifact,
+                    "stdout": decoded["runner.log"].decode("utf-8", errors="replace"),
+                    "stderr": None, "stderr_mode": "merged_in_runner_log",
+                    "exit_code": None, "elapsed_ms": None,
+                    "inner_process_argv": "unavailable", "guest_transport": "not instrumented",
+                })
+            tests: list[str] = []
+            if payload["status"] == "passed":
+                require(set(decoded) == allowed, "isolated_evidence_missing")
+                try:
+                    tests = parse_test_results(decoded["results.xml"], manifest["expected_tests"])
+                except (ValueError, ET.ParseError):
+                    payload["status"] = "failed"
+                    payload["error_code"] = "isolated_tests_or_build_failed"
+                model_result = object_value(json.loads(decoded["model-results.json"]), {"tests", "passed"})
+                require(model_result["passed"] is True and type(model_result["tests"]) is int and
+                        model_result["tests"] > 0 and model_result["tests"] == payload["model_tests"],
+                        "model_test_evidence_invalid")
+                require(b"$enddefinitions" in decoded["waves.vcd"] and b"#" in decoded["waves.vcd"],
+                        "waveform_evidence_invalid")
+            require(payload["error_code"] in (None, "isolated_tests_or_build_failed"), "runner_error_code_invalid")
+            report: JsonObject = {"schema": "openrtl.design-simulation.v2", "input_digest": input_digest,
+                                  "runtime": {"profile_digest": content_digest(self.profile),
+                                              "runner_digest": "sha256:" + hashlib.sha256(runner_bytes).hexdigest()},
+                                  "status": payload["status"], "evidence_kind": "isolated_verilator_cocotb",
+                                  "run_id": operation_id, "tests": tests, "model_tests": payload["model_tests"],
+                                  "artifacts": artifact_digests, "error_code": payload["error_code"],
+                                  "diagnostics": decoded.get("runner.log", b"")[-8000:].decode("utf-8", errors="replace")}
+            (output / "report.json").write_bytes(canonical(report))
+            return report
+        finally:
+            removed, _ = await self._process(prefix + ["rm", "--force", container], config, 30, 8192)
+            require(removed == 0, "owned_container_cleanup_requires_reconciliation")
+            if self.workload_transport is not None:
+                await self.workload_transport.release(operation_id)
+
+    async def _probe_workload(self, prefix: list[str], config: Path, operation_id: str,
+                              inputs_path: str, control_path: str, inputs: Path, control: Path) -> None:
+        """Prove the selected Docker daemon mounts the copied bytes for UID 65534."""
+        expected: dict[str, str] = {}
+        for directory in (inputs, control):
+            for path in directory.rglob("*"):
+                if path.is_file():
+                    relative = "/" + directory.name + "/" + path.relative_to(directory).as_posix()
+                    expected[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+        require(len(expected) <= 256 and len(canonical(expected)) <= 64 * 1024,
+                "workload_probe_manifest_bound")
+        script = ("import hashlib,json,pathlib,sys\n"
+                  "wanted=json.loads(sys.argv[1])\n"
+                  "for name,digest in wanted.items():\n"
+                  " p=pathlib.Path(name)\n"
+                  " assert p.is_file() and hashlib.sha256(p.read_bytes()).hexdigest()==digest\n"
+                  "print('workload-visible')\n")
+        name = "openrtl-design-" + operation_id + "-probe"
+        create = prefix + ["create", "--name", name, "--label", "openrtl.operation=" + operation_id,
+                           "--pull=never", "--network=none", "--read-only", "--cap-drop=ALL",
+                           "--security-opt=no-new-privileges", "--user=65534:65534",
+                           *resource_arguments(self.profile),
+                           "--mount", "type=bind,src=" + inputs_path + ",dst=/input,readonly",
+                           "--mount", "type=bind,src=" + control_path + ",dst=/control,readonly",
+                           "--entrypoint", self.profile["python_executable"], self.profile["image_id"],
+                           "-I", "-c", script, canonical(expected).decode("utf-8")]
+        code, raw = await self._process(create, config, 30, 8192)
+        container = raw.decode("ascii", errors="replace").strip()
+        require(code == 0 and re.fullmatch(r"[a-f0-9]{64}", container) is not None,
+                "workload_probe_creation_failed")
+        try:
+            code, output = await self._process(prefix + ["start", "--attach", container], config, 60, 8192)
+            require(code == 0 and output.strip() == b"workload-visible",
+                    "guest_workload_visibility_failed")
+        finally:
+            removed, _ = await self._process(prefix + ["rm", "--force", container], config, 30, 8192)
+            require(removed == 0, "owned_probe_cleanup_requires_reconciliation")
+
+    async def abandon(self, operation_id: str, input_digest: str) -> None:
+        """Explicit cleanup of one recorded runtime; never accept partial outputs."""
+        transport = getattr(self, "workload_transport", None)
+        require(re.fullmatch(r"[a-f0-9]{32}", operation_id) is not None, "simulation_operation_invalid")
+        run = safe_root(self.project / "runs" / operation_id)
+        intent_path = safe_root(run / "intent.json")
+        require(intent_path.is_file() and intent_path.stat().st_size <= 4096,
+                "runtime_intent_missing_manual_reconciliation_required")
+        fields = {"schema", "operation_id", "container_name", "profile_digest", "input_digest"}
+        if transport is not None:
+            fields.update({"probe_name", "transport_digest"})
+        intent = object_value(json.loads(intent_path.read_bytes()), fields)
+        name = "openrtl-design-" + operation_id
+        expected = {"schema": "openrtl.design-runtime-intent.v1", "operation_id": operation_id,
+                    "container_name": name, "profile_digest": content_digest(self.profile),
+                    "input_digest": input_digest}
+        if transport is not None:
+            expected.update(probe_name=name + "-probe",
+                            transport_digest=content_digest(transport.identity))
+        require(intent == expected, "runtime_intent_binding_invalid")
+        config = safe_root(run / "docker-config")
+        require(config.is_dir() and not any(config.iterdir()), "runtime_configuration_changed")
+        prefix = [self.profile["docker_executable"], "--host", "unix://" + self.profile["socket"],
+                  "--config", str(config)]
+        if self.profile.get("schema") == PROFILE_SCHEMA:
+            from openrtl.adapters.runtime_selection import inspect_selection
+            await inspect_selection(self.profile, config, self._process, authorized=True)
+        names = [name + "-probe", name] if transport is not None else [name]
+        for selected_name in names:
+            code, output = await self._process(prefix + ["ps", "--all", "--no-trunc", "--filter",
+                                              "name=^/" + selected_name + "$", "--format", "{{.ID}}"],
+                                               config, 30, 8192)
+            require(code == 0, "runtime_reconciliation_query_failed")
+            container = output.decode("ascii", errors="strict").strip()
+            if not container:
+                continue
+            require(re.fullmatch(r"[a-f0-9]{64}", container) is not None,
+                    "runtime_reconciliation_ambiguous")
+            template = '{{.Name}}|{{.Image}}|{{index .Config.Labels "openrtl.operation"}}'
+            code, identity = await self._process(prefix + ["inspect", "--format", template, container],
+                                                 config, 30, 8192)
+            require(code == 0 and identity.decode("ascii", errors="strict").strip() ==
+                    "/" + selected_name + "|" + self.profile["image_id"] + "|" + operation_id,
+                    "runtime_reconciliation_identity_mismatch")
+            removed, _ = await self._process(prefix + ["rm", "--force", container], config, 30, 8192)
+            require(removed == 0, "owned_container_cleanup_requires_reconciliation")
+        if transport is not None:
+            await transport.release(operation_id)

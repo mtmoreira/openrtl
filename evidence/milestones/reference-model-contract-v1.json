@@ -1,0 +1,232 @@
+{
+  "schema": "openrtl.milestone-evidence.v1",
+  "milestone_id": "reference-model-contract-v1",
+  "base_commit": "1abea8547d56453fb698ec0d7b6e104f51e8e8d0",
+  "qualified_commit": "454a72e8ab1b25d32eac56d98b95e41062bcc1ca",
+  "review_state": "local-contracts-validated-live-provider-qualification-pending",
+  "qualification_lane": "owner-offline",
+  "milestone_complete": true,
+  "implementation_slice_complete": true,
+  "qualification_scope": "Versioned stage-relative reference-model paths with application-owned model root; unchanged canonical multifile artifacts, reviewed-change scope, strict validation and metered capture; allowlisted generation diagnostics and explicit retry preservation.",
+  "locator_roots": {
+    "openrtl-primary-checkout": {
+      "kind": "declared-external-checkout",
+      "repository": "openrtl",
+      "resolution": "Resolve against the primary checkout; retained artifacts are local and not distributed."
+    }
+  },
+  "artifacts": [
+    {
+      "artifact_id": "reference-model-contract.local.1",
+      "locator": "build/retained-evidence/reference-model-contract-v1/run-0qN1mCuj/source.sha256",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "f365b189964ccd698f129720f372148cb3fee2c5e87b5f2adaa674c1457d2ace",
+      "size_bytes": 1231,
+      "producer": "reference-model-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "reference-model-contract.local.2",
+      "locator": "build/retained-evidence/reference-model-contract-v1/run-0qN1mCuj/runtime.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "dd5f86d613e7c4ec755123718ae07f43c3c41558ff1bfeebafb3335894e0cc1b",
+      "size_bytes": 63,
+      "producer": "reference-model-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "reference-model-contract.local.3",
+      "locator": "build/retained-evidence/reference-model-contract-v1/run-0qN1mCuj/focused.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "52442eb289f31ec08781e62d797ead643a5878bfc2cc8f42484311367b88c9d0",
+      "size_bytes": 285,
+      "producer": "reference-model-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "reference-model-contract.local.4",
+      "locator": "build/retained-evidence/reference-model-contract-v1/run-0qN1mCuj/frontend.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "c4f28a0afd99fedcb1f4ca028654a334c14d18ada4c744b14f5759492e7c567c",
+      "size_bytes": 3204,
+      "producer": "reference-model-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "reference-model-contract.local.5",
+      "locator": "build/retained-evidence/reference-model-contract-v1/run-0qN1mCuj/typing.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "e317872697c2cbfdefa321527a6efe73290dff3a390b0fa8723b87092eccba6a",
+      "size_bytes": 43,
+      "producer": "reference-model-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "reference-model-contract.local.6",
+      "locator": "build/retained-evidence/reference-model-contract-v1/run-0qN1mCuj/full.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "0b670268566424c4be674f9fdc9220cecc86d4a764af8629a2e180fbe4aeee27",
+      "size_bytes": 1636,
+      "producer": "reference-model-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "reference-model-contract.local.7",
+      "locator": "build/retained-evidence/reference-model-contract-v1/run-0qN1mCuj/canary.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "6dd5c04298cefe79950ded4403877720fc91f937d781d9b6bad5aa77235ff537",
+      "size_bytes": 42,
+      "producer": "reference-model-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "reference-model-contract.local.8",
+      "locator": "build/retained-evidence/reference-model-contract-v1/run-0qN1mCuj/canary/canary.log",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "3f6643b8d6ab07b7c0213838cb933d92ceb625b89c8ba00042e329f06cbafaae",
+      "size_bytes": 83411,
+      "producer": "reference-model-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "reference-model-contract.local.9",
+      "locator": "build/retained-evidence/reference-model-contract-v1/run-0qN1mCuj/canary/evidence.json",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "openrtl.verilator-canary-evidence.v1",
+      "media_type": "application/json",
+      "sha256": "9dbd8782165b3a433c643999f52d00747f48173c643772c6d99226e9efce6487",
+      "size_bytes": 1000,
+      "producer": "reference-model-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "reference-model-contract.local.10",
+      "locator": "build/retained-evidence/reference-model-contract-v1/run-0qN1mCuj/canary/results.xml",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "application/xml",
+      "sha256": "c84cb71070f9df2d4fc2c6de3300041a788a3d54824e998ba209f778802ab0d9",
+      "size_bytes": 426,
+      "producer": "reference-model-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "reference-model-contract.local.11",
+      "locator": "build/retained-evidence/reference-model-contract-v1/run-0qN1mCuj/canary/waves.vcd",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": null,
+      "media_type": "text/plain",
+      "sha256": "3472b20dd63cc6fe6cacc6b5109f33dd1c922928b78a4686f502010daf79d271",
+      "size_bytes": 44303,
+      "producer": "reference-model-owner-delivery-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    }
+  ],
+  "validation_outcomes": {
+    "focused": {
+      "suite_test_counts": [
+        184
+      ],
+      "exit_code": 0
+    },
+    "full_repository_and_examples": {
+      "suite_test_counts": [
+        694,
+        3,
+        3
+      ],
+      "exit_code": 0
+    },
+    "frontend": {
+      "exit_code": 0
+    },
+    "typing_changed_sources": {
+      "exit_code": 0
+    },
+    "source_binding": {
+      "files": 12,
+      "unchanged_after_validation": true
+    },
+    "verilator_cocotb_canary": {
+      "status": "passed",
+      "tests": 1,
+      "exit_code": 0
+    },
+    "provider_dependency": {
+      "version": "0.3.1.dev13",
+      "wheel_sha256": "b77cf547002361632f6fa3b6437287ea92f4fe69108c9a5ac837fce9c0b369d3",
+      "source": "verified-wheel-extracted-for-validation-without-installation"
+    }
+  },
+  "authorization_boundary": {
+    "local_implementation_and_commits": true,
+    "local_simulation": true,
+    "provider_calls": false,
+    "credential_values_handled": false,
+    "saved_customer_project_mutations": false,
+    "downloads": false,
+    "installation": false,
+    "publication": false,
+    "production_authorized": false
+  },
+  "qualification_limits": [
+    "Only synthetic fixtures and existing RTL canary artifacts qualify this milestone. No private prompts, provider responses, reasoning or customer project content are retained in this evidence.",
+    "Structural destination ownership does not guarantee valid generated behavior or live provider schema adherence. Live performance and new RTL design quality remain unqualified.",
+    "Simulation and waveform limits, provider authorization, strict deterministic validation, capture consent and compatibility checks remain unchanged.",
+    "Typing covers all five changed production modules. Existing unrelated web-adapter typing issues are outside this change.",
+    "Retained canary copies match original bytes; embedded worktree paths are historical after cleanup. Existing RTL success is not live agent design qualification."
+  ],
+  "pending": [
+    "m46-live-rtl-qualification",
+    "m47-release"
+  ]
+}

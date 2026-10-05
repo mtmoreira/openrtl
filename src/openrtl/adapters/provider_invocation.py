@@ -8,7 +8,7 @@ from importlib import import_module
 import json
 import os
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, BinaryIO, cast
 
 from agentrig.capabilities import DataRetention
 from agentrig.core import ArtifactRef, ArtifactResolver, ResolvedArtifact, RunContext
@@ -69,6 +69,30 @@ class EnvironmentOpenAIAuthenticationSource:
         if not isinstance(value, str) or not value:
             raise ValueError("configured provider credential is unavailable")
         return value
+
+
+class MemoryOpenAIAuthenticationSource:
+    """Use a process-local value supplied at launch or through the loopback UI."""
+
+    def __init__(self, value: str) -> None:
+        if not isinstance(value, str) or not value or len(value) > 4096 or "\n" in value or "\r" in value:
+            raise ValueError("configured provider credential is invalid")
+        self._value = value
+
+    def resolve_api_key(self) -> str:
+        return self._value
+
+
+def read_api_key_stdin(stream: BinaryIO) -> str:
+    """Read one bounded line without accepting a key as a command argument."""
+    if stream.isatty():
+        from getpass import getpass
+        return MemoryOpenAIAuthenticationSource(getpass("OpenAI API key: ")).resolve_api_key()
+    raw = stream.readline(4097)
+    if not isinstance(raw, bytes) or not raw or len(raw) > 4096:
+        raise ValueError("provider_key_input_invalid")
+    value = raw.removesuffix(b"\n").decode("utf-8")
+    return MemoryOpenAIAuthenticationSource(value).resolve_api_key()
 
 
 class RejectingArtifactResolver:

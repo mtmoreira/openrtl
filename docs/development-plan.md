@@ -154,7 +154,136 @@ qualification; new feature work waits for user feedback on that release.
   consumption reverifies every bundle and atomically materializes an isolated,
   source-only package workspace without executing package content.
 
-## Convergence
+## Approved next delivery: M36–M40
+
+M36 builds the first interactive chat-to-design slice: digest-reviewed
+requirements and assumptions, persisted engineering state, role-scoped expert
+generation, independently derived model/DV collateral, isolated simulation,
+bounded candidate repair, signoff and explicit final acceptance. The ALU is a
+live acceptance design, never hard-coded generator output. The implementation
+checkpoint `a0b47bc615af0989abbbd814f423c8b5d262123b` passed 25 focused
+tests, strict typing, full default validation and the production canary. This
+does not qualify generated designs: live provider/container acceptance remains
+pending, and the checkpoint has not been integrated into main or published.
+
+M37 adds batch operation, scoped broad delegation with a warning for each
+assumption, durable review queues, bounded execution and crash reconciliation.
+Its checkpoint `9abd92216d11d78f82b7505737015c61ece2e46a` passed 45 focused
+tests, strict typing, the 199-test main suite, both three-test example suites
+and the production canary. The
+batch runner shares M36's gates; delegation never restores provider or runtime
+permissions. M36–M40 remain a sequential local delivery, not a released agent.
+M38 adds multiple file imports and existing-design/DV baselines, explanations
+and controlled change impact. Checkpoint `2f95c5fefdc051b0b92a2a0d515aa80340098cb3`
+passed 64 focused tests, strict typing, the 218-test main suite, both three-test
+example suites and the production FIFO canary. It adds source-only imports,
+frozen provenance, reviewed baseline adoption,
+per-stage change paths, retained-file guards and fresh-evidence requirements.
+M39 expands teaching granularity, diagnosis, DV-only improvement and measured
+simulation-level experiments. Checkpoint `661024ff30e973b9b7dc51aeb329a1d4a33ce819`
+passed 87 focused tests, strict typing across 11 files, the 241-test main suite,
+both three-test example suites and the FIFO canary. It adds saved pacing, conversational but unapplied review proposals,
+requirement/source-anchored diagnosis, and comparison of reverified run artifacts.
+Comparisons do not establish equivalence, functional coverage or hardware PPA.
+M40 targets held-out designs, installed CLI workflows, documented evidence tiers
+and the user-facing package. Its candidate adds reverified read-only acceptance
+inventories, three solution-free evaluation specifications, an installed-target
+CLI smoke test and a normalized guide/spec archive. Checkpoint
+`71bc8b81640580a19f623bc98183dafc96fabc88` passed 103 focused tests, selected
+strict typing, the 257-test main suite and both three-test example suites, the
+existing FIFO canary, offline candidate preparation and 33 installed CLI checks.
+M41 preflight re-ran the default suite and rehashed retained evidence successfully.
+The installed smoke deliberately reuses existing interpreter dependencies; it is
+not a clean-machine or live-provider qualification. Published evaluation inputs
+are not secret held-out designs. Real provider/container execution and additional
+held-out trials require separate runtime/model choices and authorization.
+No milestone implies synthesis, formal execution or FPGA deployment.
+
+Complete as much local development and deterministic validation as possible
+before owner-shell handoffs. Provider calls, runtime installation, publication
+and remote Git effects remain separately authorized. A milestone is not
+complete merely because a scripted test or state transition succeeded.
+
+## Approved local continuation: M41–M45
+
+M41 adds the checked-in launcher, private resumable first-run configuration,
+explicit dependency consent and separate readiness reporting. Its current
+validated base uses existing Python 3.12+ and a pinned pure AgentRig
+wheel without an editable sibling, pip or package hooks. The base slice passed
+50 focused tests, strict typing, 307 repository tests and both three-test model
+suites. The actual offline launcher and existing FIFO canary also passed, with
+retained evidence rehashed against unchanged production source. The subsequent
+implementation adds consent-gated uv 0.12.3 / CPython 3.13.15 provisioning and
+hash-locked optional SDK 2.47.0 setup. Its local gate passed 66 focused tests,
+strict typing across eight files, 323 repository tests, both model suites and six
+actual offline launcher checks. [The runtime/SDK evidence manifest](../evidence/milestones/m41-runtime-sdk-local.json)
+binds those results to the implementation commit. A separately approved real
+macOS setup run passed private Python provisioning with no Python in PATH,
+offline reuse, locked SDK installation and offline SDK readiness. Public AgentRig
+download failed. A diagnostic retry passed 69 focused tests, 326 repository tests,
+both model suites, strict typing and six offline launcher checks, while both
+interpreters received HTTP 404/410 for the pinned public URL. The existing local
+release artifact does not establish anonymous public availability.
+[The retained evidence](../evidence/milestones/m41-public-dependency.json) records
+these outcomes separately. The later approved AgentRig publication passed
+anonymous verification of all three immutable assets and actual public-launcher
+specification review in fresh private state, using product-provisioned Python.
+[Publication evidence](../evidence/milestones/m41-publication.json) records the
+source and artifact identities. Split at the environment boundary: M41a local
+installation/onboarding implementation is validated; M41b clean-OS-user and Linux
+acceptance remains pending. The original complete M41 gate remains open. Do not
+repeat installation merely to combine already passing independent lanes, and do
+not call owner-isolated state a clean OS user. See [the first-run guide](first-run.md) and
+[the local evidence manifest](../evidence/milestones/m41-first-run-base.json).
+
+M42 will manage an explicitly owned isolated simulation runtime and pinned
+images, preserving unrelated Docker runners and forbidding host fallback.
+Its current local slice adds version-2 identity/resource-bound profiles, private
+selection, an explicit fixed infrastructure self-test, rehashed receipts and
+owned-operation recovery. Unit process doubles do not qualify a real runtime.
+Split at the backend adoption boundary: M42a local selection, evidence and recovery
+code is validated (352 repository tests, both three-test model suites, 92 focused
+tests, ten-file strict typing and offline launcher checks). M42b retains managed
+backend onboarding, the dependency decision, immutable image distribution and
+the original real isolated simulator acceptance gate. M42 as a whole remains
+incomplete; see [the candidate guide](managed-simulation.md) and
+[local evidence](../evidence/milestones/m42-local-runtime.json).
+M43a's validated local implementation adds bounded conversational routing, anchored readiness
+decisions, approvals bound to the displayed review, invocation-local capability
+revocation and ordinary batch policy inputs. Existing specs remain readable and
+are not silently given readiness evidence. See [the conversation guide](conversational-review.md).
+The owner gate passed 381 repository tests, both three-test model suites, 158
+focused regressions, eleven-file strict typing and eight offline controller lanes.
+See [the evidence manifest](../evidence/milestones/m43-conversational-review.json).
+M43b retains the original live conversational design acceptance criterion; it
+requires M46 qualification and is not satisfied by the scripted ALU review.
+M44a adds explicit file selection/previews, in-chat baseline
+adoption, reviewed independent collateral completion that preserves imported RTL,
+source-anchored explanations, and explicit source/evidence export. See the
+[import/evolution guide](import-evolution.md). Implementation
+`3256ce5544a900457d40b4824f0a4dc9e98438f5` passed 408 repository tests, both
+three-test model suites, 185 focused regressions, nine-file strict typing and
+eight owner validation lanes, including actual offline launcher import/export.
+The [M44a evidence manifest](../evidence/milestones/m44-import-evolution.json)
+records byte preservation, 87 verified launcher source hashes and the separate
+managed filesystem failures. M44b's real unfamiliar-design acceptance gate remains
+pending live M46 qualification. M45 adds locally validated session discovery,
+explicit portable export/restore, bounded progress and actionable source-free
+support diagnostics. See [sessions and diagnostics](sessions-diagnostics.md).
+Owner validation passed 435 repository tests, both model suites, 212 focused
+regressions, twelve-file typing and nine lanes, including eleven actual offline
+launcher session commands. The [M45 evidence manifest](../evidence/milestones/m45-sessions-diagnostics.json)
+binds these results to implementation `b1ae2278e1b838e6c5548e937e8469e2939c9be0`.
+See [the pending acceptance plan](pending-acceptance.md) for the remaining gates.
+Continue in sequential
+milestone worktrees with validated local checkpoints and retained evidence.
+
+M46 live engineering qualification requires separately authorized actual provider
+calls and isolated simulations of new designs plus an independent adequacy review.
+M47 release requires clean-user qualification, a distinct immutable identity and
+separately authorized publication. Neither is complete or implied by local tests.
+
+## Existing composition convergence evidence
 
 M33 adds a fixed FIFO-to-skid-buffer composition as a real dependency-closure
 consumer. Passing leaf evidence and a fresh composed producer run precede

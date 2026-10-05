@@ -1,0 +1,206 @@
+{
+  "schema": "openrtl.milestone-evidence.v1",
+  "milestone_id": "m41-runtime-sdk-local",
+  "base_commit": "5455a2e865239b7f4b0b801c5e6edf0ece6e9b13",
+  "qualified_commit": "43b8c6ea9dae9e1f6251c0640deb68a42e54b3d7",
+  "implementation_commits": [
+    "43b8c6ea9dae9e1f6251c0640deb68a42e54b3d7"
+  ],
+  "review_state": "validated-local-implementation-slice",
+  "qualification_lane": "bootstrap-policy-and-offline-launcher",
+  "milestone_complete": false,
+  "collateral_root": "build/retained-evidence/m41-runtime-sdk-43b8c6e",
+  "locator_roots": {
+    "openrtl-primary-checkout": {
+      "kind": "declared-external-checkout",
+      "repository": "openrtl",
+      "resolution": "Resolve relative to the retained primary OpenRTL checkout; artifacts are not distributed with a clone."
+    }
+  },
+  "artifacts": [
+    {
+      "artifact_id": "m41.runtime-sdk.validation.v5",
+      "locator": "build/retained-evidence/m41-runtime-sdk-43b8c6e/objects/a088691dbe7621707e2ffe9ea20490f03c1de5ce1f10b3eda211e410424cc16c",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "openrtl.m41-local-validation.v5",
+      "media_type": "application/json",
+      "sha256": "a088691dbe7621707e2ffe9ea20490f03c1de5ce1f10b3eda211e410424cc16c",
+      "size_bytes": 2247,
+      "producer": "openrtl-owner-validation",
+      "evidence_lane": "local-bootstrap-policy-and-offline-launcher",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-and-size-verified"
+    },
+    {
+      "artifact_id": "m41.runtime-sdk.reviewed-source.v5",
+      "locator": "build/retained-evidence/m41-runtime-sdk-43b8c6e/objects/fbd4b83925b8b4c500a979f989477f4d33442f57794f9509fb96605603979f04",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "openrtl.m41-reviewed-source.v5",
+      "media_type": "application/json",
+      "sha256": "fbd4b83925b8b4c500a979f989477f4d33442f57794f9509fb96605603979f04",
+      "size_bytes": 2981,
+      "producer": "openrtl-owner-validation",
+      "evidence_lane": "local-bootstrap-policy-and-offline-launcher",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-and-size-verified"
+    },
+    {
+      "artifact_id": "m41.runtime-sdk.focused_tests",
+      "locator": "build/retained-evidence/m41-runtime-sdk-43b8c6e/objects/e6611492f471bc018be91947f3157342cec25c0ab485f49c7601bc949961331d",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "text-log.v1",
+      "media_type": "text/plain",
+      "sha256": "e6611492f471bc018be91947f3157342cec25c0ab485f49c7601bc949961331d",
+      "size_bytes": 165,
+      "producer": "openrtl-owner-validation",
+      "evidence_lane": "local-bootstrap-policy-and-offline-launcher",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-and-size-verified"
+    },
+    {
+      "artifact_id": "m41.runtime-sdk.strict_typing",
+      "locator": "build/retained-evidence/m41-runtime-sdk-43b8c6e/objects/157a09cfcdfdfb5977479c5a1c08345149263a3e990a2ec976ef28aaeec9cae6",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "text-log.v1",
+      "media_type": "text/plain",
+      "sha256": "157a09cfcdfdfb5977479c5a1c08345149263a3e990a2ec976ef28aaeec9cae6",
+      "size_bytes": 43,
+      "producer": "openrtl-owner-validation",
+      "evidence_lane": "local-bootstrap-policy-and-offline-launcher",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-and-size-verified"
+    },
+    {
+      "artifact_id": "m41.runtime-sdk.full_default_validation",
+      "locator": "build/retained-evidence/m41-runtime-sdk-43b8c6e/objects/db7957e60764a2347c8e2b7488ded1fcc768d9c276ef392d6bec9d0a6c946fb5",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "text-log.v1",
+      "media_type": "text/plain",
+      "sha256": "db7957e60764a2347c8e2b7488ded1fcc768d9c276ef392d6bec9d0a6c946fb5",
+      "size_bytes": 1131,
+      "producer": "openrtl-owner-validation",
+      "evidence_lane": "local-bootstrap-policy-and-offline-launcher",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-and-size-verified"
+    },
+    {
+      "artifact_id": "m41.runtime-sdk.offline_real_launcher",
+      "locator": "build/retained-evidence/m41-runtime-sdk-43b8c6e/objects/6335c8ebb0e2f92103cb64e52eb41bcf4234a8cd269fe0c82fdde9ba72c4e93b",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "text-log.v1",
+      "media_type": "text/plain",
+      "sha256": "6335c8ebb0e2f92103cb64e52eb41bcf4234a8cd269fe0c82fdde9ba72c4e93b",
+      "size_bytes": 76,
+      "producer": "openrtl-owner-validation",
+      "evidence_lane": "local-bootstrap-policy-and-offline-launcher",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-and-size-verified"
+    },
+    {
+      "artifact_id": "m41.runtime-sdk.carried-forward.v4",
+      "locator": "build/retained-evidence/m41-runtime-sdk-43b8c6e/objects/35ba0085767e56336ac26b3bda5f7dcc4454538dbcd8f0ac41552263f3a13024",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "openrtl.m41-v4-retained.v1",
+      "media_type": "application/json",
+      "sha256": "35ba0085767e56336ac26b3bda5f7dcc4454538dbcd8f0ac41552263f3a13024",
+      "size_bytes": 36315,
+      "producer": "openrtl-owner-validation",
+      "evidence_lane": "local-bootstrap-policy-and-offline-launcher",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-and-size-verified"
+    },
+    {
+      "artifact_id": "m41.runtime-sdk.existing-fifo",
+      "locator": "build/retained-evidence/m41-runtime-sdk-43b8c6e/objects/f873343968616b04fc039df1e63d0be3831dd7f2b6db6d6c16f0f653f38a7d4d",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "openrtl.verilator-canary-evidence.v1",
+      "media_type": "application/json",
+      "sha256": "f873343968616b04fc039df1e63d0be3831dd7f2b6db6d6c16f0f653f38a7d4d",
+      "size_bytes": 1036,
+      "producer": "openrtl-owner-validation",
+      "evidence_lane": "local-bootstrap-policy-and-offline-launcher",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-and-size-verified"
+    },
+    {
+      "artifact_id": "m41.runtime-sdk.offline-launcher",
+      "locator": "build/retained-evidence/m41-runtime-sdk-43b8c6e/objects/598e102ca5ca6f014f9b6e27059351df30f76fc3a5fd0d0330fb5db3e09d06e0",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "openrtl.onboarding-smoke.v1",
+      "media_type": "application/json",
+      "sha256": "598e102ca5ca6f014f9b6e27059351df30f76fc3a5fd0d0330fb5db3e09d06e0",
+      "size_bytes": 1798,
+      "producer": "openrtl-owner-validation",
+      "evidence_lane": "local-bootstrap-policy-and-offline-launcher",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-and-size-verified"
+    },
+    {
+      "artifact_id": "m41.runtime-sdk.recursive-inventory",
+      "locator": "build/retained-evidence/m41-runtime-sdk-43b8c6e/inventory.json",
+      "locator_base": "openrtl-primary-checkout",
+      "schema": "openrtl.retained-evidence-inventory.v1",
+      "media_type": "application/json",
+      "sha256": "cc75b23516f76576c009c1fd2d9d8ca4aef5f95c80e5ff9c4fa7e1aea62b68e9",
+      "size_bytes": 80732,
+      "producer": "codex-retention-reconciliation",
+      "evidence_lane": "local-bootstrap-policy-and-offline-launcher",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "all-declared-artifacts-rehashed"
+    }
+  ],
+  "validation_outcomes": {
+    "focused_tests": "66 passed in v5",
+    "strict_typing": "8 files passed in v5",
+    "repository_tests": "323 passed in v5",
+    "example_model_tests": "FIFO 3 and skid-buffer 3 passed in v5",
+    "offline_launcher": "6 actual launcher checks passed in v5 with existing Python and retained AgentRig wheel",
+    "existing_fifo_canary": "Passed in v4; source and retained evidence rehashed unchanged in v5",
+    "runtime_sdk": "Real shell rejection/cache checks and synthetic SDK tool/install fixtures only; no real runtime or SDK installed",
+    "source_binding": "All 15 implementation files equal the v5 reviewed manifest and qualified commit"
+  },
+  "pending": [
+    "real-private-python-provisioning",
+    "real-optional-sdk-setup",
+    "public-agentrig-wheel-availability",
+    "clean-user-m41-acceptance",
+    "m42-managed-isolated-runtime",
+    "m43-conversation",
+    "m44-import-evolution",
+    "m45-sessions-diagnostics",
+    "m46-live-rtl-qualification",
+    "m47-release"
+  ],
+  "authorization_boundary": {
+    "local_implementation_and_commits": true,
+    "approved_dependency_adoption": [
+      "uv==0.12.3",
+      "openai==2.47.0 and locked transitive wheels"
+    ],
+    "production_authorized": false,
+    "provider_calls": false,
+    "credential_resolution": false,
+    "runtime_downloads": false,
+    "runtime_installation": false,
+    "sdk_installation": false,
+    "docker_contact": false,
+    "remote_git_mutations": false,
+    "publication": false
+  },
+  "qualification_limits": [
+    "Existing Python and a retained AgentRig wheel were used for the actual launcher smoke.",
+    "Runtime/SDK fixtures prove local setup policy only, not real installation compatibility.",
+    "The existing FIFO canary does not establish that an agent designed new RTL.",
+    "M41 is not integrated; M46 live qualification and M47 release remain pending."
+  ]
+}

@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import json
 from pathlib import Path
+import sys
 from typing import Any, Sequence
 
 from agentrig.capabilities import (
@@ -99,6 +100,34 @@ _FIFO_REQUIREMENTS = (
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(prog="openrtl")
     subcommands = root.add_subparsers(dest="command", required=True)
+    from openrtl.design_cli import add_design_commands
+    add_design_commands(subcommands)
+    ui = subcommands.add_parser("ui", help="serve the local design workspace")
+    ui.add_argument("--project", type=Path, required=True)
+    ui.add_argument("--create", action="store_true")
+    ui.add_argument("--port", type=int, default=8765)
+    ui.add_argument("--allow-provider", action="store_true")
+    ui.add_argument("--provider", choices=("openai", "ollama"), default="openai")
+    ui.add_argument("--model")
+    ui.add_argument("--credential-env", default="OPENAI_API_KEY")
+    ui.add_argument("--api-key-stdin", action="store_true")
+    ui.add_argument("--max-spend-usd")
+    ui.add_argument("--timeout-seconds", type=int, default=120)
+    ui.add_argument("--capture-details", action="store_true",
+                    help="retain private local prompts, outputs and provider telemetry for new operations")
+    ui.add_argument("--max-calls", type=int, default=40)
+    ui.add_argument("--max-repairs", type=int, default=2)
+    ui.add_argument("--allow-simulation", action="store_true")
+    ui.add_argument("--runtime-state", type=Path)
+    ui.add_argument("--lima-executable", type=Path)
+    ui.add_argument("--lima-state-root", type=Path)
+    ui.add_argument("--lima-instance")
+    models = subcommands.add_parser("models", help="list compatible provider model controls")
+    models.add_argument("--provider", choices=("openai", "ollama"), default="openai")
+    from openrtl.session_cli import add_session_commands
+    add_session_commands(subcommands)
+    from openrtl.runtime_cli import add_runtime_command
+    add_runtime_command(subcommands)
     subcommands.add_parser("experts", help="list stable expert contracts")
     plan = subcommands.add_parser("plan", help="show the deterministic V1 workflow")
     plan.add_argument("--mode", choices=("build", "learn"), default="build")
@@ -451,6 +480,71 @@ def parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = parser().parse_args(argv)
+    if arguments.command == "ui":
+        from openrtl.adapters.design_web import serve
+        from openrtl.application.design_agent import DesignPolicy
+        from openrtl.domain.design_session import require
+        from openrtl.domain.provider_controls import provider_selector, selector_model, spend_limit_nano
+        require(not arguments.api_key_stdin or arguments.allow_provider, "provider_key_without_permission")
+        require(arguments.allow_provider or arguments.provider == "openai",
+                "provider_selection_without_permission")
+        selected = (provider_selector(arguments.provider, arguments.model)
+                    if arguments.allow_provider else None)
+        selected_model = selector_model(selected) if selected is not None else None
+        selected_limit = (spend_limit_nano(arguments.max_spend_usd)
+                          if arguments.allow_provider and arguments.provider == "openai" else None)
+        require(arguments.provider == "openai" or
+                arguments.max_spend_usd is None and not arguments.api_key_stdin,
+                "provider_spend_not_applicable")
+        key_value = None
+        if arguments.api_key_stdin:
+            require(arguments.credential_env == "OPENAI_API_KEY", "choose_one_credential_source")
+            from openrtl.adapters.provider_invocation import read_api_key_stdin
+            key_value = read_api_key_stdin(sys.stdin.buffer)
+        selection = (arguments.runtime_state, arguments.lima_executable,
+                     arguments.lima_state_root, arguments.lima_instance)
+        require(arguments.allow_simulation == all(value is not None for value in selection) and
+                (arguments.allow_simulation or all(value is None for value in selection)),
+                "simulation_runtime_and_guest_transport_required_together")
+        def provider_builder(provider: str, model: str, value: str | None, timeout: int) -> Any:
+            if provider == "ollama":
+                from openrtl.adapters.design_generation import ollama_design_expert
+                return ollama_design_expert(authorized=True, model=model, timeout_seconds=timeout)
+            from openrtl.adapters.design_generation import openai_design_expert
+            return openai_design_expert(authorized=True, model=model,
+                                        credential_environment=arguments.credential_env,
+                                        credential_value=value, timeout_seconds=timeout)
+        def simulator_factory() -> Any:
+            if not arguments.allow_simulation:
+                return None
+            from openrtl.adapters.design_simulation import IsolatedDesignSimulator
+            from openrtl.adapters.workload_transport import LimaWorkloadTransport
+            from openrtl.runtime_cli import ready_profile
+            transport = LimaWorkloadTransport(arguments.lima_executable,
+                                              arguments.lima_state_root, arguments.lima_instance)
+            profile = ready_profile(arguments.runtime_state, transport_identity=transport.identity)
+            return IsolatedDesignSimulator(arguments.project, profile, workload_transport=transport)
+        try:
+            serve(arguments.project, create=arguments.create, port=arguments.port,
+                  expert_factory=lambda: None, provider_builder=provider_builder,
+                  initial_provider=arguments.provider, initial_model=selected_model,
+                  initial_limit_nano=selected_limit,
+                  timeout_seconds=arguments.timeout_seconds, detailed_capture=arguments.capture_details,
+                  initial_key=key_value, simulator_factory=simulator_factory,
+                  policy=DesignPolicy(arguments.max_calls, arguments.max_repairs,
+                                      selected))
+        except KeyboardInterrupt:
+            return 0
+        return 0
+    if arguments.command == "sessions":
+        from openrtl.session_cli import run_sessions
+        return run_sessions(arguments)
+    if arguments.command == "runtime":
+        from openrtl.runtime_cli import run_runtime_command
+        return run_runtime_command(arguments)
+    if arguments.command in ("chat", "resume", "batch", "recover", "status", "doctor", "import", "baseline", "change", "compare", "acceptance", "export-design"):
+        from openrtl.design_cli import run_design_command
+        return run_design_command(arguments)
     if arguments.command == "experts":
         print(
             json.dumps(
@@ -467,6 +561,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 indent=2,
             )
         )
+        return 0
+    if arguments.command == "models":
+        from openrtl.domain.provider_controls import model_catalog, ollama_catalog
+        print(json.dumps(model_catalog() if arguments.provider == "openai" else ollama_catalog(),
+                         sort_keys=True, indent=2))
         return 0
     if arguments.command == "plan":
         state = OpenRTLWorkflow().create(InteractionMode(arguments.mode))

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from importlib.metadata import version
+import inspect
 from pathlib import Path
 import tomllib
 import unittest
 
 from agentrig.capabilities import McpServerBinding, McpTransport
+from agentrig.core import PrivateTraceCapture, RunContext
 from agentrig.integrations import CommandTool
 from agentrig.integrations.openai import (
     OPENAI_IMAGE_SDK_VERSION,
@@ -18,6 +20,9 @@ from tools.validate_public_release import (
     AGENTRIG_VERSION as RELEASE_AGENTRIG_VERSION,
     VERSION as RELEASE_OPENRTL_VERSION,
 )
+
+
+_DEVELOPMENT_AGENTRIG_COMMIT = "f1200ad4d9e1cf6626b84acc9756643be75e56a3"
 
 
 class _LifecycleClient:
@@ -39,12 +44,32 @@ class AgentRigCompatibilityTest(unittest.TestCase):
 
         self.assertEqual(openrtl.__version__, "0.4.0")
         self.assertEqual(version("openrtl"), "0.4.0")
-        self.assertEqual(version("agentrig"), "0.3.0")
+        self.assertEqual(version("agentrig"), "0.3.1.dev13")
         self.assertEqual(project["version"], "0.4.0")
-        self.assertEqual(project["dependencies"], ["agentrig==0.3.0"])
+        self.assertEqual(project["dependencies"], ["agentrig==0.3.1.dev13"])
         self.assertEqual(packages["openrtl"]["version"], "0.4.0")
-        self.assertEqual(packages["agentrig"]["version"], "0.3.0")
+        self.assertEqual(packages["agentrig"]["version"], "0.3.1.dev13")
         self.assertEqual(packages["agentrig"]["source"], {"editable": "../agentrig"})
+
+    def test_current_source_workflows_pin_the_development_agentrig_commit(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        expected = f"ref: {_DEVELOPMENT_AGENTRIG_COMMIT}"
+        for relative in (
+            ".github/workflows/agentrig-0.3-compatibility.yml",
+            ".github/workflows/composed-package-matrix.yml",
+        ):
+            with self.subTest(workflow=relative):
+                workflow = (root / relative).read_text(encoding="utf-8")
+                self.assertEqual(workflow.count(expected), 1)
+
+        compatibility = (
+            root / ".github/workflows/agentrig-0.3-compatibility.yml"
+        ).read_text(encoding="utf-8")
+        self.assertEqual(compatibility.count("timeout-minutes: 30"), 1)
+        matrix = (
+            root / ".github/workflows/composed-package-matrix.yml"
+        ).read_text(encoding="utf-8")
+        self.assertEqual(matrix.count("timeout-minutes: 45"), 1)
 
     def test_consumed_public_contracts_remain_available(self) -> None:
         tools = build_command_tools(
@@ -64,6 +89,8 @@ class AgentRigCompatibilityTest(unittest.TestCase):
         self.assertIsInstance(_LifecycleClient(), OpenAIResponsesClient)
         self.assertEqual(OPENAI_RESPONSES_SDK_VERSION, "2.47.0")
         self.assertEqual(OPENAI_IMAGE_SDK_VERSION, "2.47.0")
+        self.assertIn("private_trace_capture", inspect.signature(RunContext.create_root).parameters)
+        self.assertIn("include_reasoning", inspect.signature(PrivateTraceCapture).parameters)
 
     def test_published_0_2_0_acceptance_remains_historical(self) -> None:
         self.assertEqual(RELEASE_OPENRTL_VERSION, "0.2.0")

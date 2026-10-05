@@ -1,0 +1,109 @@
+{
+  "schema": "openrtl.milestone-evidence.v1",
+  "milestone_id": "discovery-reliability-v1",
+  "base_commit": "df66569099db3c2ae03d58a7ca1d63b314ea357e",
+  "qualified_commit": "27b5dcd01bcecaccdb09dfec62ffd7e8bc6b9e51",
+  "review_state": "local-contracts-validated-live-provider-qualification-pending",
+  "qualification_lane": "owner-offline",
+  "milestone_complete": true,
+  "implementation_slice_complete": true,
+  "qualification_scope": "Deterministic discovery lifecycle, question-memory, refinement, and bounded recovery contracts only.",
+  "locator_roots": {
+    "openrtl-primary-checkout": {
+      "kind": "declared-external-checkout",
+      "repository": "openrtl",
+      "resolution": "Resolve relative to the retained primary checkout; collateral is not distributed with a clone."
+    }
+  },
+  "artifacts": [
+    {
+      "artifact_id": "discovery-reliability.local.1",
+      "locator": "build/retained-evidence/discovery-reliability-v1/run-HYY8iuaM/source.sha256",
+      "locator_base": "openrtl-primary-checkout",
+      "media_type": "text/plain",
+      "sha256": "6e65afd40f853a7a9afcd8807c7f2d5e234497c05d9324df4f5015db222f017d",
+      "size_bytes": 1488,
+      "producer": "owner-validation-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "hash-size-and-source-binding-verified"
+    },
+    {
+      "artifact_id": "discovery-reliability.local.2",
+      "locator": "build/retained-evidence/discovery-reliability-v1/run-HYY8iuaM/focused.log",
+      "locator_base": "openrtl-primary-checkout",
+      "media_type": "text/plain",
+      "sha256": "68036d586a806d5d26107c26724ba227980128e46cee3bdbbaaf211c1549e6b8",
+      "size_bytes": 304,
+      "producer": "owner-validation-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "passed"
+    },
+    {
+      "artifact_id": "discovery-reliability.local.3",
+      "locator": "build/retained-evidence/discovery-reliability-v1/run-HYY8iuaM/frontend.log",
+      "locator_base": "openrtl-primary-checkout",
+      "media_type": "text/plain",
+      "sha256": "c39fa1a1546ee30426c9b7fe55e5520828789ac4176c5c92f76a8299e81a4344",
+      "size_bytes": 903,
+      "producer": "owner-validation-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "passed"
+    },
+    {
+      "artifact_id": "discovery-reliability.local.4",
+      "locator": "build/retained-evidence/discovery-reliability-v1/run-HYY8iuaM/full.log",
+      "locator_base": "openrtl-primary-checkout",
+      "media_type": "text/plain",
+      "sha256": "2155bc6e65c2df54da7c5557da02ae110850b61ff58e39dab743dc492c6e9b45",
+      "size_bytes": 1535,
+      "producer": "owner-validation-v1",
+      "evidence_lane": "owner-offline",
+      "retention_class": "retained-local-not-distributed",
+      "availability": "local",
+      "review_state": "passed"
+    }
+  ],
+  "validation_outcomes": {
+    "focused": {
+      "tests": 157,
+      "exit_code": 0
+    },
+    "frontend": {
+      "tests": 9,
+      "exit_code": 0
+    },
+    "full_suite": {
+      "tests": 593,
+      "exit_code": 0
+    },
+    "source_binding": {
+      "files": 15,
+      "unchanged_after_validation": true
+    },
+    "verilator_cocotb_canary": "not_selected"
+  },
+  "authorization_boundary": {
+    "local_implementation_and_commits": true,
+    "provider_calls": false,
+    "credential_values_handled": false,
+    "downloads": false,
+    "installation": false,
+    "publication": false,
+    "production_authorized": false
+  },
+  "qualification_limits": [
+    "The captured failure shape is covered by local regression fixtures without retaining private prompts, provider reasoning, or unrelated captured content.",
+    "Synthetic provider responses prove deterministic local handling, not live Ollama behavior.",
+    "No provider call, runtime installation, release, publication, or remote Git action was performed."
+  ],
+  "pending": [
+    "m46-live-rtl-qualification",
+    "m47-release"
+  ]
+}

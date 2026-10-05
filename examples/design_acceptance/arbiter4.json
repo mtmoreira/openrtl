@@ -1,0 +1,47 @@
+{
+  "title": "Acceptance fixed-priority arbiter",
+  "top": "arbiter4",
+  "behavior": "Combinational four-request arbiter, lowest numbered asserted request wins. grant is one-hot or zero. valid equals any request. index identifies winning request, and is zero when valid is zero. No fairness or state.",
+  "clock_reset": "Combinational; no clock or reset.",
+  "requirements": [
+    {
+      "id": "arbiter.priority",
+      "text": "Choose the lowest numbered asserted bit of request.",
+      "acceptance": "Exhaust all 16 request vectors against an independently derived reference."
+    },
+    {
+      "id": "arbiter.grant",
+      "text": "grant has exactly one requested bit when any request is asserted, otherwise zero.",
+      "acceptance": "Check one-hot-or-zero, subset-of-request and priority for every vector."
+    },
+    {
+      "id": "arbiter.outputs",
+      "text": "valid is OR of request; index is the winning bit or zero when idle.",
+      "acceptance": "Verify all outputs together for every vector and transitions between vectors."
+    }
+  ],
+  "ports": [
+    {
+      "name": "request",
+      "direction": "input",
+      "width": 4
+    },
+    {
+      "name": "grant",
+      "direction": "output",
+      "width": 4
+    },
+    {
+      "name": "valid",
+      "direction": "output",
+      "width": 1
+    },
+    {
+      "name": "index",
+      "direction": "output",
+      "width": 2
+    }
+  ],
+  "questions": [],
+  "assumptions": []
+}
