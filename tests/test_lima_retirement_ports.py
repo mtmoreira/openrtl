@@ -288,9 +288,10 @@ class LimaRetirementPortsTests(unittest.TestCase):
             registrations,
         )
         lock = self.endpoint.root / ".service.lock"
-        os.unlink(lock)
-        lock.write_bytes(b"")
-        lock.chmod(0o600)
+        replacement = self.endpoint.root / ".replacement-service.lock"
+        replacement.write_bytes(b"")
+        replacement.chmod(0o600)
+        os.replace(replacement, lock)
         with self.assertRaisesRegex(ValueError, "runtime_retirement_execution_failed"):
             apply_guest_retirement(
                 "lima-vz-managed",

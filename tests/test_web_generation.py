@@ -319,8 +319,13 @@ class WebGenerationTest(unittest.TestCase):
 
             async def settle() -> JsonObject:
                 assert runtime.workspace is not None
-                await runtime.workspace._tasks[identifier]
-                return runtime.workspace.operation(identifier)
+                while True:
+                    operation = runtime.workspace.operation(identifier)
+                    if operation["phase"] not in (
+                        "queued", "active", "cancellation_requested"
+                    ):
+                        return operation
+                    await asyncio.sleep(0)
             return runtime._await(settle())
 
         runtime.call(approve)

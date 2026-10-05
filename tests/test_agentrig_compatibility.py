@@ -66,6 +66,10 @@ class AgentRigCompatibilityTest(unittest.TestCase):
             root / ".github/workflows/agentrig-0.3-compatibility.yml"
         ).read_text(encoding="utf-8")
         self.assertEqual(compatibility.count("timeout-minutes: 30"), 1)
+        matrix = (
+            root / ".github/workflows/composed-package-matrix.yml"
+        ).read_text(encoding="utf-8")
+        self.assertEqual(matrix.count("timeout-minutes: 45"), 1)
 
     def test_consumed_public_contracts_remain_available(self) -> None:
         tools = build_command_tools(
